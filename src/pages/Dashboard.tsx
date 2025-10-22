@@ -84,22 +84,22 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-gradient-secondary pb-32 pt-24">
-      <div className="fixed top-8 left-1/2 -translate-x-1/2 z-50 flex gap-3">
+      <div className="fixed top-8 left-1/2 -translate-x-1/2 z-50 flex gap-2">
         <button
           onClick={() => setSelectedPeriod("month")}
-          className={`glass-effect px-6 py-3 rounded-full shadow-xl hover:shadow-glow transition-smooth ${
+          className={`glass-effect px-4 py-2.5 rounded-full shadow-xl hover:shadow-glow transition-smooth ${
             selectedPeriod === "month" ? "ring-2 ring-primary" : ""
           }`}
         >
-          <span className="font-semibold text-foreground">Цей місяць</span>
+          <span className="font-semibold text-foreground text-sm">Цей місяць</span>
         </button>
         <button
           onClick={() => setSelectedClientId("all")}
-          className={`glass-effect px-6 py-3 rounded-full shadow-xl hover:shadow-glow transition-smooth ${
+          className={`glass-effect px-4 py-2.5 rounded-full shadow-xl hover:shadow-glow transition-smooth ${
             selectedClientId === "all" ? "ring-2 ring-primary" : ""
           }`}
         >
-          <span className="font-semibold text-foreground">Всі клієнти</span>
+          <span className="font-semibold text-foreground text-sm">Всі клієнти</span>
         </button>
       </div>
 
