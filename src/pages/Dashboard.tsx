@@ -1,13 +1,10 @@
 import { useState, useEffect, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ReportsButton } from "@/components/ReportsButton";
 import { storage } from "@/lib/storage";
-import { Report, Client, PaymentStatus } from "@/types/report";
-import { ArrowLeft, DollarSign, Clock, TrendingUp, Users } from "lucide-react";
+import { Report, Client } from "@/types/report";
+import { DollarSign, Clock, TrendingUp, Users } from "lucide-react";
 
 const Dashboard = () => {
-  const navigate = useNavigate();
   const [reports, setReports] = useState<Report[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [selectedPeriod, setSelectedPeriod] = useState("month");
@@ -45,22 +42,12 @@ const Dashboard = () => {
     const totalPaid = filteredReports.reduce((sum, r) => sum + r.paidAmount, 0);
     const totalRemaining = filteredReports.reduce((sum, r) => sum + r.remainingAmount, 0);
     const totalHours = filteredReports.reduce((sum, r) => sum + r.totalHours, 0);
-    
-    const paidCount = filteredReports.filter((r) => r.paymentStatus === "paid").length;
-    const partialCount = filteredReports.filter((r) => r.paymentStatus === "partial").length;
-    const unpaidCount = filteredReports.filter((r) => r.paymentStatus === "unpaid").length;
-
-    const avgRate = totalHours > 0 ? totalEarned / totalHours : 0;
 
     return {
       totalEarned,
       totalPaid,
       totalRemaining,
       totalHours,
-      paidCount,
-      partialCount,
-      unpaidCount,
-      avgRate,
     };
   }, [filteredReports]);
 
@@ -96,43 +83,25 @@ const Dashboard = () => {
   }, [filteredReports]);
 
   return (
-    <div className="min-h-screen bg-gradient-secondary pb-20">
-      <header className="bg-card border-b border-border sticky top-0 z-30 shadow-md">
-        <div className="container mx-auto px-4 py-6">
-          <Button variant="ghost" onClick={() => navigate("/")} className="mb-4">
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Назад до звітів
-          </Button>
-          <h1 className="text-3xl font-bold text-foreground mb-4">Dashboard</h1>
-
-          <div className="flex gap-3">
-            <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
-              <SelectTrigger className="flex-1">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Весь час</SelectItem>
-                <SelectItem value="month">Цей місяць</SelectItem>
-                <SelectItem value="year">Цей рік</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Select value={selectedClientId} onValueChange={setSelectedClientId}>
-              <SelectTrigger className="flex-1">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Всі клієнти</SelectItem>
-                {clients.map((client) => (
-                  <SelectItem key={client.id} value={client.id}>
-                    {client.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-      </header>
+    <div className="min-h-screen bg-gradient-secondary pb-32 pt-24">
+      <div className="fixed top-8 left-1/2 -translate-x-1/2 z-50 flex gap-3">
+        <button
+          onClick={() => setSelectedPeriod("month")}
+          className={`glass-effect px-6 py-3 rounded-full shadow-xl hover:shadow-glow transition-smooth ${
+            selectedPeriod === "month" ? "ring-2 ring-primary" : ""
+          }`}
+        >
+          <span className="font-semibold text-foreground">Цей місяць</span>
+        </button>
+        <button
+          onClick={() => setSelectedClientId("all")}
+          className={`glass-effect px-6 py-3 rounded-full shadow-xl hover:shadow-glow transition-smooth ${
+            selectedClientId === "all" ? "ring-2 ring-primary" : ""
+          }`}
+        >
+          <span className="font-semibold text-foreground">Всі клієнти</span>
+        </button>
+      </div>
 
       <main className="container mx-auto px-4 py-8 space-y-6">
         {/* KPI Cards */}
@@ -182,24 +151,6 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Payment Status Distribution */}
-        <div className="bg-card rounded-2xl p-8 shadow-lg border border-border">
-          <h2 className="text-xl font-bold text-foreground mb-6">Статус оплати</h2>
-          <div className="grid grid-cols-3 gap-4">
-            <div className="text-center">
-              <div className="text-4xl font-bold text-success mb-2">{stats.paidCount}</div>
-              <p className="text-sm text-muted-foreground">Оплачено</p>
-            </div>
-            <div className="text-center">
-              <div className="text-4xl font-bold text-warning mb-2">{stats.partialCount}</div>
-              <p className="text-sm text-muted-foreground">Частково</p>
-            </div>
-            <div className="text-center">
-              <div className="text-4xl font-bold text-destructive mb-2">{stats.unpaidCount}</div>
-              <p className="text-sm text-muted-foreground">Не оплачено</p>
-            </div>
-          </div>
-        </div>
 
         {/* Client Leaderboard */}
         <div className="bg-card rounded-2xl p-8 shadow-lg border border-border">
@@ -240,17 +191,9 @@ const Dashboard = () => {
           </div>
         )}
 
-        {/* Average Rate */}
-        <div className="bg-card rounded-2xl p-8 shadow-lg border border-border">
-          <h2 className="text-xl font-bold text-foreground mb-4">Середня ставка</h2>
-          <div className="text-center">
-            <p className="text-5xl font-bold gradient-primary bg-clip-text text-transparent">
-              {stats.avgRate.toFixed(2)}
-            </p>
-            <p className="text-muted-foreground mt-2">грн/год</p>
-          </div>
-        </div>
       </main>
+
+      <ReportsButton />
     </div>
   );
 };
