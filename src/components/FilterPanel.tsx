@@ -65,21 +65,21 @@ export const FilterPanel = ({ isOpen, onClose, clients, onApply }: FilterPanelPr
   return (
     <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-40" onClick={onClose}>
       <div
-        className="fixed top-0 right-0 h-full w-full max-w-md bg-card shadow-2xl overflow-y-auto"
+        className="fixed top-0 right-0 h-full w-full max-w-md bg-card shadow-xl overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="p-6 space-y-6">
+        <div className="p-4 space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold text-foreground">Фільтри</h2>
+            <h2 className="text-xl font-bold text-foreground">Фільтри</h2>
             <Button variant="ghost" size="icon" onClick={onClose}>
-              <X className="w-5 h-5" />
+              <X className="w-4 h-4" />
             </Button>
           </div>
 
-          <div className="space-y-6">
+          <div className="space-y-4">
             <div>
-              <Label className="text-base font-semibold mb-3 block">Статус оплати</Label>
-              <div className="space-y-3">
+              <Label className="text-sm font-semibold mb-2 block">Статус оплати</Label>
+              <div className="space-y-2">
                 {[
                   { value: "paid" as PaymentStatus, label: "Оплачено" },
                   { value: "partial" as PaymentStatus, label: "Частково" },
@@ -91,7 +91,7 @@ export const FilterPanel = ({ isOpen, onClose, clients, onApply }: FilterPanelPr
                       checked={filters.paymentStatuses.includes(status.value)}
                       onCheckedChange={() => handlePaymentStatusToggle(status.value)}
                     />
-                    <Label htmlFor={status.value} className="cursor-pointer">
+                    <Label htmlFor={status.value} className="cursor-pointer text-sm">
                       {status.label}
                     </Label>
                   </div>
@@ -100,7 +100,7 @@ export const FilterPanel = ({ isOpen, onClose, clients, onApply }: FilterPanelPr
             </div>
 
             <div>
-              <Label className="text-base font-semibold mb-3 block">Клієнт</Label>
+              <Label className="text-sm font-semibold mb-2 block">Клієнт</Label>
               <Select value={filters.clientId} onValueChange={(value) => setFilters({ ...filters, clientId: value })}>
                 <SelectTrigger>
                   <SelectValue placeholder="Всі клієнти" />
@@ -117,7 +117,7 @@ export const FilterPanel = ({ isOpen, onClose, clients, onApply }: FilterPanelPr
             </div>
 
             <div>
-              <Label className="text-base font-semibold mb-3 block">Місяць</Label>
+              <Label className="text-sm font-semibold mb-2 block">Місяць</Label>
               <Select
                 value={filters.month?.toString()}
                 onValueChange={(value) => setFilters({ ...filters, month: parseInt(value) })}
@@ -137,7 +137,7 @@ export const FilterPanel = ({ isOpen, onClose, clients, onApply }: FilterPanelPr
             </div>
 
             <div>
-              <Label className="text-base font-semibold mb-3 block">Рік</Label>
+              <Label className="text-sm font-semibold mb-2 block">Рік</Label>
               <Select
                 value={filters.year?.toString()}
                 onValueChange={(value) => setFilters({ ...filters, year: parseInt(value) })}
@@ -157,11 +157,11 @@ export const FilterPanel = ({ isOpen, onClose, clients, onApply }: FilterPanelPr
             </div>
           </div>
 
-          <div className="flex gap-3 pt-4">
+          <div className="flex gap-2 pt-4">
             <Button variant="outline" onClick={handleReset} className="flex-1">
               Скинути
             </Button>
-            <Button variant="gradient" onClick={handleApply} className="flex-1">
+            <Button variant="default" onClick={handleApply} className="flex-1">
               Застосувати
             </Button>
           </div>

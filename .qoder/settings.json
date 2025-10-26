@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "ask": [
+      "Read(!/Users/vladimirdrach/Projects/tidy-report-dash/**)",
+      "Edit(!/Users/vladimirdrach/Projects/tidy-report-dash/**)"
+    ],
+    "allow": [
+      "Read(/Users/vladimirdrach/Projects/tidy-report-dash/**)",
+      "Edit(/Users/vladimirdrach/Projects/tidy-report-dash/**)"
+    ]
+  },
+  "memoryImport": {},
+  "monitoring": {}
+}

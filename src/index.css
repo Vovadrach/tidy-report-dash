@@ -2,100 +2,107 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Notebook background pattern */
+.notebook-bg {
+  background-color: #ffffff;
+  background-image: 
+    linear-gradient(#e0e0e0 1px, transparent 1px),
+    linear-gradient(90deg, #e0e0e0 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
 /* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
 All colors MUST be HSL.
 */
 
 @layer base {
   :root {
-    --background: 240 20% 98%;
-    --foreground: 240 10% 15%;
-
-    --card: 0 0% 100%;
-    --card-foreground: 240 10% 15%;
-
-    --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 15%;
-
-    --primary: 262 83% 58%;
-    --primary-foreground: 0 0% 100%;
-    --primary-glow: 270 100% 70%;
-
-    --secondary: 240 15% 92%;
-    --secondary-foreground: 240 10% 20%;
-
-    --muted: 240 15% 95%;
-    --muted-foreground: 240 5% 50%;
-
-    --accent: 220 90% 56%;
-    --accent-foreground: 0 0% 100%;
-
-    --destructive: 0 72% 51%;
-    --destructive-foreground: 0 0% 100%;
-
-    --success: 142 76% 36%;
-    --success-foreground: 0 0% 100%;
-
-    --warning: 38 92% 50%;
-    --warning-foreground: 0 0% 100%;
-
-    --border: 240 15% 88%;
-    --input: 240 15% 90%;
-    --ring: 262 83% 58%;
-
-    --radius: 1rem;
-
-    --gradient-primary: linear-gradient(135deg, hsl(262 83% 58%), hsl(220 90% 56%));
-    --gradient-secondary: linear-gradient(180deg, hsl(240 20% 98%), hsl(240 15% 95%));
-    --gradient-success: linear-gradient(135deg, hsl(142 76% 36%), hsl(158 64% 52%));
-    --gradient-glass: linear-gradient(135deg, hsla(0 0% 100% / 0.1), hsla(0 0% 100% / 0.05));
-
-    --shadow-sm: 0 1px 2px 0 hsla(240 10% 15% / 0.05);
-    --shadow-md: 0 4px 6px -1px hsla(240 10% 15% / 0.1);
-    --shadow-lg: 0 10px 15px -3px hsla(240 10% 15% / 0.1);
-    --shadow-xl: 0 20px 25px -5px hsla(240 10% 15% / 0.1);
-    --shadow-glow: 0 0 40px hsla(262 83% 58% / 0.3);
-
+    /* Основні кольори світлої теми "Чистий Світанок" */
+    --background: 0 0% 100%; /* Чисто білий */
+    --foreground: 216 32% 17%; /* Глибокий синій */
+    
+    /* Фони карток та панелей */
+    --card: 0 0% 100%; /* Білий */
+    --card-foreground: 216 32% 17%; /* Глибокий синій */
+    
+    /* Popover елементи */
+    --popover: 0 0% 100%; /* Білий */
+    --popover-foreground: 216 32% 17%; /* Глибокий синій */
+    
+    /* Основний акцентний колір - світло-блакитний */
+    --primary: 217 91% 60%; /* #3B82F6 */
+    --primary-foreground: 0 0% 100%; /* Білий */
+    
+    /* Допоміжний колір - світло-сірий */
+    --secondary: 210 14% 95%; /* #F3F4F6 */
+    --secondary-foreground: 216 32% 17%; /* Глибокий синій */
+    
+    /* Акцентний колір - свіжа зелень */
+    --accent: 160 85% 39%; /* #10B981 */
+    --accent-foreground: 0 0% 100%; /* Білий */
+    
+    /* Приглушені кольори */
+    --muted: 210 12% 91%; /* #E5E7EB */
+    --muted-foreground: 215 9% 45%; /* #6B7280 */
+    
+    /* Статусні кольори */
+    --success: 160 92% 31%; /* #059669 */
+    --success-foreground: 0 0% 100%; /* Білий */
+    
+    --warning: 38 90% 50%; /* #F59E0B */
+    --warning-foreground: 0 0% 100%; /* Білий */
+    
+    --destructive: 0 84% 60%; /* #EF4444 */
+    --destructive-foreground: 0 0% 100%; /* Білий */
+    
+    /* Межі та введення */
+    --border: 212 12% 84%; /* #D1D5DB */
+    --input: 212 12% 84%; /* #D1D5DB */
+    --ring: 217 91% 60%; /* #3B82F6 */
+    
+    /* Радіуси */
+    --radius: 0.75rem;
+    
+    /* Градієнти */
+    --gradient-primary: linear-gradient(135deg, hsl(217 91% 60%), hsl(160 85% 39%)); /* Блакитний до зеленого */
+    --gradient-secondary: linear-gradient(180deg, hsl(0 0% 100%), hsl(210 14% 95%)); /* Білий до світло-сірого */
+    --gradient-success: linear-gradient(135deg, hsl(160 92% 31%), hsl(160 85% 39%)); /* Темно-зелений до світло-зеленого */
+    
+    /* Тіні */
+    --shadow-sm: 0 1px 3px 0 hsla(0 0% 0% / 0.1);
+    --shadow-md: 0 4px 6px -1px hsla(0 0% 0% / 0.1);
+    --shadow-lg: 0 10px 15px -3px hsla(0 0% 0% / 0.1);
+    --shadow-xl: 0 20px 25px -5px hsla(0 0% 0% / 0.1);
+    
+    /* Анімації */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .dark {
-    --background: 240 10% 8%;
-    --foreground: 240 5% 96%;
-
-    --card: 240 10% 12%;
-    --card-foreground: 240 5% 96%;
-
-    --popover: 240 10% 12%;
-    --popover-foreground: 240 5% 96%;
-
-    --primary: 262 83% 58%;
+    /* Для сумісності зберігаємо темну тему, але вона не використовується в цій концепції */
+    --background: 216 32% 10%;
+    --foreground: 0 0% 90%;
+    --card: 216 32% 15%;
+    --card-foreground: 0 0% 90%;
+    --popover: 216 32% 15%;
+    --popover-foreground: 0 0% 90%;
+    --primary: 217 91% 60%;
     --primary-foreground: 0 0% 100%;
-    --primary-glow: 270 100% 70%;
-
-    --secondary: 240 10% 18%;
-    --secondary-foreground: 240 5% 96%;
-
-    --muted: 240 10% 15%;
-    --muted-foreground: 240 5% 65%;
-
-    --accent: 220 90% 56%;
+    --secondary: 216 32% 20%;
+    --secondary-foreground: 0 0% 90%;
+    --muted: 216 32% 30%;
+    --muted-foreground: 216 32% 70%;
+    --accent: 160 85% 39%;
     --accent-foreground: 0 0% 100%;
-
-    --destructive: 0 72% 51%;
+    --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
-
-    --success: 142 76% 36%;
+    --success: 160 92% 31%;
     --success-foreground: 0 0% 100%;
-
-    --warning: 38 92% 50%;
+    --warning: 38 90% 50%;
     --warning-foreground: 0 0% 100%;
-
-    --border: 240 10% 20%;
-    --input: 240 10% 18%;
-    --ring: 262 83% 58%;
-
-    --gradient-glass: linear-gradient(135deg, hsla(0 0% 100% / 0.05), hsla(0 0% 100% / 0.02));
+    --border: 216 32% 25%;
+    --input: 216 32% 25%;
+    --ring: 217 91% 60%;
   }
 }
 
@@ -113,10 +120,25 @@ All colors MUST be HSL.
 
 @layer utilities {
   .glass-effect {
-    background: var(--gradient-glass);
-    backdrop-filter: blur(20px) saturate(180%);
-    -webkit-backdrop-filter: blur(20px) saturate(180%);
-    border: 1px solid hsla(0 0% 100% / 0.18);
+    background: var(--card);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-md);
+  }
+  
+  .glass-effect:hover {
+    box-shadow: var(--shadow-lg);
+    transition: var(--transition-smooth);
+  }
+  
+  .glass-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-md);
+  }
+  
+  .glass-card:hover {
+    box-shadow: var(--shadow-lg);
+    transition: var(--transition-smooth);
   }
 
   .gradient-primary {
@@ -126,9 +148,17 @@ All colors MUST be HSL.
   .gradient-secondary {
     background: var(--gradient-secondary);
   }
+  
+  .gradient-success {
+    background: var(--gradient-success);
+  }
 
   .shadow-glow {
-    box-shadow: var(--shadow-glow);
+    box-shadow: var(--shadow-xl);
+  }
+  
+  .shadow-glow-hover:hover {
+    box-shadow: var(--shadow-xl);
   }
 
   .transition-smooth {

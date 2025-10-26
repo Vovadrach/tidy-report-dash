@@ -1,66 +1,61 @@
 import { Report } from "@/types/report";
-import { Badge } from "@/components/ui/badge";
-import { Clock, DollarSign } from "lucide-react";
+import { Clock, Euro, Calendar } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 interface ReportCardProps {
   report: Report;
+  index?: number;
 }
 
-export const ReportCard = ({ report }: ReportCardProps) => {
+export const ReportCard = ({ report, index = 0 }: ReportCardProps) => {
   const navigate = useNavigate();
 
-  const getPaymentBadgeVariant = (status: Report["paymentStatus"]) => {
-    switch (status) {
+  const paymentStatus = report.paymentStatus || report.payment_status || "unpaid";
+  const remainingAmount = Math.round((report.totalEarned || report.total_earned || 0) - (report.paidAmount || report.paid_amount || 0));
+  const totalHours = report.totalHours || report.total_hours || 0;
+  
+  // Функція для визначення кольору в залежності від статусу оплати
+  const getPaymentColor = () => {
+    switch (paymentStatus) {
       case "paid":
-        return "success";
+        return "text-success";
       case "partial":
-        return "warning";
+        return "text-warning";
       case "unpaid":
-        return "destructive";
+        return "text-destructive";
       default:
-        return "default";
-    }
-  };
-
-  const getPaymentLabel = (status: Report["paymentStatus"]) => {
-    switch (status) {
-      case "paid":
-        return "Оплачено";
-      case "partial":
-        return "Частково";
-      case "unpaid":
-        return "Не оплачено";
-      default:
-        return status;
+        return "text-foreground";
     }
   };
 
   return (
     <div
-      onClick={() => navigate(`/report/${report.id}`)}
-      className="bg-card rounded-2xl p-6 shadow-md hover:shadow-xl transition-smooth cursor-pointer border border-border hover:border-primary/50"
+      onClick={() => {
+        // Якщо це зведений звіт (має префікс consolidated-), переходимо на сторінку з усіма робочими днями клієнта
+        if (report.id?.startsWith('consolidated-')) {
+          // Переходимо на сторінку деталей звіту, але передаємо ID клієнта
+          navigate(`/client-reports/${report.clientId}`);
+        } else {
+          navigate(`/report/${report.id}`);
+        }
+      }}
+      className="bg-card rounded-lg p-4 shadow-md border border-border hover:shadow-lg transition-smooth cursor-pointer"
     >
-      <div className="flex items-start justify-between mb-4">
-        <h3 className="text-xl font-bold text-foreground">{report.clientName}</h3>
-        <Badge variant={getPaymentBadgeVariant(report.paymentStatus)}>
-          {getPaymentLabel(report.paymentStatus)}
-        </Badge>
+      <div className="text-center mb-3">
+        <p className="text-base font-semibold text-foreground">
+          {report.clientName || report.client_name || 'Без імені'}
+        </p>
       </div>
 
-      <div className="space-y-3">
-        <div className="flex items-center gap-2 text-muted-foreground">
-          <Clock className="w-4 h-4" />
-          <span className="text-sm">
-            {report.totalHours} {report.totalHours === 1 ? "година" : "годин"}
-          </span>
+      <div className="grid grid-cols-2 gap-2">
+        <div className="bg-purple-50 dark:bg-purple-950 rounded-md p-2 flex items-center justify-center gap-1 border border-purple-200/50 dark:border-purple-800/50 shadow-md">
+          <Clock className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+          <p className="text-base font-semibold text-black dark:text-white">{totalHours}</p>
         </div>
 
-        <div className="flex items-center gap-2">
-          <DollarSign className="w-5 h-5 text-success" />
-          <span className="text-lg font-semibold text-foreground">
-            {report.totalEarned.toFixed(2)} грн
-          </span>
+        <div className="bg-amber-50 dark:bg-amber-950 rounded-md p-2 flex items-center justify-center gap-1 border border-amber-200/50 dark:border-amber-800/50 shadow-md">
+          <Euro className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+          <p className="text-base font-semibold text-amber-800 dark:text-amber-200">{remainingAmount}€</p>
         </div>
       </div>
     </div>
