@@ -88,11 +88,6 @@ const Index = () => {
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
   const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
 
-  // Swipe detection
-  const touchStartX = useRef<number>(0);
-  const touchEndX = useRef<number>(0);
-  const containerRef = useRef<HTMLDivElement>(null);
-
   // Reset to current week when returning to this page
   useEffect(() => {
     setCurrentWeekStart(getMonday(new Date()));
@@ -167,7 +162,6 @@ const Index = () => {
     setIsCustomPeriodMode(false);
     setCustomStartDate(null);
     setCustomEndDate(null);
-    setNavigationDirection(null);
   };
 
   // Custom period handlers
@@ -197,7 +191,7 @@ const Index = () => {
     setCustomEndDate(end);
     setIsCustomPeriodMode(true);
     setIsDatePickerOpen(false);
-    toast.success("Період застосовано");
+    toast.success("Період застосовано", { duration: 2000 });
   };
 
   // Auto-fill dates when year or month changes
@@ -242,44 +236,6 @@ const Index = () => {
     const today = getMonday(new Date());
     return currentWeekStart.getTime() === today.getTime();
   }, [currentWeekStart, isCustomPeriodMode]);
-
-  // Swipe handlers
-  const handleTouchStart = (e: React.TouchEvent) => {
-    // Ignore if touching a card or interactive element
-    const target = e.target as HTMLElement;
-    if (target.closest('[data-no-swipe]')) {
-      return;
-    }
-    touchStartX.current = e.touches[0].clientX;
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    touchEndX.current = e.touches[0].clientX;
-  };
-
-  const handleTouchEnd = () => {
-    // Don't swipe if we didn't register a start position
-    if (touchStartX.current === 0) {
-      return;
-    }
-
-    const swipeThreshold = 50;
-    const diff = touchStartX.current - touchEndX.current;
-
-    if (Math.abs(diff) > swipeThreshold) {
-      if (diff > 0) {
-        // Swiped left - next week
-        goToNextWeek();
-      } else {
-        // Swiped right - previous week
-        goToPreviousWeek();
-      }
-    }
-
-    // Reset
-    touchStartX.current = 0;
-    touchEndX.current = 0;
-  };
 
   // Filter work days for current week or custom period
   const weekWorkDays = useMemo(() => {
@@ -453,10 +409,6 @@ const Index = () => {
   return (
     <div
       className="min-h-screen bg-background pb-32 pt-4"
-      ref={containerRef}
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
     >
       {/* Week Navigator */}
       <div className="fixed top-0 left-0 right-0 z-40 bg-white/5 dark:bg-gray-900/5 backdrop-blur-xl border-b border-white/10 shadow-[0_2px_16px_0_rgba(31,38,135,0.1)]" data-no-swipe>
