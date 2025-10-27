@@ -45,22 +45,22 @@ export const BottomNavigation = () => {
         ></div>
       </div>
 
-      <div className="px-6 pb-4 relative pointer-events-auto">
+      <div className="px-6 pb-6 relative pointer-events-auto">
         {/* Маленька кнопка Головна над панеллю */}
         {showHomeButton && (
           <div className="flex justify-center mb-2">
             <button
               onClick={handleHomeClick}
-              className="bg-white/5 dark:bg-gray-900/5 backdrop-blur-xl border border-white/10 shadow-[0_4px_16px_0_rgba(31,38,135,0.15),0_8px_24px_0_rgba(0,0,0,0.1)] rounded-full px-4 py-2 transition-all duration-150 active:scale-95"
+              className="bg-white/5 dark:bg-gray-900/5 backdrop-blur-xl border border-white/10 shadow-[0_4px_16px_0_rgba(31,38,135,0.15),0_8px_24px_0_rgba(0,0,0,0.1)] rounded-full px-5 py-2.5 transition-all duration-150 active:scale-95"
             >
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-2">
                 <House
-                  size={16}
+                  size={18}
                   weight="bold"
                   color="#3C3C43"
                 />
                 <span
-                  className="text-[11px] font-semibold tracking-[-0.01em]"
+                  className="text-[12px] font-semibold tracking-[-0.01em]"
                   style={{ color: '#3C3C43' }}
                 >
                   Головна

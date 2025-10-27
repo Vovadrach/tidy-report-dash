@@ -448,9 +448,9 @@ const WorkDayDetails = () => {
 
         {/* Edit Form */}
         <div className="bg-card rounded-xl p-4 shadow-sm border border-border space-y-4">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-2">
             <div>
-              <Label className="text-sm font-semibold mb-2 block text-center text-foreground">Дата</Label>
+              <Label className="text-xs font-semibold mb-1.5 block text-center text-foreground">Дата</Label>
               <Input
                 type="date"
                 value={editDate}
@@ -458,12 +458,12 @@ const WorkDayDetails = () => {
                   setEditDate(e.target.value);
                   setHasUnsavedChanges(true);
                 }}
-                className="rounded-lg h-11"
+                className="rounded-lg h-10 text-sm"
               />
             </div>
 
             <div>
-              <Label className="text-sm font-semibold mb-2 block text-center text-foreground">Години</Label>
+              <Label className="text-xs font-semibold mb-1.5 block text-center text-foreground">Години</Label>
               <Input
                 type="number"
                 step="0.5"
@@ -473,13 +473,13 @@ const WorkDayDetails = () => {
                   setHasUnsavedChanges(true);
                 }}
                 placeholder="8"
-                className="rounded-lg h-11"
+                className="rounded-lg h-10 text-sm"
               />
             </div>
           </div>
 
           <div>
-            <Label className="text-sm font-semibold mb-2 flex items-center gap-2 text-foreground">
+            <Label className="text-sm font-semibold mb-2 flex items-center justify-center gap-2 text-foreground">
               <Pencil className="w-4 h-4" />
               Нотатка
             </Label>

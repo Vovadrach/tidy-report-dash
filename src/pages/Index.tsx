@@ -830,14 +830,14 @@ const Index = () => {
                   <DropdownMenuTrigger asChild>
                     <button className={`flex-1 backdrop-blur-xl px-4 py-3 rounded-xl border shadow-sm hover:shadow-md transition-all ${
                       userSelectedYear
-                        ? "bg-gradient-to-r from-emerald-500/30 to-teal-500/30 border-emerald-400/50 dark:border-emerald-600/50"
+                        ? "bg-gradient-to-r from-blue-500/30 to-purple-500/30 border-blue-400/50 dark:border-blue-600/50"
                         : "bg-card border-border"
                     }`}>
                       <div className="flex items-center justify-between gap-2">
-                        <span className={`font-bold text-sm ${userSelectedYear ? "text-emerald-700 dark:text-emerald-300" : "text-foreground"}`}>
+                        <span className={`font-bold text-sm ${userSelectedYear ? "text-blue-700 dark:text-blue-300" : "text-foreground"}`}>
                           {selectedYear ?? "Рік"}
                         </span>
-                        <ChevronDown className="w-5 h-5 text-emerald-600 dark:text-emerald-400 stroke-[2.5]" />
+                        <ChevronDown className="w-5 h-5 text-blue-600 dark:text-blue-400 stroke-[2.5]" />
                       </div>
                     </button>
                   </DropdownMenuTrigger>
@@ -854,8 +854,8 @@ const Index = () => {
                           }}
                           className={`cursor-pointer rounded-md px-3 py-1.5 text-sm font-semibold transition-all ${
                             selectedYear === year
-                              ? "bg-gradient-to-r from-emerald-500/40 to-teal-500/40 text-foreground"
-                              : "text-foreground hover:bg-gradient-to-r hover:from-emerald-500/20 hover:to-teal-500/20"
+                              ? "bg-gradient-to-r from-blue-500/40 to-purple-500/40 text-foreground"
+                              : "text-foreground hover:bg-gradient-to-r hover:from-blue-500/20 hover:to-purple-500/20"
                           }`}
                         >
                           {year}
@@ -942,7 +942,7 @@ const Index = () => {
                       setUserManuallyEditedStartDate(true);
                       setUserManuallyEditedEndDate(false);
                     }}
-                    className={`h-10 rounded-lg transition-all ${
+                    className={`h-9 rounded-lg transition-all text-xs ${
                       userManuallyEditedStartDate
                         ? 'border-2 border-blue-400 dark:border-blue-500 ring-1 ring-blue-400/30 dark:ring-blue-500/30'
                         : (userSelectedYear || userSelectedMonth)
@@ -965,7 +965,7 @@ const Index = () => {
                       setUserManuallyEditedStartDate(false);
                       setUserManuallyEditedEndDate(true);
                     }}
-                    className={`h-10 rounded-lg transition-all ${
+                    className={`h-9 rounded-lg transition-all text-xs ${
                       userManuallyEditedEndDate
                         ? 'border-2 border-blue-400 dark:border-blue-500 ring-1 ring-blue-400/30 dark:ring-blue-500/30'
                         : (userSelectedYear || userSelectedMonth)

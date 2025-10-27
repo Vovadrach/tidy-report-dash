@@ -214,15 +214,8 @@ const ReportsStatus = () => {
       {/* Fixed top section with glassmorphism */}
       <div className="fixed top-0 left-0 right-0 z-40 bg-white/5 dark:bg-gray-900/5 backdrop-blur-xl border-b border-white/10 shadow-[0_2px_16px_0_rgba(31,38,135,0.1)]">
         <div className="container mx-auto px-4 py-4">
-          {/* Page Title */}
-          <div className="text-center mb-4">
-            <h1 className="text-lg font-bold text-orange-600 dark:text-orange-400">
-              Клієнти, які не оплатили
-            </h1>
-          </div>
-
           {/* Statistics Cards */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3 mb-4">
             {/* Години блок */}
             <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-purple-50 to-violet-50 dark:from-purple-950 dark:to-violet-950 p-4 shadow-sm border border-border/50">
               <div className="flex items-center gap-3">
@@ -254,6 +247,13 @@ const ReportsStatus = () => {
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* Page Title */}
+          <div className="text-center">
+            <h1 className="text-xl font-bold text-amber-800 dark:text-amber-200">
+              не оплатили
+            </h1>
           </div>
         </div>
       </div>
