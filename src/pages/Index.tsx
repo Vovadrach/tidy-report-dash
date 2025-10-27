@@ -87,6 +87,14 @@ const Index = () => {
   const [tempEndDate, setTempEndDate] = useState("");
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
   const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
+  const [userSelectedYear, setUserSelectedYear] = useState(false);
+  const [userSelectedMonth, setUserSelectedMonth] = useState(false);
+  const [userManuallyEditedStartDate, setUserManuallyEditedStartDate] = useState(false);
+  const [userManuallyEditedEndDate, setUserManuallyEditedEndDate] = useState(false);
+
+  // Partial payment inline state
+  const [partialPaymentDayId, setPartialPaymentDayId] = useState<string | null>(null);
+  const [partialPaymentAmount, setPartialPaymentAmount] = useState("");
 
   // Reset to current week when returning to this page
   useEffect(() => {
@@ -124,8 +132,35 @@ const Index = () => {
     }
   };
 
-  const handleStatusChange = async (dayId: string, newStatus: PaymentStatus, e: React.MouseEvent) => {
+  const handleStatusChange = async (dayId: string, newStatus: PaymentStatus, e: React.MouseEvent, currentStatus?: string) => {
     e.stopPropagation(); // Prevent navigation to details page
+
+    // If switching to partial, show inline input
+    if (newStatus === "partial") {
+      setPartialPaymentDayId(dayId);
+      setPartialPaymentAmount("");
+
+      // Reset day_paid_amount to 0 ONLY when switching from "paid" to "partial"
+      // If already "partial", keep the existing day_paid_amount
+      if (currentStatus === "paid") {
+        try {
+          await api.updateWorkDay(dayId, {
+            payment_status: "partial",
+            day_paid_amount: 0,
+          });
+          await loadReports();
+        } catch (error) {
+          console.error('Error updating status:', error);
+        }
+      }
+      return;
+    }
+
+    // Hide inline input if changing from partial to paid/unpaid
+    if (partialPaymentDayId === dayId) {
+      setPartialPaymentDayId(null);
+      setPartialPaymentAmount("");
+    }
 
     try {
       await api.updateWorkDay(dayId, {
@@ -137,6 +172,39 @@ const Index = () => {
       await loadReports();
     } catch (error) {
       console.error('Error updating status:', error);
+    }
+  };
+
+  const handleApplyPartialPayment = async (day: WorkDay & { reportId: string; clientName: string; paymentStatus: string }) => {
+    if (!partialPaymentAmount || parseFloat(partialPaymentAmount) <= 0) {
+      toast.error("Введіть коректну суму");
+      return;
+    }
+
+    const partial = parseFloat(partialPaymentAmount);
+    const currentPaid = day.day_paid_amount || 0;
+    const newTotal = currentPaid + partial;
+
+    if (newTotal > day.amount) {
+      toast.error("Сума перевищує загальну вартість");
+      return;
+    }
+
+    try {
+      const newStatus: PaymentStatus = newTotal >= day.amount ? "paid" : "partial";
+
+      await api.updateWorkDay(day.id, {
+        payment_status: newStatus,
+        day_paid_amount: newTotal,
+      });
+
+      await loadReports();
+      setPartialPaymentDayId(null);
+      setPartialPaymentAmount("");
+      toast.success("Оплату додано", { duration: 2000 });
+    } catch (error) {
+      toast.error("Помилка додавання оплати");
+      console.error(error);
     }
   };
 
@@ -166,11 +234,18 @@ const Index = () => {
 
   // Custom period handlers
   const handleOpenDatePicker = () => {
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth();
+
     setIsDatePickerOpen(true);
-    setTempStartDate("");
-    setTempEndDate("");
-    setSelectedYear(null);
-    setSelectedMonth(null);
+    setSelectedYear(currentYear);
+    setSelectedMonth(currentMonth);
+    setUserSelectedYear(false);
+    setUserSelectedMonth(false);
+    setUserManuallyEditedStartDate(false);
+    setUserManuallyEditedEndDate(false);
+    // tempStartDate and tempEndDate will be set by useEffect when selectedYear/selectedMonth change
   };
 
   const handleApplyCustomPeriod = () => {
@@ -196,7 +271,7 @@ const Index = () => {
 
   // Auto-fill dates when year or month changes
   useEffect(() => {
-    if (selectedYear !== null) {
+    if (selectedYear !== null && (userSelectedYear || userSelectedMonth)) {
       let start: Date;
       let end: Date;
 
@@ -221,7 +296,39 @@ const Index = () => {
       setTempStartDate(formatDate(start));
       setTempEndDate(formatDate(end));
     }
-  }, [selectedYear, selectedMonth]);
+  }, [selectedYear, selectedMonth, userSelectedYear, userSelectedMonth]);
+
+  // Auto-detect year and month from manual date changes
+  useEffect(() => {
+    if (tempStartDate && tempEndDate && (userManuallyEditedStartDate || userManuallyEditedEndDate)) {
+      const start = new Date(tempStartDate);
+      const end = new Date(tempEndDate);
+
+      const startYear = start.getFullYear();
+      const endYear = end.getFullYear();
+      const startMonth = start.getMonth();
+      const endMonth = end.getMonth();
+
+      // Check if same year
+      if (startYear === endYear) {
+        setSelectedYear(startYear);
+        setUserSelectedYear(true);
+
+        // Check if same month
+        if (startMonth === endMonth) {
+          setSelectedMonth(startMonth);
+          setUserSelectedMonth(true);
+        } else {
+          setSelectedMonth(null);
+          setUserSelectedMonth(true); // Mark as selected to show highlight
+        }
+      } else {
+        // Different years - just mark as having dates
+        setUserSelectedYear(true);
+        setUserSelectedMonth(true);
+      }
+    }
+  }, [tempStartDate, tempEndDate, userManuallyEditedStartDate, userManuallyEditedEndDate]);
 
   const handleClearCustomPeriod = () => {
     setIsCustomPeriodMode(false);
@@ -514,133 +621,185 @@ const Index = () => {
 
             return (
               <div key={dateKey} className="space-y-2" data-no-swipe>
-                {/* Day Header */}
-                <div className="space-y-2">
-                  <div className={`flex items-center justify-between px-3 py-1 relative ${isToday ? 'bg-primary/10 rounded-lg' : ''}`}>
-                    {/* Дата з іконкою - зліва */}
-                    <div className={`flex items-center gap-2 ${
-                      isToday
-                        ? 'text-primary'
-                        : daysData.length === 0
-                        ? 'text-muted-foreground'
-                        : 'text-foreground'
+                {/* Day Header - Sticky (Telegram style) */}
+                <div className="sticky top-[140px] z-30 flex justify-center py-1.5">
+                  <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full shadow-sm ${
+                    isToday
+                      ? 'bg-primary/20 backdrop-blur-xl border border-primary/30'
+                      : 'bg-card/95 backdrop-blur-xl border border-border/50'
+                  }`}>
+                    <Calendar className={`w-3.5 h-3.5 ${
+                      isToday ? 'text-primary' : daysData.length === 0 ? 'text-muted-foreground' : 'text-foreground'
+                    }`} />
+                    <span className={`text-xs font-semibold ${
+                      isToday ? 'text-primary' : daysData.length === 0 ? 'text-muted-foreground' : 'text-foreground'
                     }`}>
-                      <Calendar className="w-4 h-4" />
-                      <span className="text-sm font-medium">{dayNumber}</span>
-                    </div>
-
-                    {/* День тижня - по центру */}
-                    <span className={`text-sm font-medium absolute left-1/2 -translate-x-1/2 ${
-                      isToday
-                        ? 'text-primary'
-                        : daysData.length === 0
-                        ? 'text-muted-foreground'
-                        : 'text-foreground'
+                      {dayNumber}
+                    </span>
+                    <span className={`text-xs font-medium ${
+                      isToday ? 'text-primary' : daysData.length === 0 ? 'text-muted-foreground' : 'text-foreground'
                     }`}>
                       {dayName}
                       {isToday && ' (Сьогодні)'}
                     </span>
-
-                    {/* Порожній простір праворуч для балансу */}
-                    <div className="w-12"></div>
                   </div>
-
-                  {/* Separator line */}
-                  {daysData.length === 0 && (
-                    <div className="h-px bg-gradient-to-r from-transparent via-border/30 to-transparent"></div>
-                  )}
                 </div>
 
                 {/* Work Days for this date */}
                 {daysData.length > 0 && (
                   <div className="space-y-2">
                     {daysData.map((day, dayIndex) => (
-                      <div
-                        key={`${day.reportId}-${day.id}`}
-                        onClick={() => navigate(`/report/${day.reportId}/day/${day.id}`)}
-                        className={`bg-card rounded-lg p-3 border border-border hover:shadow-md transition-smooth cursor-pointer ${
-                          dayIndex === daysData.length - 1
-                            ? 'shadow-[0_4px_16px_0_rgba(31,38,135,0.15)]'
-                            : 'shadow-sm'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between gap-3">
-                          {/* Ліва частина: індикатор + ім'я */}
-                          <div className="flex items-center gap-2 min-w-0 flex-1">
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                                <button className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 transition-all hover:scale-110 ${
-                                  day.paymentStatus === 'paid' ? 'bg-success/20 hover:bg-success/30' :
-                                  day.paymentStatus === 'partial' ? 'bg-warning/20 hover:bg-warning/30' : 'bg-destructive/20 hover:bg-destructive/30'
+                      <div key={`${day.reportId}-${day.id}`}>
+                        <div className="flex gap-2">
+                          <div
+                            onClick={() => navigate(`/report/${day.reportId}/day/${day.id}`)}
+                            className={`flex-1 bg-card rounded-lg p-3 border border-border hover:shadow-md transition-smooth cursor-pointer ${
+                              dayIndex === daysData.length - 1
+                                ? 'shadow-[0_4px_16px_0_rgba(31,38,135,0.15)]'
+                                : 'shadow-sm'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between gap-3">
+                              {/* Ліва частина: індикатор + ім'я */}
+                              <div className="flex items-center gap-2 min-w-0 flex-1">
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                                    <button className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 transition-all hover:scale-110 ${
+                                      day.paymentStatus === 'paid' ? 'bg-success/20 hover:bg-success/30' :
+                                      day.paymentStatus === 'partial' ? 'bg-warning/20 hover:bg-warning/30' : 'bg-destructive/20 hover:bg-destructive/30'
+                                    }`}>
+                                      <span className={`text-xs font-bold ${
+                                        day.paymentStatus === 'paid' ? 'text-success' :
+                                        day.paymentStatus === 'partial' ? 'text-warning' : 'text-destructive'
+                                      }`}>
+                                        {day.paymentStatus === 'paid' ? '✓' :
+                                         day.paymentStatus === 'partial' ? '◐' : '○'}
+                                      </span>
+                                    </button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent className="bg-card backdrop-blur-xl border border-border shadow-lg rounded-xl z-[100] p-1.5 min-w-[140px]">
+                                    {/* Active status first */}
+                                    {day.paymentStatus === 'paid' && (
+                                      <DropdownMenuItem
+                                        onClick={(e) => handleStatusChange(day.id, "paid", e, day.paymentStatus)}
+                                        className="cursor-pointer rounded-md px-3 py-2 text-sm font-semibold transition-all bg-success/20 text-success"
+                                      >
+                                        <CheckCircle2 className="w-4 h-4 mr-2 inline" />
+                                        Оплачено
+                                      </DropdownMenuItem>
+                                    )}
+                                    {day.paymentStatus === 'partial' && (
+                                      <DropdownMenuItem
+                                        onClick={(e) => handleStatusChange(day.id, "partial", e, day.paymentStatus)}
+                                        className="cursor-pointer rounded-md px-3 py-2 text-sm font-semibold transition-all bg-warning/20 text-warning"
+                                      >
+                                        <AlertCircle className="w-4 h-4 mr-2 inline" />
+                                        Частково
+                                      </DropdownMenuItem>
+                                    )}
+                                    {day.paymentStatus === 'unpaid' && (
+                                      <DropdownMenuItem
+                                        onClick={(e) => handleStatusChange(day.id, "unpaid", e, day.paymentStatus)}
+                                        className="cursor-pointer rounded-md px-3 py-2 text-sm font-semibold transition-all bg-destructive/20 text-destructive"
+                                      >
+                                        <XCircle className="w-4 h-4 mr-2 inline" />
+                                        Не оплачено
+                                      </DropdownMenuItem>
+                                    )}
+
+                                    {/* Other statuses */}
+                                    {day.paymentStatus !== 'paid' && (
+                                      <DropdownMenuItem
+                                        onClick={(e) => handleStatusChange(day.id, "paid", e, day.paymentStatus)}
+                                        className="cursor-pointer rounded-md px-3 py-2 text-sm font-semibold transition-all text-foreground hover:bg-success/10"
+                                      >
+                                        <CheckCircle2 className="w-4 h-4 mr-2 inline" />
+                                        Оплачено
+                                      </DropdownMenuItem>
+                                    )}
+                                    {day.paymentStatus !== 'partial' && (
+                                      <DropdownMenuItem
+                                        onClick={(e) => handleStatusChange(day.id, "partial", e, day.paymentStatus)}
+                                        className="cursor-pointer rounded-md px-3 py-2 text-sm font-semibold transition-all text-foreground hover:bg-warning/10"
+                                      >
+                                        <AlertCircle className="w-4 h-4 mr-2 inline" />
+                                        Частково
+                                      </DropdownMenuItem>
+                                    )}
+                                    {day.paymentStatus !== 'unpaid' && (
+                                      <DropdownMenuItem
+                                        onClick={(e) => handleStatusChange(day.id, "unpaid", e, day.paymentStatus)}
+                                        className="cursor-pointer rounded-md px-3 py-2 text-sm font-semibold transition-all text-foreground hover:bg-destructive/10"
+                                      >
+                                        <XCircle className="w-4 h-4 mr-2 inline" />
+                                        Не оплачено
+                                      </DropdownMenuItem>
+                                    )}
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                                <h3 className={`text-sm font-semibold truncate ${
+                                  day.paymentStatus === 'paid' ? 'text-success' : 'text-foreground'
                                 }`}>
-                                  <span className={`text-xs font-bold ${
-                                    day.paymentStatus === 'paid' ? 'text-success' :
-                                    day.paymentStatus === 'partial' ? 'text-warning' : 'text-destructive'
-                                  }`}>
-                                    {day.paymentStatus === 'paid' ? '✓' :
-                                     day.paymentStatus === 'partial' ? '◐' : '○'}
-                                  </span>
-                                </button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent className="bg-card backdrop-blur-xl border border-border shadow-lg rounded-xl z-[100] p-1.5 min-w-[140px]">
-                                <DropdownMenuItem
-                                  onClick={(e) => handleStatusChange(day.id, "paid", e)}
-                                  className={`cursor-pointer rounded-md px-3 py-2 text-sm font-semibold transition-all ${
-                                    day.paymentStatus === 'paid'
-                                      ? 'bg-success/20 text-success'
-                                      : 'text-foreground hover:bg-success/10'
-                                  }`}
-                                >
-                                  <CheckCircle2 className="w-4 h-4 mr-2 inline" />
-                                  Оплачено
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  onClick={(e) => handleStatusChange(day.id, "partial", e)}
-                                  className={`cursor-pointer rounded-md px-3 py-2 text-sm font-semibold transition-all ${
-                                    day.paymentStatus === 'partial'
-                                      ? 'bg-warning/20 text-warning'
-                                      : 'text-foreground hover:bg-warning/10'
-                                  }`}
-                                >
-                                  <AlertCircle className="w-4 h-4 mr-2 inline" />
-                                  Частково
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  onClick={(e) => handleStatusChange(day.id, "unpaid", e)}
-                                  className={`cursor-pointer rounded-md px-3 py-2 text-sm font-semibold transition-all ${
-                                    day.paymentStatus === 'unpaid'
-                                      ? 'bg-destructive/20 text-destructive'
-                                      : 'text-foreground hover:bg-destructive/10'
-                                  }`}
-                                >
-                                  <XCircle className="w-4 h-4 mr-2 inline" />
-                                  Не оплачено
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                            <h3 className={`text-sm font-semibold truncate ${
-                              day.paymentStatus === 'paid' ? 'text-success' : 'text-foreground'
-                            }`}>
-                              {day.clientName}
-                            </h3>
-                          </div>
+                                  {day.clientName}
+                                </h3>
+                              </div>
 
-                          {/* Права частина: години + сума */}
-                          <div className="flex items-center gap-2 flex-shrink-0">
-                            <div className="bg-purple-50 rounded-lg px-2 py-1 flex items-center gap-1 min-w-[68px]">
-                              <Clock className="w-4 h-4 text-purple-600 flex-shrink-0" />
-                              <span className="text-sm font-bold text-foreground tabular-nums flex-1 text-center">{day.hours}</span>
+                              {/* Права частина: години + сума */}
+                              <div className="flex items-center gap-2 flex-shrink-0">
+                                <div className="bg-purple-50 rounded-lg px-2 py-1 flex items-center gap-1 min-w-[68px]">
+                                  <Clock className="w-4 h-4 text-purple-600 flex-shrink-0" />
+                                  <span className="text-sm font-bold text-foreground tabular-nums flex-1 text-center">{day.hours}</span>
+                                </div>
+
+                                <div className="bg-blue-50 rounded-lg px-2 py-1 flex items-center gap-1 min-w-[78px]">
+                                  <Euro className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                                  <span className="text-sm font-bold text-foreground tabular-nums flex-1 text-center">{Math.round(day.amount)}</span>
+                                </div>
+                              </div>
                             </div>
 
-                            <div className="bg-blue-50 rounded-lg px-2 py-1 flex items-center gap-1 min-w-[78px]">
-                              <Euro className="w-4 h-4 text-blue-600 flex-shrink-0" />
-                              <span className="text-sm font-bold text-foreground tabular-nums flex-1 text-center">{Math.round(day.amount)}</span>
-                            </div>
+                            {day.note && (
+                              <p className="text-xs text-muted-foreground mt-2 truncate">📝 {day.note}</p>
+                            )}
                           </div>
                         </div>
 
-                        {day.note && (
-                          <p className="text-xs text-muted-foreground mt-2 truncate">📝 {day.note}</p>
+                        {/* Inline Partial Payment Input - appears beside the card */}
+                        {partialPaymentDayId === day.id && (
+                          <div className="mt-2 bg-card rounded-lg p-3 border border-orange-300 dark:border-orange-700 shadow-sm" onClick={(e) => e.stopPropagation()}>
+                            <div className="flex gap-2 items-start">
+                              <div className="flex-1">
+                                <Input
+                                  type="number"
+                                  value={partialPaymentAmount}
+                                  onChange={(e) => setPartialPaymentAmount(e.target.value)}
+                                  placeholder={`Залишок: ${Math.round(day.amount - (day.day_paid_amount || 0))}€`}
+                                  className="h-9 text-sm rounded-lg"
+                                  autoFocus
+                                />
+                              </div>
+                              <button
+                                onClick={() => handleApplyPartialPayment(day)}
+                                disabled={
+                                  !partialPaymentAmount ||
+                                  parseFloat(partialPaymentAmount) <= 0 ||
+                                  (parseFloat(partialPaymentAmount) + (day.day_paid_amount || 0)) > day.amount
+                                }
+                                className="h-9 px-3 rounded-lg text-sm font-medium bg-orange-500 hover:bg-orange-600 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                ✓
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setPartialPaymentDayId(null);
+                                  setPartialPaymentAmount("");
+                                }}
+                                className="h-9 px-3 rounded-lg text-sm font-medium bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 transition-colors"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          </div>
                         )}
                       </div>
                     ))}
@@ -670,15 +829,15 @@ const Index = () => {
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <button className={`flex-1 backdrop-blur-xl px-4 py-3 rounded-xl border shadow-sm hover:shadow-md transition-all ${
-                      selectedYear !== null
-                        ? "bg-gradient-to-r from-blue-500/30 to-purple-500/30 border-blue-400/50 dark:border-blue-600/50"
+                      userSelectedYear
+                        ? "bg-gradient-to-r from-emerald-500/30 to-teal-500/30 border-emerald-400/50 dark:border-emerald-600/50"
                         : "bg-card border-border"
                     }`}>
                       <div className="flex items-center justify-between gap-2">
-                        <span className={`font-bold text-sm ${selectedYear !== null ? "text-blue-700 dark:text-blue-300" : "text-foreground"}`}>
+                        <span className={`font-bold text-sm ${userSelectedYear ? "text-emerald-700 dark:text-emerald-300" : "text-foreground"}`}>
                           {selectedYear ?? "Рік"}
                         </span>
-                        <ChevronDown className="w-5 h-5 text-blue-600 dark:text-blue-400 stroke-[2.5]" />
+                        <ChevronDown className="w-5 h-5 text-emerald-600 dark:text-emerald-400 stroke-[2.5]" />
                       </div>
                     </button>
                   </DropdownMenuTrigger>
@@ -687,11 +846,16 @@ const Index = () => {
                       {[2024, 2025, 2026, 2027, 2028, 2029, 2030].map((year) => (
                         <DropdownMenuItem
                           key={year}
-                          onClick={() => setSelectedYear(year)}
+                          onClick={() => {
+                            setSelectedYear(year);
+                            setUserSelectedYear(true);
+                            setUserManuallyEditedStartDate(false);
+                            setUserManuallyEditedEndDate(false);
+                          }}
                           className={`cursor-pointer rounded-md px-3 py-1.5 text-sm font-semibold transition-all ${
                             selectedYear === year
-                              ? "bg-gradient-to-r from-blue-500/40 to-purple-500/40 text-foreground"
-                              : "text-foreground hover:bg-gradient-to-r hover:from-blue-500/20 hover:to-purple-500/20"
+                              ? "bg-gradient-to-r from-emerald-500/40 to-teal-500/40 text-foreground"
+                              : "text-foreground hover:bg-gradient-to-r hover:from-emerald-500/20 hover:to-teal-500/20"
                           }`}
                         >
                           {year}
@@ -705,14 +869,14 @@ const Index = () => {
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <button className={`flex-1 backdrop-blur-xl px-4 py-3 rounded-xl border shadow-sm hover:shadow-md transition-all ${
-                      selectedMonth !== null
+                      userSelectedMonth
                         ? "bg-gradient-to-r from-emerald-500/30 to-teal-500/30 border-emerald-400/50 dark:border-emerald-600/50"
                         : "bg-card border-border"
                     }`}>
                       <div className="flex items-center justify-between gap-2">
-                        <span className={`font-bold text-sm ${selectedMonth !== null ? "text-emerald-700 dark:text-emerald-300" : "text-foreground"}`}>
+                        <span className={`font-bold text-sm ${userSelectedMonth ? "text-emerald-700 dark:text-emerald-300" : "text-foreground"}`}>
                           {selectedMonth !== null
-                            ? ["Січ", "Лют", "Бер", "Кві", "Тра", "Чер", "Лип", "Сер", "Вер", "Жов", "Лис", "Гру"][selectedMonth]
+                            ? ["Січень", "Лютий", "Березень", "Квітень", "Травень", "Червень", "Липень", "Серпень", "Вересень", "Жовтень", "Листопад", "Грудень"][selectedMonth]
                             : "Місяць"}
                         </span>
                         <ChevronDown className="w-5 h-5 text-emerald-600 dark:text-emerald-400 stroke-[2.5]" />
@@ -722,7 +886,12 @@ const Index = () => {
                   <DropdownMenuContent className="bg-card backdrop-blur-xl border border-border shadow-lg rounded-lg z-[110] p-1.5 min-w-[140px] max-h-[300px] overflow-y-auto">
                     <div className="space-y-0.5">
                       <DropdownMenuItem
-                        onClick={() => setSelectedMonth(null)}
+                        onClick={() => {
+                          setSelectedMonth(null);
+                          setUserSelectedMonth(true);
+                          setUserManuallyEditedStartDate(false);
+                          setUserManuallyEditedEndDate(false);
+                        }}
                         className={`cursor-pointer rounded-md px-3 py-1.5 text-sm font-semibold transition-all ${
                           selectedMonth === null
                             ? "bg-gradient-to-r from-emerald-500/40 to-teal-500/40 text-foreground"
@@ -734,7 +903,12 @@ const Index = () => {
                       {["Січень", "Лютий", "Березень", "Квітень", "Травень", "Червень", "Липень", "Серпень", "Вересень", "Жовтень", "Листопад", "Грудень"].map((month, i) => (
                         <DropdownMenuItem
                           key={i}
-                          onClick={() => setSelectedMonth(i)}
+                          onClick={() => {
+                            setSelectedMonth(i);
+                            setUserSelectedMonth(true);
+                            setUserManuallyEditedStartDate(false);
+                            setUserManuallyEditedEndDate(false);
+                          }}
                           className={`cursor-pointer rounded-md px-3 py-1.5 text-sm font-semibold transition-all ${
                             selectedMonth === i
                               ? "bg-gradient-to-r from-emerald-500/40 to-teal-500/40 text-foreground"
@@ -753,7 +927,7 @@ const Index = () => {
             {/* Date Range Display */}
             <div className="space-y-2">
               <Label className="text-base font-semibold text-foreground">Період</Label>
-              <div className="space-y-2">
+              <div className="grid grid-cols-2 gap-2">
                 <div className="space-y-1">
                   <Label className="text-xs text-muted-foreground">З</Label>
                   <Input
@@ -763,8 +937,18 @@ const Index = () => {
                       setTempStartDate(e.target.value);
                       setSelectedYear(null);
                       setSelectedMonth(null);
+                      setUserSelectedYear(false);
+                      setUserSelectedMonth(false);
+                      setUserManuallyEditedStartDate(true);
+                      setUserManuallyEditedEndDate(false);
                     }}
-                    className="h-10 rounded-md"
+                    className={`h-10 rounded-lg transition-all ${
+                      userManuallyEditedStartDate
+                        ? 'border-2 border-blue-400 dark:border-blue-500 ring-1 ring-blue-400/30 dark:ring-blue-500/30'
+                        : (userSelectedYear || userSelectedMonth)
+                        ? 'border border-emerald-400 dark:border-emerald-500 ring-1 ring-emerald-400/20 dark:ring-emerald-500/20 bg-emerald-50/30 dark:bg-emerald-950/20'
+                        : ''
+                    }`}
                   />
                 </div>
                 <div className="space-y-1">
@@ -776,8 +960,18 @@ const Index = () => {
                       setTempEndDate(e.target.value);
                       setSelectedYear(null);
                       setSelectedMonth(null);
+                      setUserSelectedYear(false);
+                      setUserSelectedMonth(false);
+                      setUserManuallyEditedStartDate(false);
+                      setUserManuallyEditedEndDate(true);
                     }}
-                    className="h-10 rounded-md"
+                    className={`h-10 rounded-lg transition-all ${
+                      userManuallyEditedEndDate
+                        ? 'border-2 border-blue-400 dark:border-blue-500 ring-1 ring-blue-400/30 dark:ring-blue-500/30'
+                        : (userSelectedYear || userSelectedMonth)
+                        ? 'border border-emerald-400 dark:border-emerald-500 ring-1 ring-emerald-400/20 dark:ring-emerald-500/20 bg-emerald-50/30 dark:bg-emerald-950/20'
+                        : ''
+                    }`}
                   />
                 </div>
               </div>

@@ -77,6 +77,10 @@ const WorkDayDetails = () => {
 
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
+      // Автозбереження при виході зі сторінки
+      if (hasUnsavedChangesRef.current) {
+        handleSave();
+      }
 
       // Save on unmount only
       if (hasUnsavedChangesRef.current && workDayRef.current && clientRef.current && editHoursRef.current) {
@@ -208,20 +212,27 @@ const WorkDayDetails = () => {
   };
 
   const handleApplyPartial = async () => {
-    if (!report || !workDay || !partialAmount) {
+    if (!report || !workDay || !partialAmount || !client) {
       return;
     }
 
     const partial = parseFloat(partialAmount);
+
+    // Calculate current amount based on edited hours
+    const hours = editHours ? parseFloat(editHours) : workDay.hours;
+    const hourlyRate = client.hourlyRate || client.hourly_rate || 0;
+    const currentAmount = hours * hourlyRate;
+
     const newDayPaidTotal = dayPaidAmount + partial;
 
-    if (newDayPaidTotal > workDay.amount) {
+    if (newDayPaidTotal > currentAmount) {
+      toast.error("Сума не може перевищувати загальну вартість");
       return;
     }
 
     try {
       let newStatus: PaymentStatus = "partial";
-      if (newDayPaidTotal >= workDay.amount) {
+      if (newDayPaidTotal >= currentAmount) {
         newStatus = "paid";
       }
 
@@ -232,7 +243,9 @@ const WorkDayDetails = () => {
 
       await loadData();
       setPartialAmount("");
+      toast.success("Часткову оплату додано", { duration: 2000 });
     } catch (error) {
+      toast.error("Помилка додавання оплати");
       console.error(error);
     }
   };
@@ -242,7 +255,7 @@ const WorkDayDetails = () => {
     if (confirm("Ви впевнені, що хочете видалити цей звіт?")) {
       try {
         await api.deleteReport(report.id);
-        toast.success("Звіт видалено");
+        toast.success("Звіт видалено", { duration: 2000 });
         navigate("/");
       } catch (error) {
         toast.error('Помилка видалення звіту');
@@ -356,7 +369,7 @@ const WorkDayDetails = () => {
               {/* Partial Button - LEFT */}
               <button
                 onClick={handleSetPartial}
-                className={`h-12 rounded-xl font-semibold transition-all backdrop-blur-sm ${
+                className={`h-12 rounded-xl text-sm font-semibold transition-all backdrop-blur-sm ${
                   status === "partial"
                     ? "bg-gradient-to-br from-orange-100 to-orange-200 dark:from-orange-900 dark:to-orange-800 text-orange-800 dark:text-orange-100 shadow-[0_4px_16px_0_rgba(249,115,22,0.25)] border-2 border-orange-400 dark:border-orange-600"
                     : "bg-orange-50/30 dark:bg-orange-950/20 text-orange-600/60 dark:text-orange-400/60 border border-orange-300/50 dark:border-orange-700/50 hover:bg-orange-50/50 dark:hover:bg-orange-950/30 hover:border-orange-400/70 dark:hover:border-orange-600/70"
@@ -368,7 +381,7 @@ const WorkDayDetails = () => {
               {/* Unpaid Button - CENTER */}
               <button
                 onClick={handleSetUnpaid}
-                className={`h-12 rounded-xl font-semibold transition-all backdrop-blur-sm ${
+                className={`h-12 rounded-xl text-sm font-semibold transition-all backdrop-blur-sm ${
                   status === "unpaid"
                     ? "bg-gradient-to-br from-red-100 to-red-200 dark:from-red-900 dark:to-red-800 text-red-800 dark:text-red-100 shadow-[0_4px_16px_0_rgba(239,68,68,0.25)] border-2 border-red-400 dark:border-red-600"
                     : "bg-red-50/30 dark:bg-red-950/20 text-red-600/60 dark:text-red-400/60 border border-red-300/50 dark:border-red-700/50 hover:bg-red-50/50 dark:hover:bg-red-950/30 hover:border-red-400/70 dark:hover:border-red-600/70"
@@ -380,7 +393,7 @@ const WorkDayDetails = () => {
               {/* Paid Button - RIGHT */}
               <button
                 onClick={handleMarkAsPaid}
-                className={`h-12 rounded-xl font-semibold transition-all backdrop-blur-sm ${
+                className={`h-12 rounded-xl text-sm font-semibold transition-all backdrop-blur-sm ${
                   status === "paid"
                     ? "bg-gradient-to-br from-green-100 to-green-200 dark:from-green-900 dark:to-green-800 text-green-800 dark:text-green-100 shadow-[0_4px_16px_0_rgba(34,197,94,0.25)] border-2 border-green-400 dark:border-green-600"
                     : "bg-green-50/30 dark:bg-green-950/20 text-green-600/60 dark:text-green-400/60 border border-green-300/50 dark:border-green-700/50 hover:bg-green-50/50 dark:hover:bg-green-950/30 hover:border-green-400/70 dark:hover:border-green-600/70"
@@ -392,42 +405,42 @@ const WorkDayDetails = () => {
 
             {/* Partial Payment Input - always visible when status is partial */}
             {status === "partial" && (
-              <div className="space-y-2 p-3 bg-orange-50 dark:bg-orange-950 rounded-lg border-2 border-orange-400 dark:border-orange-600 shadow-[0_0_12px_0_rgba(251,146,60,0.3)]">
-                <div className="flex gap-2">
+              <div className="space-y-3">
+                <div className="grid grid-cols-3 gap-2">
                   <Input
                     type="number"
                     value={partialAmount}
                     onChange={(e) => setPartialAmount(e.target.value)}
                     placeholder="Додати суму"
-                    max={workDay.amount - dayPaidAmount}
-                    className="h-10 text-sm rounded-lg bg-background border-orange-300 dark:border-orange-700 focus-visible:ring-orange-500"
+                    max={currentAmount - dayPaidAmount}
+                    className="col-span-2 h-12 text-sm rounded-xl bg-background border-orange-300 dark:border-orange-700 focus-visible:ring-orange-500"
                   />
                   <button
                     onClick={() => {
                       handleApplyPartial();
                     }}
-                    disabled={!partialAmount || parseFloat(partialAmount) > (workDay.amount - dayPaidAmount) || parseFloat(partialAmount) <= 0}
-                    className="h-10 px-4 rounded-lg text-sm font-medium bg-orange-500 hover:bg-orange-600 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={!partialAmount || parseFloat(partialAmount) > (currentAmount - dayPaidAmount) || parseFloat(partialAmount) <= 0}
+                    className="h-12 rounded-xl text-sm font-semibold bg-orange-500 hover:bg-orange-600 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Додати
                   </button>
                 </div>
-              </div>
-            )}
 
-            {/* Payment Info Display */}
-            {dayPaidAmount > 0 && status !== "paid" && (
-              <div className="pt-2 border-t border-border">
-                <div className="flex items-center justify-between text-sm">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-muted-foreground">Оплачено:</span>
-                    <span className="font-semibold text-foreground">{Math.round(dayPaidAmount)}€</span>
+                {/* Payment Info Display */}
+                {dayPaidAmount > 0 && (
+                  <div className="bg-orange-50/50 dark:bg-orange-950/30 rounded-lg p-3">
+                    <div className="flex items-center justify-between text-sm">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-muted-foreground">Оплачено:</span>
+                        <span className="font-semibold text-foreground">{Math.round(dayPaidAmount)}€</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-orange-600 dark:text-orange-400 font-medium">Залишок:</span>
+                        <span className="font-bold text-orange-600 dark:text-orange-400">{Math.round(currentAmount - dayPaidAmount)}€</span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-orange-600 dark:text-orange-400 font-medium">Залишок:</span>
-                    <span className="font-bold text-orange-600 dark:text-orange-400">{Math.round(workDay.amount - dayPaidAmount)}€</span>
-                  </div>
-                </div>
+                )}
               </div>
             )}
           </div>
@@ -492,35 +505,8 @@ const WorkDayDetails = () => {
         </button>
       </main>
 
-      {/* Gradient fade effect for back button */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 pointer-events-none h-40">
-        {/* Плавний градієнт розмиття - від сильного до відсутнього */}
-        <div
-          className="absolute inset-0 backdrop-blur-xl"
-          style={{
-            maskImage: 'linear-gradient(to top, black 0%, black 40%, transparent 100%)',
-            WebkitMaskImage: 'linear-gradient(to top, black 0%, black 40%, transparent 100%)'
-          }}
-        ></div>
-
-        {/* Градієнтний фон */}
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/90 via-40% to-transparent"></div>
-      </div>
-
-      <button
-        onClick={async () => {
-          if (hasUnsavedChanges) {
-            await handleSave();
-          }
-          navigate("/");
-        }}
-        className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 bg-gradient-to-br from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 text-blue-700 px-8 py-4 rounded-full shadow-md hover:shadow-lg transition-all backdrop-blur-sm border border-blue-200/60 pointer-events-auto"
-      >
-        <div className="flex items-center gap-2">
-          <ArrowLeft className="w-5 h-5 stroke-[2.5]" />
-          <span className="font-semibold text-base">Назад</span>
-        </div>
-      </button>
+      {/* Bottom Navigation - оновлено */}
+      <BottomNavigation />
     </div>
   );
 };

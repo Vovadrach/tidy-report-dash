@@ -1,58 +1,138 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
-  BarChart3,
-  Plus,
-  Clock,
-} from "lucide-react";
+  ChartBar,
+  PlusCircle,
+  Clock as ClockIcon,
+  House,
+} from "@phosphor-icons/react";
 
 export const BottomNavigation = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Визначаємо поточну сторінку
+  const isHomePage = location.pathname === "/";
+  const isDashboard = location.pathname === "/dashboard";
+  const isReportsStatus = location.pathname === "/reports-status";
+  const isSelectClient = location.pathname === "/select-client";
+  const isCreateReport = location.pathname.startsWith("/create-report");
+
+  // Показувати кнопку головна тільки не на головній
+  const showHomeButton = !isHomePage;
+
+  // Функція для переходу на головну
+  const handleHomeClick = () => {
+    navigate("/"); // Завжди йдемо на головну
+  };
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 pointer-events-none h-40">
-      {/* Плавний градієнт розмиття - від сильного до відсутнього */}
-      <div
-        className="absolute inset-0 backdrop-blur-xl"
-        style={{
-          maskImage: 'linear-gradient(to top, black 0%, black 40%, transparent 100%)',
-          WebkitMaskImage: 'linear-gradient(to top, black 0%, black 40%, transparent 100%)'
-        }}
-      ></div>
+    <div className="fixed bottom-0 left-0 right-0 z-50 pointer-events-none" data-no-swipe>
+      {/* Градієнтний ефект розмиття (дим) */}
+      <div className="absolute inset-0 pointer-events-none" style={{ height: '200px' }}>
+        {/* Розмиття backdrop */}
+        <div
+          className="absolute inset-0 backdrop-blur-xl"
+          style={{
+            maskImage: 'linear-gradient(to top, black 0%, black 30%, transparent 100%)',
+            WebkitMaskImage: 'linear-gradient(to top, black 0%, black 30%, transparent 100%)'
+          }}
+        ></div>
 
-      {/* Градієнтний фон */}
-      <div className="absolute inset-0 bg-gradient-to-t from-background via-background/90 via-40% to-transparent"></div>
+        {/* Градієнтний фон */}
+        <div
+          className="absolute inset-0 bg-gradient-to-t from-background via-background/90 via-30% to-transparent"
+        ></div>
+      </div>
 
-      <div className="container mx-auto px-4 pb-4 relative pointer-events-auto flex items-end h-full">
-        <div className="flex justify-center items-center gap-3 w-full mb-2">
-          {/* Ліва кнопка - Звіт */}
-          <Button
-            variant="ghost"
-            className="rounded-full bg-gradient-to-br from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 text-blue-700 w-32 h-14 shadow-md hover:shadow-lg transition-all backdrop-blur-sm border border-blue-200/60 font-semibold"
-            onClick={() => navigate("/dashboard")}
-          >
-            <BarChart3 className="h-5 w-5 stroke-[2.5]" />
-            <span className="ml-2 text-sm font-semibold">Звіт</span>
-          </Button>
+      <div className="px-6 pb-4 relative pointer-events-auto">
+        {/* Маленька кнопка Головна над панеллю */}
+        {showHomeButton && (
+          <div className="flex justify-center mb-2">
+            <button
+              onClick={handleHomeClick}
+              className="bg-white/5 dark:bg-gray-900/5 backdrop-blur-xl border border-white/10 shadow-[0_4px_16px_0_rgba(31,38,135,0.15),0_8px_24px_0_rgba(0,0,0,0.1)] rounded-full px-4 py-2 transition-all duration-150 active:scale-95"
+            >
+              <div className="flex items-center gap-1.5">
+                <House
+                  size={16}
+                  weight="bold"
+                  color="#3C3C43"
+                />
+                <span
+                  className="text-[11px] font-semibold tracking-[-0.01em]"
+                  style={{ color: '#3C3C43' }}
+                >
+                  Головна
+                </span>
+              </div>
+            </button>
+          </div>
+        )}
 
-          {/* Центральна кнопка - Створити запис */}
-          <Button
-            variant="ghost"
-            className="rounded-full bg-gradient-to-br from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 text-white h-16 w-16 shadow-xl hover:shadow-2xl transition-all backdrop-blur-sm border-2 border-indigo-300/60 flex-shrink-0 animate-pulse hover:animate-none"
-            onClick={() => navigate("/select-client")}
-          >
-            <Plus className="h-10 w-10 stroke-[3]" />
-          </Button>
+        {/* Telegram-style панель з glass-morphism */}
+        <div className="relative mx-auto" style={{ maxWidth: '360px' }}>
+          {/* Головна панель */}
+          <div className="bg-white/5 dark:bg-gray-900/5 backdrop-blur-xl border border-white/10 shadow-[0_8px_32px_0_rgba(31,38,135,0.2),0_4px_16px_0_rgba(0,0,0,0.15)] rounded-[2.25rem] overflow-hidden relative">
+            <div className="flex items-center h-[70px] px-2 gap-1 relative">
+              {/* Ліва кнопка - Звіт */}
+              <button
+                onClick={() => navigate("/dashboard")}
+                className="flex-1 flex flex-col items-center justify-center gap-[2px] h-[56px] rounded-full transition-colors duration-150 active:bg-black/[0.08]"
+                style={{ backgroundColor: isDashboard ? 'rgba(0, 0, 0, 0.045)' : 'transparent' }}
+              >
+                <ChartBar
+                  size={27}
+                  weight="fill"
+                  color={isDashboard ? "#007AFF" : "#3C3C43"}
+                />
+                <span
+                  className="text-[10.5px] font-medium tracking-[-0.01em]"
+                  style={{ color: isDashboard ? '#007AFF' : '#3C3C43' }}
+                >
+                  Звіт
+                </span>
+              </button>
 
-          {/* Права кнопка - Очікую */}
-          <Button
-            variant="ghost"
-            className="rounded-full bg-gradient-to-br from-emerald-50 to-emerald-100 hover:from-emerald-100 hover:to-emerald-200 text-emerald-700 w-32 h-14 shadow-md hover:shadow-lg transition-all backdrop-blur-sm border border-emerald-200/60 font-semibold"
-            onClick={() => navigate("/reports-status")}
-          >
-            <Clock className="h-5 w-5 stroke-[2.5]" />
-            <span className="ml-2 text-sm font-semibold">Очікую</span>
-          </Button>
+              {/* Центральна кнопка - Створити запис (завжди) */}
+              <button
+                onClick={() => navigate("/select-client")}
+                className="flex-1 flex flex-col items-center justify-center gap-[2px] h-[56px] rounded-full transition-colors duration-150 active:bg-black/[0.08]"
+                style={{ backgroundColor: (isSelectClient || isCreateReport) ? 'rgba(0, 0, 0, 0.045)' : 'transparent' }}
+              >
+                <PlusCircle
+                  size={27}
+                  weight="fill"
+                  color={(isSelectClient || isCreateReport) ? "#007AFF" : "#3C3C43"}
+                />
+                <span
+                  className="text-[10.5px] font-medium tracking-[-0.01em]"
+                  style={{ color: (isSelectClient || isCreateReport) ? '#007AFF' : '#3C3C43' }}
+                >
+                  Створити
+                </span>
+              </button>
+
+              {/* Права кнопка - Очікую */}
+              <button
+                onClick={() => navigate("/reports-status")}
+                className="flex-1 flex flex-col items-center justify-center gap-[2px] h-[56px] rounded-full transition-colors duration-150 active:bg-black/[0.08]"
+                style={{ backgroundColor: isReportsStatus ? 'rgba(0, 0, 0, 0.045)' : 'transparent' }}
+              >
+                <ClockIcon
+                  size={27}
+                  weight="fill"
+                  color={isReportsStatus ? "#007AFF" : "#3C3C43"}
+                />
+                <span
+                  className="text-[10.5px] font-medium tracking-[-0.01em]"
+                  style={{ color: isReportsStatus ? '#007AFF' : '#3C3C43' }}
+                >
+                  Очікую
+                </span>
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>

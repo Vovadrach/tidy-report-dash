@@ -6,6 +6,7 @@ import { User, UserPlus, LogOut, ArrowLeft, ChevronRight, Search } from "lucide-
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { Input } from "@/components/ui/input";
+import { BottomNavigation } from "@/components/BottomNavigation";
 
 const SelectClient = () => {
   const navigate = useNavigate();
@@ -162,31 +163,7 @@ const SelectClient = () => {
         </button>
       </main>
 
-      {/* Gradient fade effect for back button */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 pointer-events-none h-40">
-        {/* Плавний градієнт розмиття - від сильного до відсутнього */}
-        <div
-          className="absolute inset-0 backdrop-blur-xl"
-          style={{
-            maskImage: 'linear-gradient(to top, black 0%, black 40%, transparent 100%)',
-            WebkitMaskImage: 'linear-gradient(to top, black 0%, black 40%, transparent 100%)'
-          }}
-        ></div>
-
-        {/* Градієнтний фон */}
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/90 via-40% to-transparent"></div>
-      </div>
-
-      {/* Back button */}
-      <button
-        onClick={() => navigate("/")}
-        className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 bg-gradient-to-br from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 dark:from-blue-950 dark:to-blue-900 text-blue-700 dark:text-blue-300 px-8 py-4 rounded-full shadow-md hover:shadow-lg transition-all backdrop-blur-sm border border-blue-200/60 dark:border-blue-700/60 pointer-events-auto"
-      >
-        <div className="flex items-center gap-2">
-          <ArrowLeft className="w-5 h-5 stroke-[2.5]" />
-          <span className="font-semibold text-base">Назад</span>
-        </div>
-      </button>
+      <BottomNavigation />
     </div>
   );
 };

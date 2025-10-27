@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
 import { api } from "@/lib/api";
 import { Report, WorkDay, Client } from "@/types/report";
 import { Clock, Euro, CheckCircle2, XCircle, AlertCircle, ArrowLeft } from "lucide-react";
@@ -128,14 +129,9 @@ const ClientReports = () => {
                 </p>
 
                 <div className="flex items-center gap-2">
-                  <div className="bg-purple-50 dark:bg-purple-950 rounded-lg px-3 py-1.5 flex items-center gap-1.5">
-                    <Clock className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-                    <span className="font-semibold text-black dark:text-white text-sm">{day.hours}</span>
-                  </div>
-
                   <div className="bg-blue-50 dark:bg-blue-950 rounded-lg px-3 py-1.5 flex items-center gap-1.5">
                     <Euro className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-                    <span className="font-semibold text-black dark:text-white text-sm">{Math.round(day.amount)}€</span>
+                    <span className="text-black dark:text-white text-sm">{Math.round(day.amount)}€</span>
                   </div>
 
                   <div className="bg-orange-50 dark:bg-orange-950 rounded-lg px-3 py-1.5 flex items-center gap-1.5 border-2 border-orange-400 dark:border-orange-600">
@@ -155,30 +151,8 @@ const ClientReports = () => {
         )}
       </main>
 
-      {/* Gradient fade effect for back button */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 pointer-events-none h-40">
-        {/* Плавний градієнт розмиття - від сильного до відсутнього */}
-        <div
-          className="absolute inset-0 backdrop-blur-xl"
-          style={{
-            maskImage: 'linear-gradient(to top, black 0%, black 40%, transparent 100%)',
-            WebkitMaskImage: 'linear-gradient(to top, black 0%, black 40%, transparent 100%)'
-          }}
-        ></div>
-
-        {/* Градієнтний фон */}
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/90 via-40% to-transparent"></div>
-      </div>
-
-      <button
-        onClick={() => navigate("/")}
-        className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 bg-gradient-to-br from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 text-blue-700 px-8 py-4 rounded-full shadow-md hover:shadow-lg transition-all backdrop-blur-sm border border-blue-200/60 pointer-events-auto"
-      >
-        <div className="flex items-center gap-2">
-          <ArrowLeft className="w-5 h-5 stroke-[2.5]" />
-          <span className="font-semibold text-base">Назад</span>
-        </div>
-      </button>
+      {/* Bottom Navigation */}
+      <BottomNavigation />
     </div>
   );
 };

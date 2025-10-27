@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { api } from '@/lib/api';
 import { Client } from '@/types/report';
-import { Edit2, Trash2, Plus } from 'lucide-react';
+import { Pencil, Trash2, Plus, Euro, Users } from 'lucide-react';
 import { toast } from 'sonner';
 import { BottomNavigation } from '@/components/BottomNavigation';
 
@@ -55,7 +55,7 @@ const ClientManagement = () => {
       setNewClientName('');
       setNewClientRate('');
       setIsAddDialogOpen(false);
-      toast.success('Клієнта додано');
+      toast.success('Клієнта додано', { duration: 2000 });
     } catch (error) {
       toast.error('Помилка додавання клієнта');
       console.error(error);
@@ -84,7 +84,7 @@ const ClientManagement = () => {
       await loadClients();
       setIsEditDialogOpen(false);
       setEditingClient(null);
-      toast.success('Клієнта оновлено');
+      toast.success('Клієнта оновлено', { duration: 2000 });
     } catch (error) {
       toast.error('Помилка оновлення клієнта');
       console.error(error);
@@ -99,7 +99,7 @@ const ClientManagement = () => {
     try {
       await api.deleteClient(clientId);
       await loadClients();
-      toast.success('Клієнта видалено');
+      toast.success('Клієнта видалено', { duration: 2000 });
     } catch (error) {
       toast.error('Помилка видалення клієнта');
       console.error(error);
@@ -116,127 +116,142 @@ const ClientManagement = () => {
 
   return (
     <div className="min-h-screen bg-background pb-32 pt-4">
-      <main className="container mx-auto px-4 py-8 max-w-4xl space-y-6">
-        {/* Header */}
-        <div className="bg-card rounded-lg p-6 shadow-md border border-border">
-          <h1 className="text-2xl font-bold text-center text-foreground">Управління клієнтами</h1>
+      {/* Fixed top section */}
+      <div className="fixed top-0 left-0 right-0 z-40 bg-white/5 dark:bg-gray-900/5 backdrop-blur-xl border-b border-white/10 shadow-[0_2px_16px_0_rgba(31,38,135,0.1)]">
+        <div className="container mx-auto px-4 py-4">
+          <h1 className="text-xl font-bold text-center text-foreground">Управління клієнтами</h1>
         </div>
+      </div>
 
+      <main className="container mx-auto px-4 pt-20 max-w-4xl space-y-3">
         {/* Add Client Button */}
-        <Button
+        <button
           onClick={() => setIsAddDialogOpen(true)}
-          className="w-full bg-success hover:bg-success/90 text-white h-12 text-base font-semibold rounded-md"
+          className="w-full bg-gradient-to-br from-green-100 to-green-200 dark:from-green-900 dark:to-green-800 text-green-800 dark:text-green-100 shadow-[0_4px_16px_0_rgba(34,197,94,0.25)] border-2 border-green-400 dark:border-green-600 rounded-xl p-4 font-semibold transition-all active:scale-[0.98] hover:shadow-[0_6px_20px_0_rgba(34,197,94,0.3)]"
         >
-          <Plus className="w-4 h-4 mr-2" />
-          Додати клієнта
-        </Button>
+          <div className="flex items-center justify-center gap-2">
+            <Plus className="w-5 h-5" />
+            <span className="text-base">Додати клієнта</span>
+          </div>
+        </button>
 
         {/* Clients List */}
-        <div className="bg-card rounded-lg p-6 shadow-md border border-border space-y-3">
-          {clients.length === 0 ? (
-            <p className="text-center text-muted-foreground py-8">Немає клієнтів</p>
-          ) : (
-            clients.map((client) => (
-              <div
-                key={client.id}
-                className="bg-secondary/10 rounded-md p-5 flex items-center justify-between border border-border"
-              >
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-foreground mb-1">{client.name}</h3>
-                  <p className="text-base text-primary font-medium">
-                    {client.hourlyRate || client.hourly_rate}€/год
-                  </p>
+        {clients.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-20">
+            <Users className="w-16 h-16 text-muted-foreground/30 mb-4" />
+            <p className="text-center text-muted-foreground">Немає клієнтів</p>
+          </div>
+        ) : (
+          clients.map((client) => (
+            <div
+              key={client.id}
+              className="bg-card rounded-xl p-4 shadow-sm border border-border"
+            >
+              <div className="flex items-center justify-between gap-3">
+                {/* Client Name */}
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-base font-bold text-foreground truncate">{client.name}</h3>
                 </div>
-                <div className="flex gap-2">
+
+                {/* Hourly Rate Badge */}
+                <div className="bg-blue-50 dark:bg-blue-950 rounded-lg px-3 py-1.5 flex items-center gap-1.5 flex-shrink-0">
+                  <Euro className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                  <span className="font-semibold text-black dark:text-white text-sm">
+                    {client.hourlyRate || client.hourly_rate}€/год
+                  </span>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex gap-1 flex-shrink-0">
                   <button
                     onClick={() => handleEditClick(client)}
-                    className="p-3 rounded-md hover:bg-primary/10 transition-smooth"
+                    className="w-9 h-9 rounded-lg flex items-center justify-center bg-blue-50 dark:bg-blue-950 hover:bg-blue-100 dark:hover:bg-blue-900 transition-colors active:scale-95"
                   >
-                    <Edit2 className="w-4 h-4 text-primary" />
+                    <Pencil className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                   </button>
                   <button
                     onClick={() => handleDeleteClient(client.id)}
-                    className="p-3 rounded-md hover:bg-destructive/10 transition-smooth"
+                    className="w-9 h-9 rounded-lg flex items-center justify-center bg-red-50 dark:bg-red-950 hover:bg-red-100 dark:hover:bg-red-900 transition-colors active:scale-95"
                   >
-                    <Trash2 className="w-4 h-4 text-destructive" />
+                    <Trash2 className="w-4 h-4 text-red-600 dark:text-red-400" />
                   </button>
                 </div>
               </div>
-            ))
-          )}
-        </div>
+            </div>
+          ))
+        )}
       </main>
 
       {/* Add Client Dialog */}
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-        <DialogContent className="bg-card border border-border shadow-xl max-w-md rounded-md">
+        <DialogContent className="bg-card border border-border shadow-xl max-w-md rounded-xl">
           <DialogHeader>
-            <DialogTitle className="text-xl font-bold text-foreground">Додати клієнта</DialogTitle>
+            <DialogTitle className="text-lg font-bold text-foreground text-center">Додати клієнта</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 pt-4">
-            <div className="space-y-2">
-              <Label className="text-base font-semibold text-foreground">Назва клієнта</Label>
+          <div className="space-y-3 pt-2">
+            <div className="space-y-1.5">
+              <Label className="text-sm font-semibold text-foreground">Назва клієнта</Label>
               <Input
                 value={newClientName}
                 onChange={(e) => setNewClientName(e.target.value)}
                 placeholder="Введіть назву"
-                className="h-10 rounded-md"
+                className="h-11 rounded-lg"
               />
             </div>
-            <div className="space-y-2">
-              <Label className="text-base font-semibold text-foreground">Ставка за годину (€)</Label>
+            <div className="space-y-1.5">
+              <Label className="text-sm font-semibold text-foreground">Ставка за годину (€)</Label>
               <Input
                 type="number"
                 value={newClientRate}
                 onChange={(e) => setNewClientRate(e.target.value)}
                 placeholder="Введіть ставку"
-                className="h-10 rounded-md"
+                className="h-11 rounded-lg"
               />
             </div>
-            <Button 
-              onClick={handleAddClient} 
-              className="w-full h-10 bg-success hover:bg-success/90 text-white text-base font-semibold rounded-md"
+            <button
+              onClick={handleAddClient}
+              className="w-full bg-gradient-to-br from-green-100 to-green-200 dark:from-green-900 dark:to-green-800 text-green-800 dark:text-green-100 shadow-[0_4px_16px_0_rgba(34,197,94,0.25)] border-2 border-green-400 dark:border-green-600 rounded-lg h-11 font-semibold transition-all active:scale-[0.98] flex items-center justify-center gap-2"
             >
-              <Plus className="w-4 h-4 mr-2" />
-              Додати
-            </Button>
+              <Plus className="w-4 h-4" />
+              <span>Додати</span>
+            </button>
           </div>
         </DialogContent>
       </Dialog>
 
       {/* Edit Client Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="bg-card border border-border shadow-xl max-w-md rounded-md">
+        <DialogContent className="bg-card border border-border shadow-xl max-w-md rounded-xl">
           <DialogHeader>
-            <DialogTitle className="text-xl font-bold text-foreground">Редагувати клієнта</DialogTitle>
+            <DialogTitle className="text-lg font-bold text-foreground text-center">Редагувати клієнта</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 pt-4">
-            <div className="space-y-2">
-              <Label className="text-base font-semibold text-foreground">Назва клієнта</Label>
+          <div className="space-y-3 pt-2">
+            <div className="space-y-1.5">
+              <Label className="text-sm font-semibold text-foreground">Назва клієнта</Label>
               <Input
                 value={editClientName}
                 onChange={(e) => setEditClientName(e.target.value)}
                 placeholder="Введіть назву"
-                className="h-10 rounded-md"
+                className="h-11 rounded-lg"
               />
             </div>
-            <div className="space-y-2">
-              <Label className="text-base font-semibold text-foreground">Ставка за годину (€)</Label>
+            <div className="space-y-1.5">
+              <Label className="text-sm font-semibold text-foreground">Ставка за годину (€)</Label>
               <Input
                 type="number"
                 value={editClientRate}
                 onChange={(e) => setEditClientRate(e.target.value)}
                 placeholder="Введіть ставку"
-                className="h-10 rounded-md"
+                className="h-11 rounded-lg"
               />
             </div>
-            <Button 
-              onClick={handleUpdateClient} 
-              className="w-full h-10 bg-primary hover:bg-primary/90 text-white text-base font-semibold rounded-md"
+            <button
+              onClick={handleUpdateClient}
+              className="w-full bg-gradient-to-br from-blue-100 to-blue-200 dark:from-blue-900 dark:to-blue-800 text-blue-800 dark:text-blue-100 shadow-[0_4px_16px_0_rgba(59,130,246,0.25)] border-2 border-blue-400 dark:border-blue-600 rounded-lg h-11 font-semibold transition-all active:scale-[0.98] flex items-center justify-center gap-2"
             >
-              <Edit2 className="w-4 h-4 mr-2" />
-              Зберегти
-            </Button>
+              <Pencil className="w-4 h-4" />
+              <span>Зберегти</span>
+            </button>
           </div>
         </DialogContent>
       </Dialog>
