@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ChevronDown } from "lucide-react";
 
-// Helper functions for week calculation
+// Helper functions for month calculation
 // Format date as YYYY-MM-DD using local time (not UTC)
 const formatLocalDate = (date: Date): string => {
   const year = date.getFullYear();
@@ -26,46 +26,19 @@ const formatLocalDate = (date: Date): string => {
   return `${year}-${month}-${day}`;
 };
 
-const getMonday = (date: Date) => {
-  // Use local date methods instead of ISO to avoid timezone issues
+const getFirstDayOfMonth = (date: Date) => {
+  return new Date(date.getFullYear(), date.getMonth(), 1, 0, 0, 0, 0);
+};
+
+const getLastDayOfMonth = (date: Date) => {
+  return new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59, 999);
+};
+
+const formatMonthRange = (date: Date) => {
+  const monthNames = ["Січень", "Лютий", "Березень", "Квітень", "Травень", "Червень", "Липень", "Серпень", "Вересень", "Жовтень", "Листопад", "Грудень"];
+  const month = monthNames[date.getMonth()];
   const year = date.getFullYear();
-  const month = date.getMonth();
-  const dateNum = date.getDate();
-  const day = date.getDay();
-
-  // Calculate Monday
-  const diff = day === 0 ? -6 : 1 - day;
-
-  // Create new date with local time
-  const monday = new Date(year, month, dateNum + diff, 0, 0, 0, 0);
-
-  return monday;
-};
-
-const getSunday = (monday: Date) => {
-  const d = new Date(monday);
-  d.setDate(d.getDate() + 6);
-  d.setHours(23, 59, 59, 999);
-  return d;
-};
-
-const formatWeekRange = (monday: Date) => {
-  const sunday = new Date(monday);
-  sunday.setDate(sunday.getDate() + 6);
-
-  const monthNames = ["Січ", "Лют", "Бер", "Кві", "Тра", "Чер", "Лип", "Сер", "Вер", "Жов", "Лис", "Гру"];
-
-  const startDay = monday.getDate();
-  const endDay = sunday.getDate();
-  const startMonth = monthNames[monday.getMonth()];
-  const endMonth = monthNames[sunday.getMonth()];
-  const year = monday.getFullYear();
-
-  if (monday.getMonth() === sunday.getMonth()) {
-    return `${startDay}-${endDay} ${startMonth} ${year}`;
-  } else {
-    return `${startDay} ${startMonth} - ${endDay} ${endMonth} ${year}`;
-  }
+  return `${month} ${year}`;
 };
 
 const Index = () => {
@@ -75,8 +48,8 @@ const Index = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Week navigation state - always start with current week
-  const [currentWeekStart, setCurrentWeekStart] = useState<Date>(() => getMonday(new Date()));
+  // Month navigation state - always start with current month
+  const [currentMonth, setCurrentMonth] = useState<Date>(() => getFirstDayOfMonth(new Date()));
 
   // Custom period state
   const [isCustomPeriodMode, setIsCustomPeriodMode] = useState(false);
@@ -96,9 +69,9 @@ const Index = () => {
   const [partialPaymentDayId, setPartialPaymentDayId] = useState<string | null>(null);
   const [partialPaymentAmount, setPartialPaymentAmount] = useState("");
 
-  // Reset to current week when returning to this page
+  // Reset to current month when returning to this page
   useEffect(() => {
-    setCurrentWeekStart(getMonday(new Date()));
+    setCurrentMonth(getFirstDayOfMonth(new Date()));
   }, [location.pathname]);
 
   // Load reports
@@ -208,25 +181,25 @@ const Index = () => {
     }
   };
 
-  // Week navigation functions
-  const goToPreviousWeek = () => {
-    setCurrentWeekStart(prev => {
+  // Month navigation functions
+  const goToPreviousMonth = () => {
+    setCurrentMonth(prev => {
       const newDate = new Date(prev);
-      newDate.setDate(newDate.getDate() - 7);
-      return newDate;
+      newDate.setMonth(newDate.getMonth() - 1);
+      return getFirstDayOfMonth(newDate);
     });
   };
 
-  const goToNextWeek = () => {
-    setCurrentWeekStart(prev => {
+  const goToNextMonth = () => {
+    setCurrentMonth(prev => {
       const newDate = new Date(prev);
-      newDate.setDate(newDate.getDate() + 7);
-      return newDate;
+      newDate.setMonth(newDate.getMonth() + 1);
+      return getFirstDayOfMonth(newDate);
     });
   };
 
-  const goToCurrentWeek = () => {
-    setCurrentWeekStart(getMonday(new Date()));
+  const goToCurrentMonth = () => {
+    setCurrentMonth(getFirstDayOfMonth(new Date()));
     setIsCustomPeriodMode(false);
     setCustomStartDate(null);
     setCustomEndDate(null);
@@ -334,18 +307,18 @@ const Index = () => {
     setIsCustomPeriodMode(false);
     setCustomStartDate(null);
     setCustomEndDate(null);
-    setCurrentWeekStart(getMonday(new Date()));
+    setCurrentMonth(getFirstDayOfMonth(new Date()));
   };
 
-  // Check if current week is selected
-  const isCurrentWeek = useMemo(() => {
+  // Check if current month is selected
+  const isCurrentMonth = useMemo(() => {
     if (isCustomPeriodMode) return false;
-    const today = getMonday(new Date());
-    return currentWeekStart.getTime() === today.getTime();
-  }, [currentWeekStart, isCustomPeriodMode]);
+    const today = getFirstDayOfMonth(new Date());
+    return currentMonth.getTime() === today.getTime();
+  }, [currentMonth, isCustomPeriodMode]);
 
-  // Filter work days for current week or custom period
-  const weekWorkDays = useMemo(() => {
+  // Filter work days for current month or custom period
+  const monthWorkDays = useMemo(() => {
     let periodStart: Date;
     let periodEnd: Date;
 
@@ -353,8 +326,8 @@ const Index = () => {
       periodStart = customStartDate;
       periodEnd = customEndDate;
     } else {
-      periodStart = currentWeekStart;
-      periodEnd = getSunday(currentWeekStart);
+      periodStart = getFirstDayOfMonth(currentMonth);
+      periodEnd = getLastDayOfMonth(currentMonth);
     }
 
     const days: Array<WorkDay & { reportId: string; clientName: string; paymentStatus: string }> = [];
@@ -374,9 +347,9 @@ const Index = () => {
     });
 
     return days.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-  }, [reports, currentWeekStart, isCustomPeriodMode, customStartDate, customEndDate]);
+  }, [reports, currentMonth, isCustomPeriodMode, customStartDate, customEndDate]);
 
-  // Group work days by date (Sunday at top, Monday at bottom)
+  // Group work days by date (latest at top, earliest at bottom)
   const groupedByDay = useMemo(() => {
     const daysList: Array<{ date: string; days: Array<WorkDay & { reportId: string; clientName: string; paymentStatus: string }> }> = [];
 
@@ -395,17 +368,23 @@ const Index = () => {
         daysList.push({ date: dateKey, days: [] });
       });
     } else {
-      // Create all 7 days of the week from Sunday (6) to Monday (0) - reversed
-      for (let i = 6; i >= 0; i--) {
-        const date = new Date(currentWeekStart);
-        date.setDate(date.getDate() + i);
-        const dateKey = formatLocalDate(date);
-        daysList.push({ date: dateKey, days: [] });
+      // Create all days of the month
+      const monthStart = getFirstDayOfMonth(currentMonth);
+      const monthEnd = getLastDayOfMonth(currentMonth);
+      const tempList: string[] = [];
+
+      for (let d = new Date(monthStart); d <= monthEnd; d.setDate(d.getDate() + 1)) {
+        tempList.push(formatLocalDate(d));
       }
+
+      // Reverse to show latest first
+      tempList.reverse().forEach(dateKey => {
+        daysList.push({ date: dateKey, days: [] });
+      });
     }
 
     // Fill with actual work days
-    weekWorkDays.forEach(day => {
+    monthWorkDays.forEach(day => {
       const entry = daysList.find(d => d.date === day.date);
       if (entry) {
         entry.days.push(day);
@@ -413,7 +392,7 @@ const Index = () => {
     });
 
     // Check if there are any work days
-    const hasWorkDays = weekWorkDays.length > 0;
+    const hasWorkDays = monthWorkDays.length > 0;
 
     if (!isCustomPeriodMode) {
       // Find today's date
@@ -430,9 +409,9 @@ const Index = () => {
           }
         }
 
-        // Keep days from Monday to the last work day OR today (whichever is first)
+        // Keep days from start of month to the last work day OR today (whichever is first)
         if (lastWorkDayIndex >= 0) {
-          // If today is in the week and is before the last work day, show up to today
+          // If today is in the month and is before the last work day, show up to today
           if (todayIndex >= 0 && todayIndex < lastWorkDayIndex) {
             return daysList.slice(todayIndex);
           }
@@ -440,7 +419,7 @@ const Index = () => {
           return daysList.slice(lastWorkDayIndex);
         }
       } else {
-        // If no work days but today is in this week, show only today
+        // If no work days but today is in this month, show only today
         if (todayIndex >= 0) {
           return daysList.slice(todayIndex, todayIndex + 1);
         }
@@ -448,15 +427,15 @@ const Index = () => {
     }
 
     return daysList;
-  }, [weekWorkDays, currentWeekStart, isCustomPeriodMode, customStartDate, customEndDate]);
+  }, [monthWorkDays, currentMonth, isCustomPeriodMode, customStartDate, customEndDate]);
 
-  // Week statistics
-  const weekStats = useMemo(() => {
+  // Month statistics
+  const monthStats = useMemo(() => {
     let totalHours = 0;
     let totalEarned = 0;
     let totalPaid = 0;
 
-    weekWorkDays.forEach(day => {
+    monthWorkDays.forEach(day => {
       totalHours += day.hours;
       totalEarned += day.amount;
 
@@ -477,7 +456,7 @@ const Index = () => {
       totalRemaining: totalEarned - totalPaid,
       paidPercentage
     };
-  }, [weekWorkDays]);
+  }, [monthWorkDays]);
 
   // Function to determine payment color based on status
   const getPaymentColor = (day: WorkDay & { paymentStatus: string }) => {
@@ -517,16 +496,16 @@ const Index = () => {
     <div
       className="min-h-screen bg-background pb-32 pt-4"
     >
-      {/* Week Navigator */}
+      {/* Month Navigator */}
       <div className="fixed top-0 left-0 right-0 z-40 bg-white/5 dark:bg-gray-900/5 backdrop-blur-xl border-b border-white/10 shadow-[0_2px_16px_0_rgba(31,38,135,0.1)]" data-no-swipe>
         <div className="container mx-auto px-4 py-3">
           {/* Navigation Controls */}
           <div className="flex items-center justify-between mb-3">
             {!isCustomPeriodMode ? (
               <button
-                onClick={goToPreviousWeek}
+                onClick={goToPreviousMonth}
                 className="p-2 rounded-full hover:bg-primary/10 transition-all"
-                aria-label="Попередній тиждень"
+                aria-label="Попередній місяць"
               >
                 <ChevronLeft className="w-6 h-6 text-primary stroke-[2.5]" />
               </button>
@@ -541,7 +520,7 @@ const Index = () => {
               >
                 {isCustomPeriodMode && customStartDate && customEndDate
                   ? `${customStartDate.toLocaleDateString("uk-UA", { day: 'numeric', month: 'short' })} - ${customEndDate.toLocaleDateString("uk-UA", { day: 'numeric', month: 'short', year: 'numeric' })}`
-                  : formatWeekRange(currentWeekStart)}
+                  : formatMonthRange(currentMonth)}
               </button>
               {isCustomPeriodMode && (
                 <button
@@ -556,9 +535,9 @@ const Index = () => {
 
             {!isCustomPeriodMode ? (
               <button
-                onClick={goToNextWeek}
+                onClick={goToNextMonth}
                 className="p-2 rounded-full hover:bg-primary/10 transition-all"
-                aria-label="Наступний тиждень"
+                aria-label="Наступний місяць"
               >
                 <ChevronRight className="w-6 h-6 text-primary stroke-[2.5]" />
               </button>
@@ -567,15 +546,15 @@ const Index = () => {
             )}
           </div>
 
-          {/* Week Statistics */}
+          {/* Month Statistics */}
           <div className="grid grid-cols-2 gap-2">
             <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-2 text-center border border-purple-200/60">
               <p className="text-xs text-purple-700 font-medium">Годин</p>
-              <p className="text-lg font-bold text-purple-900">{weekStats.totalHours.toFixed(1)}</p>
+              <p className="text-lg font-bold text-purple-900">{monthStats.totalHours.toFixed(1)}</p>
             </div>
             <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-2 text-center border border-blue-200/60">
               <p className="text-xs text-blue-700 font-medium">Заробіток</p>
-              <p className="text-lg font-bold text-blue-900">{Math.round(weekStats.totalEarned)}€</p>
+              <p className="text-lg font-bold text-blue-900">{Math.round(monthStats.totalEarned)}€</p>
             </div>
           </div>
         </div>
@@ -583,21 +562,21 @@ const Index = () => {
 
       <main className="container mx-auto px-4 pt-36 pb-6 space-y-4">
         {/* Return to Today Button */}
-        {!isCurrentWeek && !isCustomPeriodMode && (
+        {!isCurrentMonth && !isCustomPeriodMode && (
           <div className="flex justify-center mb-4">
             <button
-              onClick={goToCurrentWeek}
+              onClick={goToCurrentMonth}
               className="bg-primary/10 px-4 py-2 rounded-lg flex items-center gap-2"
             >
-              {currentWeekStart < getMonday(new Date()) ? (
+              {currentMonth < getFirstDayOfMonth(new Date()) ? (
                 <>
-                  <span className="text-sm font-semibold text-primary">Повернутися на сьогодні</span>
+                  <span className="text-sm font-semibold text-primary">Повернутися на поточний місяць</span>
                   <Redo2 className="w-4 h-4 text-primary" />
                 </>
               ) : (
                 <>
                   <Undo2 className="w-4 h-4 text-primary" />
-                  <span className="text-sm font-semibold text-primary">Повернутися на сьогодні</span>
+                  <span className="text-sm font-semibold text-primary">Повернутися на поточний місяць</span>
                 </>
               )}
             </button>
@@ -608,7 +587,7 @@ const Index = () => {
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <Calendar className="w-16 h-16 text-muted-foreground mb-4" />
             <p className="text-xl font-semibold text-foreground mb-2">Немає записів</p>
-            <p className="text-muted-foreground text-sm">на цьому тижні</p>
+            <p className="text-muted-foreground text-sm">в цьому місяці</p>
           </div>
         ) : (
           groupedByDay.map(({ date: dateKey, days: daysData }) => {
