@@ -1,6 +1,29 @@
 export type PaymentStatus = "paid" | "partial" | "unpaid";
 export type ReportStatus = "in_progress" | "completed";
 
+export interface Worker {
+  id: string;
+  user_id: string;
+  name: string;
+  color: string;
+  is_primary: boolean;
+  isPrimary?: boolean;
+  created_at?: string;
+}
+
+export interface WorkDayAssignment {
+  id: string;
+  work_day_id: string;
+  workDayId?: string;
+  worker_id: string | null;
+  workerId?: string | null;
+  amount: number;
+  hours: number;
+  worker?: Worker | null;
+  deleted_worker_name?: string | null;
+  created_at?: string;
+}
+
 export interface WorkDay {
   id: string;
   date: string;
@@ -10,6 +33,8 @@ export interface WorkDay {
   note?: string;
   day_paid_amount?: number;
   paymentStatus?: PaymentStatus;
+  assignments?: WorkDayAssignment[];
+  is_planned?: boolean;
 }
 
 export interface Client {

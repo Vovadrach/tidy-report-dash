@@ -1,6 +1,7 @@
 import { Report } from "@/types/report";
 import { Clock, Euro, Calendar } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { decimalToHours } from "@/utils/timeFormat";
 
 interface ReportCardProps {
   report: Report;
@@ -50,7 +51,7 @@ export const ReportCard = ({ report, index = 0 }: ReportCardProps) => {
       <div className="grid grid-cols-2 gap-2">
         <div className="bg-purple-50 dark:bg-purple-950 rounded-md p-2 flex items-center justify-center gap-1 border border-purple-200/50 dark:border-purple-800/50 shadow-md">
           <Clock className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-          <p className="text-base font-semibold text-black dark:text-white">{totalHours}</p>
+          <p className="text-base font-semibold text-black dark:text-white">{decimalToHours(totalHours)}</p>
         </div>
 
         <div className="bg-amber-50 dark:bg-amber-950 rounded-md p-2 flex items-center justify-center gap-1 border border-amber-200/50 dark:border-amber-800/50 shadow-md">

@@ -7,10 +7,13 @@ import { Report, Client } from "@/types/report";
 import { Clock, Euro, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { BottomNavigation } from "@/components/BottomNavigation";
+import { decimalToHours } from "@/utils/timeFormat";
+import { useWorker } from "@/contexts/WorkerContext";
 
 const ReportsStatus = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { selectedWorkerId } = useWorker();
   const [reports, setReports] = useState<Report[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
@@ -18,20 +21,16 @@ const ReportsStatus = () => {
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [selectedWorkerId]);
 
   useEffect(() => {
     const handleFocus = () => {
       loadData();
     };
-    
+
     window.addEventListener('focus', handleFocus);
     return () => window.removeEventListener('focus', handleFocus);
   }, []);
-
-  useEffect(() => {
-    loadData();
-  }, [location.pathname]);
 
   const loadData = async () => {
     try {
@@ -44,36 +43,68 @@ const ReportsStatus = () => {
       
       const reportsWithRecalculatedPayments = reportsData.map(report => {
         const workDays = report.workDays || [];
-        
+
         let totalHours = 0;
         let totalEarned = 0;
         let paidAmount = 0;
-        
+
         workDays.forEach(day => {
-          const dayHours = day.hours || 0;
-          const dayAmount = day.amount || 0;
-          const dayStatus = day.paymentStatus || day.payment_status;
-          const dayPaid = day.day_paid_amount || 0;
-          
-          totalHours += dayHours;
-          totalEarned += dayAmount;
-          
-          if (dayStatus === 'paid') {
-            paidAmount += dayAmount;
-          } else if (dayStatus === 'partial') {
-            paidAmount += dayPaid;
+          // Filter by worker if selected
+          if (selectedWorkerId !== 'all') {
+            const hasAssignment = day.assignments?.some(a =>
+              a.worker_id === selectedWorkerId || a.workerId === selectedWorkerId
+            );
+            if (!hasAssignment) return; // Skip this day if worker not assigned
+
+            // Get worker-specific data
+            const assignment = day.assignments?.find(a =>
+              a.worker_id === selectedWorkerId || a.workerId === selectedWorkerId
+            );
+
+            if (assignment) {
+              const workerHours = assignment.hours || 0;
+              const workerAmount = assignment.amount || 0;
+              const dayStatus = day.paymentStatus || day.payment_status;
+              const dayPaid = day.day_paid_amount || 0;
+
+              totalHours += workerHours;
+              totalEarned += workerAmount;
+
+              if (dayStatus === 'paid') {
+                paidAmount += workerAmount;
+              } else if (dayStatus === 'partial') {
+                // Calculate worker's share of partial payment
+                const workerShare = day.amount > 0 ? (workerAmount / day.amount) * dayPaid : 0;
+                paidAmount += workerShare;
+              }
+            }
+          } else {
+            // Show all work days
+            const dayHours = day.hours || 0;
+            const dayAmount = day.amount || 0;
+            const dayStatus = day.paymentStatus || day.payment_status;
+            const dayPaid = day.day_paid_amount || 0;
+
+            totalHours += dayHours;
+            totalEarned += dayAmount;
+
+            if (dayStatus === 'paid') {
+              paidAmount += dayAmount;
+            } else if (dayStatus === 'partial') {
+              paidAmount += dayPaid;
+            }
           }
         });
-        
+
         const remainingAmount = totalEarned - paidAmount;
-        
+
         let paymentStatus = 'unpaid';
         if (paidAmount === totalEarned && totalEarned > 0) {
           paymentStatus = 'paid';
         } else if (paidAmount > 0) {
           paymentStatus = 'partial';
         }
-        
+
         return {
           ...report,
           totalHours,
@@ -155,9 +186,14 @@ const ReportsStatus = () => {
       };
     }).filter(report => report !== null) as any[];
     
-    // Сортуємо за статусом оплати
-    const paymentOrder = { unpaid: 0, partial: 1, paid: 2 };
+    // Сортуємо за сумою боргу (від більшого до меншого)
     return consolidatedReports.sort((a, b) => {
+      // Спочатку сортуємо за залишком до оплати (від більшого до меншого)
+      const amountDiff = b.remainingAmount - a.remainingAmount;
+      if (amountDiff !== 0) return amountDiff;
+
+      // Якщо суми однакові, сортуємо за статусом
+      const paymentOrder = { unpaid: 0, partial: 1, paid: 2 };
       return paymentOrder[a.paymentStatus] - paymentOrder[b.paymentStatus];
     });
   }, [reports]);
@@ -169,18 +205,56 @@ const ReportsStatus = () => {
     reports.forEach(report => {
       report.workDays.forEach(day => {
         const dayStatus = day.paymentStatus || day.payment_status;
-        if (dayStatus === "unpaid") {
-          totalUnpaidAmount += day.amount;
-          totalUnpaidHours += day.hours;
-        } else if (dayStatus === "partial") {
-          const dayPaid = day.day_paid_amount || 0;
-          totalUnpaidAmount += (day.amount - dayPaid);
-          const client = clients.find(c => c.id === report.clientId || c.id === report.client_id);
-          if (client) {
-            const hourlyRate = client.hourlyRate || client.hourly_rate || 0;
-            if (hourlyRate > 0) {
-              const paidHours = dayPaid / hourlyRate;
-              totalUnpaidHours += (day.hours - paidHours);
+
+        // Filter by worker if selected
+        if (selectedWorkerId !== 'all') {
+          const hasAssignment = day.assignments?.some(a =>
+            a.worker_id === selectedWorkerId || a.workerId === selectedWorkerId
+          );
+          if (!hasAssignment) return; // Skip this day
+
+          const assignment = day.assignments?.find(a =>
+            a.worker_id === selectedWorkerId || a.workerId === selectedWorkerId
+          );
+
+          if (assignment) {
+            const workerAmount = assignment.amount || 0;
+            const workerHours = assignment.hours || 0;
+
+            if (dayStatus === "unpaid") {
+              totalUnpaidAmount += workerAmount;
+              totalUnpaidHours += workerHours;
+            } else if (dayStatus === "partial") {
+              const dayPaid = day.day_paid_amount || 0;
+              // Calculate worker's share of partial payment
+              const workerShare = day.amount > 0 ? (workerAmount / day.amount) * dayPaid : 0;
+              totalUnpaidAmount += (workerAmount - workerShare);
+
+              const client = clients.find(c => c.id === report.clientId || c.id === report.client_id);
+              if (client) {
+                const hourlyRate = client.hourlyRate || client.hourly_rate || 0;
+                if (hourlyRate > 0) {
+                  const paidHours = workerShare / hourlyRate;
+                  totalUnpaidHours += (workerHours - paidHours);
+                }
+              }
+            }
+          }
+        } else {
+          // Show all
+          if (dayStatus === "unpaid") {
+            totalUnpaidAmount += day.amount;
+            totalUnpaidHours += day.hours;
+          } else if (dayStatus === "partial") {
+            const dayPaid = day.day_paid_amount || 0;
+            totalUnpaidAmount += (day.amount - dayPaid);
+            const client = clients.find(c => c.id === report.clientId || c.id === report.client_id);
+            if (client) {
+              const hourlyRate = client.hourlyRate || client.hourly_rate || 0;
+              if (hourlyRate > 0) {
+                const paidHours = dayPaid / hourlyRate;
+                totalUnpaidHours += (day.hours - paidHours);
+              }
             }
           }
         }
@@ -188,7 +262,7 @@ const ReportsStatus = () => {
     });
 
     return { totalUnpaidAmount, totalUnpaidHours };
-  }, [reports, clients]);
+  }, [reports, clients, selectedWorkerId]);
 
   if (loading) {
     return (
@@ -225,7 +299,7 @@ const ReportsStatus = () => {
                 <div className="min-w-0 flex-1">
                   <p className="text-xs font-medium text-muted-foreground mb-0.5">Години</p>
                   <div className="flex items-baseline gap-1">
-                    <p className="text-xl font-bold text-black dark:text-white">{unpaidSummary.totalUnpaidHours.toFixed(1)}</p>
+                    <p className="text-xl font-bold text-black dark:text-white">{decimalToHours(unpaidSummary.totalUnpaidHours)}</p>
                     <p className="text-sm font-semibold text-black dark:text-white">год</p>
                   </div>
                 </div>

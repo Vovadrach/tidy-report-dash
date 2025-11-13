@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { api } from "@/lib/api";
-import { Report, Client } from "@/types/report";
+import { Report, Client, WorkDay } from "@/types/report";
 import { DollarSign, Clock, TrendingUp, Users, ChevronDown, AlertCircle, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -12,10 +12,30 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { BottomNavigation } from "@/components/BottomNavigation";
+import { decimalToHours } from "@/utils/timeFormat";
+import { useWorker } from "@/contexts/WorkerContext";
+
+// Helper function to extract worker-specific data from work day
+const getWorkerDataFromWorkDay = (day: WorkDay, workerId: string | 'all') => {
+  if (workerId === 'all') {
+    return { amount: day.amount, hours: day.hours };
+  }
+
+  const assignment = day.assignments?.find(a =>
+    (a.worker_id === workerId || a.workerId === workerId)
+  );
+
+  if (assignment) {
+    return { amount: assignment.amount, hours: assignment.hours };
+  }
+
+  return { amount: 0, hours: 0 };
+};
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { selectedWorkerId } = useWorker();
   const [reports, setReports] = useState<Report[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth());
@@ -72,7 +92,7 @@ const Dashboard = () => {
       const reportsWithRecalculatedPayments = reportsData.map(report => {
         const workDays = report.workDays || [];
         
-        let totalHours = 0;
+        let totalMinutes = 0;
         let totalEarned = 0;
         let paidAmount = 0;
         
@@ -82,7 +102,7 @@ const Dashboard = () => {
           const dayStatus = day.paymentStatus || day.payment_status;
           const dayPaid = day.day_paid_amount || 0;
           
-          totalHours += dayHours;
+          totalMinutes += Math.round(dayHours * 60);
           totalEarned += dayAmount;
           
           if (dayStatus === 'paid') {
@@ -92,6 +112,7 @@ const Dashboard = () => {
           }
         });
         
+        const totalHours = totalMinutes / 60;
         const remainingAmount = totalEarned - paidAmount;
         
         let paymentStatus = 'unpaid';
@@ -126,6 +147,56 @@ const Dashboard = () => {
   const filteredReports = useMemo(() => {
     let filtered = [...reports];
 
+    // Filter by worker
+    if (selectedWorkerId !== 'all') {
+      filtered = filtered.map(report => {
+        const filteredWorkDays = (report.workDays || []).filter(day => {
+          const hasAssignment = day.assignments?.some(a =>
+            a.worker_id === selectedWorkerId || a.workerId === selectedWorkerId
+          );
+          return hasAssignment;
+        });
+
+        // Only include report if it has work days for this worker
+        if (filteredWorkDays.length === 0) return null;
+
+        // Recalculate totals based on worker-specific data
+        let totalMinutes = 0;
+        let totalEarned = 0;
+        let paidAmount = 0;
+
+        filteredWorkDays.forEach(day => {
+          // Get worker-specific data from assignments
+          const workerData = getWorkerDataFromWorkDay(day, selectedWorkerId);
+
+          totalMinutes += Math.round(workerData.hours * 60);
+          totalEarned += workerData.amount;
+
+          const dayStatus = day.paymentStatus || day.payment_status;
+          if (dayStatus === 'paid') {
+            // Worker gets their full share
+            paidAmount += workerData.amount;
+          } else if (dayStatus === 'partial') {
+            // Calculate worker's proportional share of partial payment
+            const dayTotalAmount = day.amount || 0;
+            if (dayTotalAmount > 0) {
+              const workerShare = (workerData.amount / dayTotalAmount) * (day.day_paid_amount || 0);
+              paidAmount += workerShare;
+            }
+          }
+        });
+
+        return {
+          ...report,
+          workDays: filteredWorkDays,
+          totalHours: totalMinutes / 60,
+          totalEarned,
+          paidAmount,
+          remainingAmount: totalEarned - paidAmount
+        };
+      }).filter(r => r !== null) as Report[];
+    }
+
     if (selectedClientId !== "all") {
       filtered = filtered.filter((r) => (r.clientId || r.client_id) === selectedClientId);
     }
@@ -146,7 +217,7 @@ const Dashboard = () => {
     // If selectedYear is null, show all periods (no filtering)
 
     return filtered;
-  }, [reports, selectedClientId, selectedMonth, selectedYear]);
+  }, [reports, selectedClientId, selectedMonth, selectedYear, selectedWorkerId]);
 
   const stats = useMemo(() => {
     // Розраховуємо статистику тільки для відфільтрованих звітів
@@ -183,8 +254,8 @@ const Dashboard = () => {
       });
     });
 
-    // Сортуємо за залишком (боргом) замість загального заробітку
-    return Array.from(clientStats.values()).sort((a, b) => b.remaining - a.remaining);
+    // Сортуємо за заробітком (від більшого до меншого)
+    return Array.from(clientStats.values()).sort((a, b) => b.earned - a.earned);
   }, [filteredReports]);
 
   const debtsBreakdown = useMemo(() => {
@@ -428,7 +499,7 @@ const Dashboard = () => {
               <div className="min-w-0 flex-1">
                 <p className="text-xs font-medium text-muted-foreground mb-0.5">Години</p>
                 <div className="flex items-baseline gap-1">
-                  <p className="text-xl font-bold text-black dark:text-white">{stats.totalHours}</p>
+                  <p className="text-xl font-bold text-black dark:text-white">{decimalToHours(stats.totalHours)}</p>
                   <p className="text-sm font-semibold text-black dark:text-white">год</p>
                 </div>
               </div>
@@ -530,7 +601,7 @@ const Dashboard = () => {
                     <span className="font-semibold text-foreground text-sm">{client.name}</span>
                   </div>
                   <div className="flex items-center gap-3">
-                    <p className="text-xs text-muted-foreground font-medium">{client.hours} год</p>
+                    <p className="text-xs text-muted-foreground font-medium">{decimalToHours(client.hours)} год</p>
                     <p className="font-bold text-success text-base min-w-[60px] text-right">{Math.round(client.earned)}€</p>
                   </div>
                 </div>

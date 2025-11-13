@@ -6,6 +6,7 @@ import {
   Clock as ClockIcon,
   House,
 } from "@phosphor-icons/react";
+import { WorkerSelector } from "./WorkerSelector";
 
 export const BottomNavigation = () => {
   const navigate = useNavigate();
@@ -46,26 +47,34 @@ export const BottomNavigation = () => {
       </div>
 
       <div className="px-6 pb-6 relative pointer-events-auto">
+        {/* WorkerSelector над панеллю (на головній) */}
+        {isHomePage && (
+          <div className="flex justify-center mb-2">
+            <div className="w-full" style={{ maxWidth: '360px' }}>
+              <WorkerSelector />
+            </div>
+          </div>
+        )}
+
         {/* Маленька кнопка Головна над панеллю */}
         {showHomeButton && (
           <div className="flex justify-center mb-2">
             <button
               onClick={handleHomeClick}
-              className="bg-white/5 dark:bg-gray-900/5 backdrop-blur-xl border border-white/10 shadow-[0_4px_16px_0_rgba(31,38,135,0.15),0_8px_24px_0_rgba(0,0,0,0.1)] rounded-full px-5 py-2.5 transition-all duration-150 active:scale-95"
+              className="flex flex-col items-center justify-center gap-[2px] h-[56px] rounded-full transition-all duration-150 active:scale-95 px-8 bg-white/5 dark:bg-gray-900/5 backdrop-blur-xl border border-white/10 shadow-[0_4px_16px_0_rgba(31,38,135,0.15),0_8px_24px_0_rgba(0,0,0,0.1)]"
+              style={{ backgroundColor: 'rgba(0, 0, 0, 0.045)' }}
             >
-              <div className="flex items-center gap-2">
-                <House
-                  size={18}
-                  weight="bold"
-                  color="#3C3C43"
-                />
-                <span
-                  className="text-[12px] font-semibold tracking-[-0.01em]"
-                  style={{ color: '#3C3C43' }}
-                >
-                  Головна
-                </span>
-              </div>
+              <House
+                size={27}
+                weight="fill"
+                color="#007AFF"
+              />
+              <span
+                className="text-[10.5px] font-medium tracking-[-0.01em]"
+                style={{ color: '#007AFF' }}
+              >
+                Головна
+              </span>
             </button>
           </div>
         )}

@@ -5,6 +5,7 @@ import { Report, WorkDay, PaymentStatus } from "@/types/report";
 import { Clock, TrendingUp, CheckCircle2, XCircle, AlertCircle, Calendar, Loader2, Euro, ChevronLeft, ChevronRight, X, Undo2, Redo2 } from "lucide-react";
 import { toast } from "sonner";
 import { BottomNavigation } from "@/components/BottomNavigation";
+import { WorkerSelector } from "@/components/WorkerSelector";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -16,8 +17,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ChevronDown } from "lucide-react";
+import { useWorker } from "@/contexts/WorkerContext";
 
-// Helper functions for week calculation
+// Helper functions for month calculation
 // Format date as YYYY-MM-DD using local time (not UTC)
 const formatLocalDate = (date: Date): string => {
   const year = date.getFullYear();
@@ -26,57 +28,46 @@ const formatLocalDate = (date: Date): string => {
   return `${year}-${month}-${day}`;
 };
 
-const getMonday = (date: Date) => {
-  // Use local date methods instead of ISO to avoid timezone issues
+const getFirstDayOfMonth = (date: Date) => {
   const year = date.getFullYear();
   const month = date.getMonth();
-  const dateNum = date.getDate();
-  const day = date.getDay();
-
-  // Calculate Monday
-  const diff = day === 0 ? -6 : 1 - day;
-
-  // Create new date with local time
-  const monday = new Date(year, month, dateNum + diff, 0, 0, 0, 0);
-
-  return monday;
+  return new Date(year, month, 1, 0, 0, 0, 0);
 };
 
-const getSunday = (monday: Date) => {
-  const d = new Date(monday);
-  d.setDate(d.getDate() + 6);
-  d.setHours(23, 59, 59, 999);
-  return d;
+const getLastDayOfMonth = (date: Date) => {
+  const year = date.getFullYear();
+  const month = date.getMonth();
+  return new Date(year, month + 1, 0, 23, 59, 59, 999);
 };
 
-const formatWeekRange = (monday: Date) => {
-  const sunday = new Date(monday);
-  sunday.setDate(sunday.getDate() + 6);
+const formatMonthYear = (date: Date) => {
+  const monthNames = ["Січень", "Лютий", "Березень", "Квітень", "Травень", "Червень", "Липень", "Серпень", "Вересень", "Жовтень", "Листопад", "Грудень"];
 
-  const monthNames = ["Січ", "Лют", "Бер", "Кві", "Тра", "Чер", "Лип", "Сер", "Вер", "Жов", "Лис", "Гру"];
+  const month = monthNames[date.getMonth()];
+  const year = date.getFullYear();
 
-  const startDay = monday.getDate();
-  const endDay = sunday.getDate();
-  const startMonth = monthNames[monday.getMonth()];
-  const endMonth = monthNames[sunday.getMonth()];
-  const year = monday.getFullYear();
+  return `${month} ${year}`;
+};
 
-  if (monday.getMonth() === sunday.getMonth()) {
-    return `${startDay}-${endDay} ${startMonth} ${year}`;
-  } else {
-    return `${startDay} ${startMonth} - ${endDay} ${endMonth} ${year}`;
-  }
+// Helper function to convert decimal hours to hours:minutes format
+const decimalToHours = (decimal: number): string => {
+  if (!decimal) return "0";
+  const totalMinutes = Math.round(decimal * 60);
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return minutes === 0 ? `${hours}` : `${hours}:${minutes.toString().padStart(2, '0')}`;
 };
 
 const Index = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { selectedWorkerId, setSelectedWorkerId } = useWorker();
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Week navigation state - always start with current week
-  const [currentWeekStart, setCurrentWeekStart] = useState<Date>(() => getMonday(new Date()));
+  // Month navigation state - always start with current month
+  const [currentMonth, setCurrentMonth] = useState<Date>(() => getFirstDayOfMonth(new Date()));
 
   // Custom period state
   const [isCustomPeriodMode, setIsCustomPeriodMode] = useState(false);
@@ -96,9 +87,9 @@ const Index = () => {
   const [partialPaymentDayId, setPartialPaymentDayId] = useState<string | null>(null);
   const [partialPaymentAmount, setPartialPaymentAmount] = useState("");
 
-  // Reset to current week when returning to this page
+  // Reset to current month when returning to this page
   useEffect(() => {
-    setCurrentWeekStart(getMonday(new Date()));
+    setCurrentMonth(getFirstDayOfMonth(new Date()));
   }, [location.pathname]);
 
   // Load reports
@@ -132,7 +123,7 @@ const Index = () => {
     }
   };
 
-  const handleStatusChange = async (dayId: string, newStatus: PaymentStatus, e: React.MouseEvent, currentStatus?: string) => {
+  const handleStatusChange = async (dayId: string, newStatus: PaymentStatus, e: React.MouseEvent, currentStatus?: string, day?: WorkDay & { workerAmount?: number }) => {
     e.stopPropagation(); // Prevent navigation to details page
 
     // If switching to partial, show inline input
@@ -163,10 +154,26 @@ const Index = () => {
     }
 
     try {
-      await api.updateWorkDay(dayId, {
-        payment_status: newStatus,
-        day_paid_amount: newStatus === "unpaid" ? 0 : undefined,
-      });
+      // For specific worker, when marking as paid, add worker's share to day_paid_amount
+      if (selectedWorkerId !== 'all' && newStatus === "paid" && day && day.workerAmount) {
+        const currentPaid = day.day_paid_amount || 0;
+        const newPaidAmount = currentPaid + day.workerAmount;
+        const totalAmount = day.amount;
+
+        // Determine new status based on total paid
+        const finalStatus: PaymentStatus = newPaidAmount >= totalAmount ? "paid" : "partial";
+
+        await api.updateWorkDay(dayId, {
+          payment_status: finalStatus,
+          day_paid_amount: Math.min(newPaidAmount, totalAmount),
+        });
+      } else {
+        // For "all" workers view or unpaid status, update normally
+        await api.updateWorkDay(dayId, {
+          payment_status: newStatus,
+          day_paid_amount: newStatus === "unpaid" ? 0 : undefined,
+        });
+      }
 
       // Reload reports to reflect changes
       await loadReports();
@@ -208,25 +215,25 @@ const Index = () => {
     }
   };
 
-  // Week navigation functions
-  const goToPreviousWeek = () => {
-    setCurrentWeekStart(prev => {
+  // Month navigation functions
+  const goToPreviousMonth = () => {
+    setCurrentMonth(prev => {
       const newDate = new Date(prev);
-      newDate.setDate(newDate.getDate() - 7);
-      return newDate;
+      newDate.setMonth(newDate.getMonth() - 1);
+      return getFirstDayOfMonth(newDate);
     });
   };
 
-  const goToNextWeek = () => {
-    setCurrentWeekStart(prev => {
+  const goToNextMonth = () => {
+    setCurrentMonth(prev => {
       const newDate = new Date(prev);
-      newDate.setDate(newDate.getDate() + 7);
-      return newDate;
+      newDate.setMonth(newDate.getMonth() + 1);
+      return getFirstDayOfMonth(newDate);
     });
   };
 
-  const goToCurrentWeek = () => {
-    setCurrentWeekStart(getMonday(new Date()));
+  const goToCurrentMonth = () => {
+    setCurrentMonth(getFirstDayOfMonth(new Date()));
     setIsCustomPeriodMode(false);
     setCustomStartDate(null);
     setCustomEndDate(null);
@@ -334,18 +341,45 @@ const Index = () => {
     setIsCustomPeriodMode(false);
     setCustomStartDate(null);
     setCustomEndDate(null);
-    setCurrentWeekStart(getMonday(new Date()));
+    setCurrentMonth(getFirstDayOfMonth(new Date()));
   };
 
-  // Check if current week is selected
-  const isCurrentWeek = useMemo(() => {
+  // Check if current month is selected
+  const isCurrentMonth = useMemo(() => {
     if (isCustomPeriodMode) return false;
-    const today = getMonday(new Date());
-    return currentWeekStart.getTime() === today.getTime();
-  }, [currentWeekStart, isCustomPeriodMode]);
+    const today = getFirstDayOfMonth(new Date());
+    return currentMonth.getTime() === today.getTime();
+  }, [currentMonth, isCustomPeriodMode]);
 
-  // Filter work days for current week or custom period
-  const weekWorkDays = useMemo(() => {
+  // Helper function to get worker-specific data from work day
+  const getWorkerDataFromWorkDay = (day: WorkDay, workerId: string | 'all') => {
+    if (workerId === 'all') {
+      return {
+        amount: day.amount,
+        hours: day.hours
+      };
+    }
+
+    // Find assignment for this worker
+    const assignment = day.assignments?.find(a =>
+      (a.worker_id === workerId || a.workerId === workerId)
+    );
+
+    if (assignment) {
+      return {
+        amount: assignment.amount,
+        hours: assignment.hours
+      };
+    }
+
+    return {
+      amount: 0,
+      hours: 0
+    };
+  };
+
+  // Filter work days for current month or custom period
+  const monthWorkDays = useMemo(() => {
     let periodStart: Date;
     let periodEnd: Date;
 
@@ -353,121 +387,119 @@ const Index = () => {
       periodStart = customStartDate;
       periodEnd = customEndDate;
     } else {
-      periodStart = currentWeekStart;
-      periodEnd = getSunday(currentWeekStart);
+      periodStart = getFirstDayOfMonth(currentMonth);
+      periodEnd = getLastDayOfMonth(currentMonth);
     }
 
-    const days: Array<WorkDay & { reportId: string; clientName: string; paymentStatus: string }> = [];
+    const days: Array<WorkDay & { reportId: string; clientId: string; clientName: string; paymentStatus: string; workerAmount?: number; workerHours?: number }> = [];
 
     reports.forEach(report => {
       report.workDays.forEach(day => {
         const dayDate = new Date(day.date);
         if (dayDate >= periodStart && dayDate <= periodEnd) {
-          days.push({
-            ...day,
-            reportId: report.id,
-            clientName: report.clientName || report.client_name || 'Без імені',
-            paymentStatus: day.paymentStatus || day.payment_status || 'unpaid'
-          });
+          // Filter by worker if selected
+          if (selectedWorkerId === 'all') {
+            // Show all work days
+            days.push({
+              ...day,
+              reportId: report.id,
+              clientId: report.clientId || report.client_id || '',
+              clientName: report.clientName || report.client_name || 'Без імені',
+              paymentStatus: day.paymentStatus || day.payment_status || 'unpaid'
+            });
+          } else {
+            // Only show work days assigned to selected worker
+            const hasAssignment = day.assignments?.some(a => a.worker_id === selectedWorkerId || a.workerId === selectedWorkerId);
+            if (hasAssignment) {
+              const workerData = getWorkerDataFromWorkDay(day, selectedWorkerId);
+              days.push({
+                ...day,
+                reportId: report.id,
+                clientId: report.clientId || report.client_id || '',
+                clientName: report.clientName || report.client_name || 'Без імені',
+                paymentStatus: day.paymentStatus || day.payment_status || 'unpaid',
+                workerAmount: workerData.amount,
+                workerHours: workerData.hours
+              });
+            }
+          }
         }
       });
     });
 
     return days.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-  }, [reports, currentWeekStart, isCustomPeriodMode, customStartDate, customEndDate]);
+  }, [reports, currentMonth, isCustomPeriodMode, customStartDate, customEndDate, selectedWorkerId]);
 
-  // Group work days by date (Sunday at top, Monday at bottom)
+  // Group work days by date (latest at top, earliest at bottom)
   const groupedByDay = useMemo(() => {
-    const daysList: Array<{ date: string; days: Array<WorkDay & { reportId: string; clientName: string; paymentStatus: string }> }> = [];
+    const daysMap = new Map<string, Array<WorkDay & { reportId: string; clientName: string; paymentStatus: string }>>();
 
-    if (isCustomPeriodMode && customStartDate && customEndDate) {
-      // For custom period, create all days between start and end
-      const start = new Date(customStartDate);
-      const end = new Date(customEndDate);
-      const tempList: string[] = [];
-
-      for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-        tempList.push(formatLocalDate(d));
+    // Add all work days to the map
+    monthWorkDays.forEach(day => {
+      if (!daysMap.has(day.date)) {
+        daysMap.set(day.date, []);
       }
-
-      // Reverse to show latest first
-      tempList.reverse().forEach(dateKey => {
-        daysList.push({ date: dateKey, days: [] });
-      });
-    } else {
-      // Create all 7 days of the week from Sunday (6) to Monday (0) - reversed
-      for (let i = 6; i >= 0; i--) {
-        const date = new Date(currentWeekStart);
-        date.setDate(date.getDate() + i);
-        const dateKey = formatLocalDate(date);
-        daysList.push({ date: dateKey, days: [] });
-      }
-    }
-
-    // Fill with actual work days
-    weekWorkDays.forEach(day => {
-      const entry = daysList.find(d => d.date === day.date);
-      if (entry) {
-        entry.days.push(day);
-      }
+      daysMap.get(day.date)!.push(day);
     });
 
-    // Check if there are any work days
-    const hasWorkDays = weekWorkDays.length > 0;
+    // Add today if not already in the map AND if it's in the current period
+    const todayKey = formatLocalDate(new Date());
+    const today = new Date(todayKey);
 
-    if (!isCustomPeriodMode) {
-      // Find today's date
-      const todayKey = formatLocalDate(new Date());
-      const todayIndex = daysList.findIndex(d => d.date === todayKey);
+    let periodStart: Date;
+    let periodEnd: Date;
 
-      if (hasWorkDays) {
-        // If there are work days, find the last day with work
-        let lastWorkDayIndex = -1;
-        for (let i = 0; i < daysList.length; i++) {
-          if (daysList[i].days.length > 0) {
-            lastWorkDayIndex = i;
-            break; // Since we're going from top (latest) to bottom (earliest)
-          }
-        }
-
-        // Keep days from Monday to the last work day OR today (whichever is first)
-        if (lastWorkDayIndex >= 0) {
-          // If today is in the week and is before the last work day, show up to today
-          if (todayIndex >= 0 && todayIndex < lastWorkDayIndex) {
-            return daysList.slice(todayIndex);
-          }
-          // Otherwise show up to the last work day
-          return daysList.slice(lastWorkDayIndex);
-        }
-      } else {
-        // If no work days but today is in this week, show only today
-        if (todayIndex >= 0) {
-          return daysList.slice(todayIndex, todayIndex + 1);
-        }
-      }
+    if (isCustomPeriodMode && customStartDate && customEndDate) {
+      periodStart = customStartDate;
+      periodEnd = customEndDate;
+    } else {
+      periodStart = getFirstDayOfMonth(currentMonth);
+      periodEnd = getLastDayOfMonth(currentMonth);
     }
 
-    return daysList;
-  }, [weekWorkDays, currentWeekStart, isCustomPeriodMode, customStartDate, customEndDate]);
+    // Only add today if it's within the current viewing period
+    if (today >= periodStart && today <= periodEnd && !daysMap.has(todayKey)) {
+      daysMap.set(todayKey, []);
+    }
 
-  // Week statistics
-  const weekStats = useMemo(() => {
-    let totalHours = 0;
+    // Convert to array and sort by date (latest first)
+    const daysList = Array.from(daysMap.entries())
+      .map(([date, days]) => ({ date, days }))
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+    return daysList;
+  }, [monthWorkDays, currentMonth, isCustomPeriodMode, customStartDate, customEndDate]);
+
+  // Month statistics
+  const monthStats = useMemo(() => {
+    let totalMinutes = 0;
     let totalEarned = 0;
     let totalPaid = 0;
 
-    weekWorkDays.forEach(day => {
-      totalHours += day.hours;
-      totalEarned += day.amount;
+    monthWorkDays.forEach(day => {
+      // Use worker-specific data if available
+      const dayHours = day.workerHours !== undefined ? day.workerHours : day.hours;
+      const dayAmount = day.workerAmount !== undefined ? day.workerAmount : day.amount;
+
+      totalMinutes += Math.round(dayHours * 60);
+      totalEarned += dayAmount;
 
       const status = day.paymentStatus;
       if (status === 'paid') {
-        totalPaid += day.amount;
+        totalPaid += dayAmount;
       } else if (status === 'partial') {
-        totalPaid += day.day_paid_amount || 0;
+        // For partial payment, calculate worker's share
+        if (selectedWorkerId !== 'all' && day.workerAmount !== undefined && day.amount > 0) {
+          // Calculate worker's share of paid amount proportionally
+          const workerShare = (day.workerAmount / day.amount) * (day.day_paid_amount || 0);
+          totalPaid += workerShare;
+        } else {
+          totalPaid += day.day_paid_amount || 0;
+        }
       }
     });
 
+    const totalHours = totalMinutes / 60;
     const paidPercentage = totalEarned > 0 ? Math.round((totalPaid / totalEarned) * 100) : 0;
 
     return {
@@ -477,7 +509,7 @@ const Index = () => {
       totalRemaining: totalEarned - totalPaid,
       paidPercentage
     };
-  }, [weekWorkDays]);
+  }, [monthWorkDays, selectedWorkerId]);
 
   // Function to determine payment color based on status
   const getPaymentColor = (day: WorkDay & { paymentStatus: string }) => {
@@ -517,18 +549,18 @@ const Index = () => {
     <div
       className="min-h-screen bg-background pb-32 pt-4"
     >
-      {/* Week Navigator */}
+      {/* Month Navigator */}
       <div className="fixed top-0 left-0 right-0 z-40 bg-white/5 dark:bg-gray-900/5 backdrop-blur-xl border-b border-white/10 shadow-[0_2px_16px_0_rgba(31,38,135,0.1)]" data-no-swipe>
         <div className="container mx-auto px-4 py-3">
           {/* Navigation Controls */}
           <div className="flex items-center justify-between mb-3">
             {!isCustomPeriodMode ? (
               <button
-                onClick={goToPreviousWeek}
-                className="p-2 rounded-full hover:bg-primary/10 transition-all"
-                aria-label="Попередній тиждень"
+                onClick={goToPreviousMonth}
+                className="p-2.5 rounded-xl hover:bg-primary/10 transition-all active:scale-95"
+                aria-label="Попередній місяць"
               >
-                <ChevronLeft className="w-6 h-6 text-primary stroke-[2.5]" />
+                <ChevronLeft className="w-5 h-5 text-primary stroke-[3]" />
               </button>
             ) : (
               <div className="w-10"></div>
@@ -537,11 +569,13 @@ const Index = () => {
             <div className="flex flex-col items-center gap-1">
               <button
                 onClick={handleOpenDatePicker}
-                className="text-sm font-bold text-foreground hover:text-primary transition-colors cursor-pointer"
+                className="px-5 py-2 rounded-2xl hover:bg-primary/10 transition-all active:scale-95 cursor-pointer"
               >
-                {isCustomPeriodMode && customStartDate && customEndDate
-                  ? `${customStartDate.toLocaleDateString("uk-UA", { day: 'numeric', month: 'short' })} - ${customEndDate.toLocaleDateString("uk-UA", { day: 'numeric', month: 'short', year: 'numeric' })}`
-                  : formatWeekRange(currentWeekStart)}
+                <span className="text-base font-extrabold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
+                  {isCustomPeriodMode && customStartDate && customEndDate
+                    ? `${customStartDate.toLocaleDateString("uk-UA", { day: 'numeric', month: 'short' })} - ${customEndDate.toLocaleDateString("uk-UA", { day: 'numeric', month: 'short', year: 'numeric' })}`
+                    : formatMonthYear(currentMonth)}
+                </span>
               </button>
               {isCustomPeriodMode && (
                 <button
@@ -556,48 +590,48 @@ const Index = () => {
 
             {!isCustomPeriodMode ? (
               <button
-                onClick={goToNextWeek}
-                className="p-2 rounded-full hover:bg-primary/10 transition-all"
-                aria-label="Наступний тиждень"
+                onClick={goToNextMonth}
+                className="p-2.5 rounded-xl hover:bg-primary/10 transition-all active:scale-95"
+                aria-label="Наступний місяць"
               >
-                <ChevronRight className="w-6 h-6 text-primary stroke-[2.5]" />
+                <ChevronRight className="w-5 h-5 text-primary stroke-[3]" />
               </button>
             ) : (
               <div className="w-10"></div>
             )}
           </div>
 
-          {/* Week Statistics */}
+          {/* Month Statistics */}
           <div className="grid grid-cols-2 gap-2">
             <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-2 text-center border border-purple-200/60">
               <p className="text-xs text-purple-700 font-medium">Годин</p>
-              <p className="text-lg font-bold text-purple-900">{weekStats.totalHours.toFixed(1)}</p>
+              <p className="text-lg font-bold text-purple-900">{decimalToHours(monthStats.totalHours)}</p>
             </div>
             <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-2 text-center border border-blue-200/60">
               <p className="text-xs text-blue-700 font-medium">Заробіток</p>
-              <p className="text-lg font-bold text-blue-900">{Math.round(weekStats.totalEarned)}€</p>
+              <p className="text-lg font-bold text-blue-900">{Math.round(monthStats.totalEarned)}€</p>
             </div>
           </div>
         </div>
       </div>
 
       <main className="container mx-auto px-4 pt-36 pb-6 space-y-4">
-        {/* Return to Today Button */}
-        {!isCurrentWeek && !isCustomPeriodMode && (
+        {/* Return to Current Month Button */}
+        {!isCurrentMonth && !isCustomPeriodMode && (
           <div className="flex justify-center mb-4">
             <button
-              onClick={goToCurrentWeek}
+              onClick={goToCurrentMonth}
               className="bg-primary/10 px-4 py-2 rounded-lg flex items-center gap-2"
             >
-              {currentWeekStart < getMonday(new Date()) ? (
+              {currentMonth < getFirstDayOfMonth(new Date()) ? (
                 <>
-                  <span className="text-sm font-semibold text-primary">Повернутися на сьогодні</span>
+                  <span className="text-sm font-semibold text-primary">Поточний місяць</span>
                   <Redo2 className="w-4 h-4 text-primary" />
                 </>
               ) : (
                 <>
                   <Undo2 className="w-4 h-4 text-primary" />
-                  <span className="text-sm font-semibold text-primary">Повернутися на сьогодні</span>
+                  <span className="text-sm font-semibold text-primary">Поточний місяць</span>
                 </>
               )}
             </button>
@@ -608,7 +642,7 @@ const Index = () => {
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <Calendar className="w-16 h-16 text-muted-foreground mb-4" />
             <p className="text-xl font-semibold text-foreground mb-2">Немає записів</p>
-            <p className="text-muted-foreground text-sm">на цьому тижні</p>
+            <p className="text-muted-foreground text-sm">в цьому місяці</p>
           </div>
         ) : (
           groupedByDay.map(({ date: dateKey, days: daysData }) => {
@@ -622,27 +656,34 @@ const Index = () => {
             return (
               <div key={dateKey} className="space-y-2" data-no-swipe>
                 {/* Day Header - Sticky (Telegram style) */}
-                <div className="sticky top-[140px] z-30 flex justify-center py-1.5">
+                <div className="sticky top-[140px] z-30 flex flex-col items-center gap-2 py-1.5">
                   <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full shadow-sm ${
                     isToday
-                      ? 'bg-primary/20 backdrop-blur-xl border border-primary/30'
+                      ? 'bg-gradient-to-r from-red-500/25 to-rose-500/25 backdrop-blur-xl border border-red-400/40 dark:border-red-500/40'
                       : 'bg-card/95 backdrop-blur-xl border border-border/50'
                   }`}>
                     <Calendar className={`w-3.5 h-3.5 ${
-                      isToday ? 'text-primary' : daysData.length === 0 ? 'text-muted-foreground' : 'text-foreground'
+                      isToday ? 'text-red-600 dark:text-red-400' : daysData.length === 0 ? 'text-muted-foreground' : 'text-foreground'
                     }`} />
                     <span className={`text-xs font-semibold ${
-                      isToday ? 'text-primary' : daysData.length === 0 ? 'text-muted-foreground' : 'text-foreground'
+                      isToday ? 'text-red-700 dark:text-red-300' : daysData.length === 0 ? 'text-muted-foreground' : 'text-foreground'
                     }`}>
                       {dayNumber}
                     </span>
                     <span className={`text-xs font-medium ${
-                      isToday ? 'text-primary' : daysData.length === 0 ? 'text-muted-foreground' : 'text-foreground'
+                      isToday ? 'text-red-700 dark:text-red-300' : daysData.length === 0 ? 'text-muted-foreground' : 'text-foreground'
                     }`}>
                       {dayName}
                       {isToday && ' (Сьогодні)'}
                     </span>
                   </div>
+
+                  {/* Info text - only for today when no records */}
+                  {isToday && daysData.length === 0 && (
+                    <span className="text-xs text-muted-foreground">
+                      Записів ще немає
+                    </span>
+                  )}
                 </div>
 
                 {/* Work Days for this date */}
@@ -652,114 +693,164 @@ const Index = () => {
                       <div key={`${day.reportId}-${day.id}`}>
                         <div className="flex gap-2">
                           <div
-                            onClick={() => navigate(`/report/${day.reportId}/day/${day.id}`)}
-                            className={`flex-1 bg-card rounded-lg p-3 border border-border hover:shadow-md transition-smooth cursor-pointer ${
-                              dayIndex === daysData.length - 1
-                                ? 'shadow-[0_4px_16px_0_rgba(31,38,135,0.15)]'
-                                : 'shadow-sm'
+                            onClick={() => {
+                              if (day.is_planned) {
+                                // For planned work, open CreateReport with pre-filled data
+                                navigate(`/create-report?clientId=${day.clientId}&date=${day.date}&workDayId=${day.id}&reportId=${day.reportId}`);
+                              } else {
+                                // For normal work, open WorkDayDetails
+                                navigate(`/report/${day.reportId}/day/${day.id}`);
+                              }
+                            }}
+                            className={`flex-1 rounded-lg p-2 sm:p-3 hover:shadow-md transition-smooth cursor-pointer ${
+                              day.is_planned
+                                ? 'bg-gradient-to-br from-amber-50/80 to-orange-50/80 dark:from-amber-950/30 dark:to-orange-950/30 border-2 border-dashed border-amber-400/70 dark:border-amber-500/70'
+                                : `bg-card border border-border ${dayIndex === daysData.length - 1 ? 'shadow-[0_4px_16px_0_rgba(31,38,135,0.15)]' : 'shadow-sm'}`
                             }`}
                           >
-                            <div className="flex items-center justify-between gap-3">
+                            <div className="flex items-center justify-between gap-2 sm:gap-3">
                               {/* Ліва частина: індикатор + ім'я */}
-                              <div className="flex items-center gap-2 min-w-0 flex-1">
-                                <DropdownMenu>
-                                  <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                                    <button className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 transition-all hover:scale-110 ${
-                                      day.paymentStatus === 'paid' ? 'bg-success/20 hover:bg-success/30' :
-                                      day.paymentStatus === 'partial' ? 'bg-warning/20 hover:bg-warning/30' : 'bg-destructive/20 hover:bg-destructive/30'
-                                    }`}>
-                                      <span className={`text-xs font-bold ${
-                                        day.paymentStatus === 'paid' ? 'text-success' :
-                                        day.paymentStatus === 'partial' ? 'text-warning' : 'text-destructive'
+                              <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
+                                {!day.is_planned && (
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                                      <button className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center flex-shrink-0 transition-all hover:scale-110 ${
+                                        day.paymentStatus === 'paid' ? 'bg-success/20 hover:bg-success/30' :
+                                        day.paymentStatus === 'partial' ? 'bg-warning/20 hover:bg-warning/30' : 'bg-destructive/20 hover:bg-destructive/30'
                                       }`}>
-                                        {day.paymentStatus === 'paid' ? '✓' :
-                                         day.paymentStatus === 'partial' ? '◐' : '○'}
-                                      </span>
-                                    </button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent className="bg-card backdrop-blur-xl border border-border shadow-lg rounded-xl z-[100] p-1.5 min-w-[140px]">
-                                    {/* Active status first */}
-                                    {day.paymentStatus === 'paid' && (
-                                      <DropdownMenuItem
-                                        onClick={(e) => handleStatusChange(day.id, "paid", e, day.paymentStatus)}
-                                        className="cursor-pointer rounded-md px-3 py-2 text-sm font-semibold transition-all bg-success/20 text-success"
-                                      >
-                                        <CheckCircle2 className="w-4 h-4 mr-2 inline" />
-                                        Оплачено
-                                      </DropdownMenuItem>
-                                    )}
-                                    {day.paymentStatus === 'partial' && (
-                                      <DropdownMenuItem
-                                        onClick={(e) => handleStatusChange(day.id, "partial", e, day.paymentStatus)}
-                                        className="cursor-pointer rounded-md px-3 py-2 text-sm font-semibold transition-all bg-warning/20 text-warning"
-                                      >
-                                        <AlertCircle className="w-4 h-4 mr-2 inline" />
-                                        Частково
-                                      </DropdownMenuItem>
-                                    )}
-                                    {day.paymentStatus === 'unpaid' && (
-                                      <DropdownMenuItem
-                                        onClick={(e) => handleStatusChange(day.id, "unpaid", e, day.paymentStatus)}
-                                        className="cursor-pointer rounded-md px-3 py-2 text-sm font-semibold transition-all bg-destructive/20 text-destructive"
-                                      >
-                                        <XCircle className="w-4 h-4 mr-2 inline" />
-                                        Не оплачено
-                                      </DropdownMenuItem>
-                                    )}
+                                        <span className={`text-[10px] sm:text-xs font-bold ${
+                                          day.paymentStatus === 'paid' ? 'text-success' :
+                                          day.paymentStatus === 'partial' ? 'text-warning' : 'text-destructive'
+                                        }`}>
+                                          {day.paymentStatus === 'paid' ? '✓' :
+                                           day.paymentStatus === 'partial' ? '◐' : '○'}
+                                        </span>
+                                      </button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent className="bg-card backdrop-blur-xl border border-border shadow-lg rounded-xl z-[100] p-1.5 min-w-[140px]">
+                                      {/* Active status first */}
+                                      {day.paymentStatus === 'paid' && (
+                                        <DropdownMenuItem
+                                          onClick={(e) => handleStatusChange(day.id, "paid", e, day.paymentStatus, day)}
+                                          className="cursor-pointer rounded-md px-3 py-2 text-sm font-semibold transition-all bg-success/20 text-success"
+                                        >
+                                          <CheckCircle2 className="w-4 h-4 mr-2 inline" />
+                                          Оплачено
+                                        </DropdownMenuItem>
+                                      )}
+                                      {day.paymentStatus === 'partial' && (
+                                        <DropdownMenuItem
+                                          onClick={(e) => handleStatusChange(day.id, "partial", e, day.paymentStatus, day)}
+                                          className="cursor-pointer rounded-md px-3 py-2 text-sm font-semibold transition-all bg-warning/20 text-warning"
+                                        >
+                                          <AlertCircle className="w-4 h-4 mr-2 inline" />
+                                          Частково
+                                        </DropdownMenuItem>
+                                      )}
+                                      {day.paymentStatus === 'unpaid' && (
+                                        <DropdownMenuItem
+                                          onClick={(e) => handleStatusChange(day.id, "unpaid", e, day.paymentStatus, day)}
+                                          className="cursor-pointer rounded-md px-3 py-2 text-sm font-semibold transition-all bg-destructive/20 text-destructive"
+                                        >
+                                          <XCircle className="w-4 h-4 mr-2 inline" />
+                                          Не оплачено
+                                        </DropdownMenuItem>
+                                      )}
 
-                                    {/* Other statuses */}
-                                    {day.paymentStatus !== 'paid' && (
-                                      <DropdownMenuItem
-                                        onClick={(e) => handleStatusChange(day.id, "paid", e, day.paymentStatus)}
-                                        className="cursor-pointer rounded-md px-3 py-2 text-sm font-semibold transition-all text-foreground hover:bg-success/10"
-                                      >
-                                        <CheckCircle2 className="w-4 h-4 mr-2 inline" />
-                                        Оплачено
-                                      </DropdownMenuItem>
-                                    )}
-                                    {day.paymentStatus !== 'partial' && (
-                                      <DropdownMenuItem
-                                        onClick={(e) => handleStatusChange(day.id, "partial", e, day.paymentStatus)}
-                                        className="cursor-pointer rounded-md px-3 py-2 text-sm font-semibold transition-all text-foreground hover:bg-warning/10"
-                                      >
-                                        <AlertCircle className="w-4 h-4 mr-2 inline" />
-                                        Частково
-                                      </DropdownMenuItem>
-                                    )}
-                                    {day.paymentStatus !== 'unpaid' && (
-                                      <DropdownMenuItem
-                                        onClick={(e) => handleStatusChange(day.id, "unpaid", e, day.paymentStatus)}
-                                        className="cursor-pointer rounded-md px-3 py-2 text-sm font-semibold transition-all text-foreground hover:bg-destructive/10"
-                                      >
-                                        <XCircle className="w-4 h-4 mr-2 inline" />
-                                        Не оплачено
-                                      </DropdownMenuItem>
-                                    )}
-                                  </DropdownMenuContent>
-                                </DropdownMenu>
-                                <h3 className={`text-sm font-semibold truncate ${
+                                      {/* Other statuses */}
+                                      {day.paymentStatus !== 'paid' && (
+                                        <DropdownMenuItem
+                                          onClick={(e) => handleStatusChange(day.id, "paid", e, day.paymentStatus, day)}
+                                          className="cursor-pointer rounded-md px-3 py-2 text-sm font-semibold transition-all text-foreground hover:bg-success/10"
+                                        >
+                                          <CheckCircle2 className="w-4 h-4 mr-2 inline" />
+                                          Оплачено
+                                        </DropdownMenuItem>
+                                      )}
+                                      {day.paymentStatus !== 'partial' && (
+                                        <DropdownMenuItem
+                                          onClick={(e) => handleStatusChange(day.id, "partial", e, day.paymentStatus, day)}
+                                          className="cursor-pointer rounded-md px-3 py-2 text-sm font-semibold transition-all text-foreground hover:bg-warning/10"
+                                        >
+                                          <AlertCircle className="w-4 h-4 mr-2 inline" />
+                                          Частково
+                                        </DropdownMenuItem>
+                                      )}
+                                      {day.paymentStatus !== 'unpaid' && (
+                                        <DropdownMenuItem
+                                          onClick={(e) => handleStatusChange(day.id, "unpaid", e, day.paymentStatus, day)}
+                                          className="cursor-pointer rounded-md px-3 py-2 text-sm font-semibold transition-all text-foreground hover:bg-destructive/10"
+                                        >
+                                          <XCircle className="w-4 h-4 mr-2 inline" />
+                                          Не оплачено
+                                        </DropdownMenuItem>
+                                      )}
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
+                                )}
+                                <h3 className={`text-xs sm:text-sm font-semibold truncate ${
                                   day.paymentStatus === 'paid' ? 'text-success' : 'text-foreground'
                                 }`}>
                                   {day.clientName}
                                 </h3>
+
+                                {/* Worker badge - inline if single worker */}
+                                {!day.is_planned && day.assignments && day.assignments.length === 1 && (
+                                  <div className="flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-800 ml-2">
+                                    <div
+                                      className="w-2 h-2 rounded-full"
+                                      style={{ backgroundColor: day.assignments[0].worker?.color || '#3b82f6' }}
+                                    />
+                                    <span className="text-[10px]">{day.assignments[0].worker?.name}</span>
+                                  </div>
+                                )}
                               </div>
 
-                              {/* Права частина: години + сума */}
-                              <div className="flex items-center gap-2 flex-shrink-0">
-                                <div className="bg-purple-50 rounded-lg px-2 py-1 flex items-center gap-1 min-w-[68px]">
-                                  <Clock className="w-4 h-4 text-purple-600 flex-shrink-0" />
-                                  <span className="text-sm font-bold text-foreground tabular-nums flex-1 text-center">{day.hours}</span>
+                              {/* Права частина: години + сума АБО бейдж "Заплановано" */}
+                              {day.is_planned ? (
+                                <div className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300">
+                                  <Calendar className="w-3.5 h-3.5" />
+                                  <span className="text-[10px] font-semibold">Заплановано</span>
                                 </div>
+                              ) : (
+                                <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+                                  <div className="bg-purple-50 rounded-lg px-1.5 sm:px-2 py-0.5 sm:py-1 flex items-center gap-0.5 sm:gap-1 min-w-[60px] sm:min-w-[70px]">
+                                    <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-purple-600 flex-shrink-0" />
+                                    <span className="text-xs sm:text-sm font-bold text-foreground tabular-nums">
+                                      {decimalToHours(day.workerHours !== undefined ? day.workerHours : day.hours)}
+                                    </span>
+                                  </div>
 
-                                <div className="bg-blue-50 rounded-lg px-2 py-1 flex items-center gap-1 min-w-[78px]">
-                                  <Euro className="w-4 h-4 text-blue-600 flex-shrink-0" />
-                                  <span className="text-sm font-bold text-foreground tabular-nums flex-1 text-center">{Math.round(day.amount)}</span>
+                                  <div className="bg-blue-50 rounded-lg px-1.5 sm:px-2 py-0.5 sm:py-1 flex items-center gap-0.5 sm:gap-1 min-w-[60px] sm:min-w-[70px]">
+                                    <Euro className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-600 flex-shrink-0" />
+                                    <span className="text-xs sm:text-sm font-bold text-foreground tabular-nums">
+                                      {Math.round(day.workerAmount !== undefined ? day.workerAmount : day.amount)}
+                                    </span>
+                                  </div>
                                 </div>
-                              </div>
+                              )}
                             </div>
 
                             {day.note && (
                               <p className="text-xs text-muted-foreground mt-2 truncate">📝 {day.note}</p>
+                            )}
+                            
+                            {/* Worker badges - below if multiple workers */}
+                            {day.assignments && day.assignments.length > 1 && (
+                              <div className="flex flex-wrap gap-1 mt-2">
+                                {day.assignments.map(assignment => (
+                                  <div 
+                                    key={assignment.id}
+                                    className="flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-800"
+                                  >
+                                    <div 
+                                      className="w-2 h-2 rounded-full" 
+                                      style={{ backgroundColor: assignment.worker?.color || '#3b82f6' }}
+                                    />
+                                    <span className="text-[10px]">{assignment.worker?.name}</span>
+                                  </div>
+                                ))}
+                              </div>
                             )}
                           </div>
                         </div>
@@ -773,7 +864,7 @@ const Index = () => {
                                   type="number"
                                   value={partialPaymentAmount}
                                   onChange={(e) => setPartialPaymentAmount(e.target.value)}
-                                  placeholder={`Залишок: ${Math.round(day.amount - (day.day_paid_amount || 0))}€`}
+                                  placeholder={`Залишок: ${Math.round((day.workerAmount !== undefined ? day.workerAmount : day.amount) - (day.day_paid_amount || 0))}€`}
                                   className="h-9 text-sm rounded-lg"
                                   autoFocus
                                 />
@@ -783,7 +874,7 @@ const Index = () => {
                                 disabled={
                                   !partialPaymentAmount ||
                                   parseFloat(partialPaymentAmount) <= 0 ||
-                                  (parseFloat(partialPaymentAmount) + (day.day_paid_amount || 0)) > day.amount
+                                  (parseFloat(partialPaymentAmount) + (day.day_paid_amount || 0)) > (day.workerAmount !== undefined ? day.workerAmount : day.amount)
                                 }
                                 className="h-9 px-3 rounded-lg text-sm font-medium bg-orange-500 hover:bg-orange-600 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                               >
@@ -921,59 +1012,6 @@ const Index = () => {
                     </div>
                   </DropdownMenuContent>
                 </DropdownMenu>
-              </div>
-            </div>
-
-            {/* Date Range Display */}
-            <div className="space-y-2">
-              <Label className="text-base font-semibold text-foreground">Період</Label>
-              <div className="grid grid-cols-2 gap-2">
-                <div className="space-y-1">
-                  <Label className="text-xs text-muted-foreground">З</Label>
-                  <Input
-                    type="date"
-                    value={tempStartDate}
-                    onChange={(e) => {
-                      setTempStartDate(e.target.value);
-                      setSelectedYear(null);
-                      setSelectedMonth(null);
-                      setUserSelectedYear(false);
-                      setUserSelectedMonth(false);
-                      setUserManuallyEditedStartDate(true);
-                      setUserManuallyEditedEndDate(false);
-                    }}
-                    className={`h-9 rounded-lg transition-all text-xs ${
-                      userManuallyEditedStartDate
-                        ? 'border-2 border-blue-400 dark:border-blue-500 ring-1 ring-blue-400/30 dark:ring-blue-500/30'
-                        : (userSelectedYear || userSelectedMonth)
-                        ? 'border border-emerald-400 dark:border-emerald-500 ring-1 ring-emerald-400/20 dark:ring-emerald-500/20 bg-emerald-50/30 dark:bg-emerald-950/20'
-                        : ''
-                    }`}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs text-muted-foreground">До</Label>
-                  <Input
-                    type="date"
-                    value={tempEndDate}
-                    onChange={(e) => {
-                      setTempEndDate(e.target.value);
-                      setSelectedYear(null);
-                      setSelectedMonth(null);
-                      setUserSelectedYear(false);
-                      setUserSelectedMonth(false);
-                      setUserManuallyEditedStartDate(false);
-                      setUserManuallyEditedEndDate(true);
-                    }}
-                    className={`h-9 rounded-lg transition-all text-xs ${
-                      userManuallyEditedEndDate
-                        ? 'border-2 border-blue-400 dark:border-blue-500 ring-1 ring-blue-400/30 dark:ring-blue-500/30'
-                        : (userSelectedYear || userSelectedMonth)
-                        ? 'border border-emerald-400 dark:border-emerald-500 ring-1 ring-emerald-400/20 dark:ring-emerald-500/20 bg-emerald-50/30 dark:bg-emerald-950/20'
-                        : ''
-                    }`}
-                  />
-                </div>
               </div>
             </div>
 

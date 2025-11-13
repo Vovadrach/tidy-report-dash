@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "@/lib/api";
 import { Client } from "@/types/report";
-import { User, UserPlus, LogOut, ArrowLeft, ChevronRight, Search } from "lucide-react";
+import { User, UserPlus, LogOut, ArrowLeft, ChevronRight, Search, House } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { Input } from "@/components/ui/input";
@@ -163,7 +163,37 @@ const SelectClient = () => {
         </button>
       </main>
 
-      <BottomNavigation />
+      {/* Home Button - floating at bottom */}
+      <div className="fixed bottom-0 left-0 right-0 z-50 pointer-events-none">
+        <div className="absolute inset-0 pointer-events-none" style={{ height: '200px' }}>
+          <div
+            className="absolute inset-0 backdrop-blur-xl"
+            style={{
+              maskImage: 'linear-gradient(to top, black 0%, black 30%, transparent 100%)',
+              WebkitMaskImage: 'linear-gradient(to top, black 0%, black 30%, transparent 100%)'
+            }}
+          ></div>
+          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/90 via-30% to-transparent"></div>
+        </div>
+
+        <div className="px-6 pb-6 relative pointer-events-auto">
+          <div className="flex justify-center">
+            <button
+              onClick={() => navigate('/')}
+              className="flex flex-col items-center justify-center gap-[2px] h-[56px] rounded-full transition-all duration-150 active:scale-95 px-8 bg-white/5 dark:bg-gray-900/5 backdrop-blur-xl border border-white/10 shadow-[0_4px_16px_0_rgba(31,38,135,0.15),0_8px_24px_0_rgba(0,0,0,0.1)]"
+              style={{ backgroundColor: 'rgba(0, 0, 0, 0.045)' }}
+            >
+              <House className="w-[27px] h-[27px]" style={{ color: '#007AFF' }} strokeWidth={2.5} fill="currentColor" />
+              <span
+                className="text-[10.5px] font-medium tracking-[-0.01em]"
+                style={{ color: '#007AFF' }}
+              >
+                Головна
+              </span>
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

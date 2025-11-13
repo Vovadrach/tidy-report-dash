@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import { Report, Client, WorkDay } from '@/types/report';
+import { Report, Client, WorkDay, Worker, WorkDayAssignment } from '@/types/report';
 
 export const api = {
   // Clients
@@ -84,9 +84,29 @@ export const api = {
 
         if (workDaysError) throw workDaysError;
 
+        // Load assignments for each work day
+        const workDaysWithAssignments = await Promise.all(
+          (workDaysData || []).map(async (workDay) => {
+            const { data: assignmentsData, error: assignmentsError } = await supabase
+              .from('work_day_assignments')
+              .select(`
+                *,
+                worker:workers(*)
+              `)
+              .eq('work_day_id', workDay.id);
+
+            if (assignmentsError) throw assignmentsError;
+
+            return {
+              ...workDay,
+              assignments: assignmentsData || [],
+            };
+          })
+        );
+
         return {
           ...report,
-          workDays: workDaysData || [],
+          workDays: workDaysWithAssignments,
         };
       })
     );
@@ -130,6 +150,7 @@ export const api = {
         payment_status: day.paymentStatus || day.payment_status || 'unpaid',
         note: day.note || null,
         day_paid_amount: day.day_paid_amount || 0,
+        is_planned: day.is_planned || false,
       }));
 
       const { data: newWorkDays, error: workDaysError } = await supabase
@@ -198,6 +219,7 @@ export const api = {
           if (workDay.payment_status) updateWorkDayData.payment_status = workDay.payment_status;
           if (workDay.note !== undefined) updateWorkDayData.note = workDay.note;
           if (workDay.day_paid_amount !== undefined) updateWorkDayData.day_paid_amount = workDay.day_paid_amount;
+          if (workDay.is_planned !== undefined) updateWorkDayData.is_planned = workDay.is_planned;
 
           await supabase
             .from('work_days')
@@ -246,6 +268,7 @@ export const api = {
     if (updates.payment_status) updateData.payment_status = updates.payment_status;
     if (updates.note !== undefined) updateData.note = updates.note;
     if (updates.day_paid_amount !== undefined) updateData.day_paid_amount = updates.day_paid_amount;
+    if (updates.is_planned !== undefined) updateData.is_planned = updates.is_planned;
 
     const { data, error } = await supabase
       .from('work_days')
@@ -283,6 +306,162 @@ export const api = {
       .from('work_days')
       .update({ day_paid_amount: amount })
       .eq('id', dayId);
+
+    if (error) throw error;
+  },
+
+  // Workers
+  getWorkers: async (): Promise<Worker[]> => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('Not authenticated');
+
+    const { data, error } = await supabase
+      .from('workers')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('is_primary', { ascending: false })
+      .order('created_at', { ascending: true });
+
+    if (error) throw error;
+    return data || [];
+  },
+
+  addWorker: async (worker: Omit<Worker, 'id' | 'user_id' | 'created_at'>): Promise<Worker> => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('Not authenticated');
+
+    const { data, error } = await supabase
+      .from('workers')
+      .insert([{
+        name: worker.name,
+        color: worker.color,
+        is_primary: worker.is_primary || worker.isPrimary || false,
+        user_id: user.id
+      }])
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
+  updateWorker: async (workerId: string, updates: Partial<Worker>): Promise<Worker> => {
+    const updateData: Record<string, unknown> = {};
+    if (updates.name) updateData.name = updates.name;
+    if (updates.color) updateData.color = updates.color;
+    if (updates.is_primary !== undefined) updateData.is_primary = updates.is_primary;
+    if (updates.isPrimary !== undefined) updateData.is_primary = updates.isPrimary;
+
+    const { data, error } = await supabase
+      .from('workers')
+      .update(updateData)
+      .eq('id', workerId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
+  deleteWorker: async (workerId: string): Promise<void> => {
+    const { error } = await supabase
+      .from('workers')
+      .delete()
+      .eq('id', workerId);
+
+    if (error) throw error;
+  },
+
+  ensurePrimaryWorker: async (name: string = 'Лідія'): Promise<Worker> => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('Not authenticated');
+
+    // Check if primary worker exists
+    const { data: existing } = await supabase
+      .from('workers')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('is_primary', true)
+      .single();
+
+    if (existing) return existing;
+
+    // Create primary worker
+    const { data, error } = await supabase
+      .from('workers')
+      .insert([{
+        name,
+        color: '#3b82f6',
+        is_primary: true,
+        user_id: user.id
+      }])
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
+  // Work Day Assignments
+  getWorkDayAssignments: async (workDayId: string): Promise<WorkDayAssignment[]> => {
+    const { data, error } = await supabase
+      .from('work_day_assignments')
+      .select(`
+        *,
+        worker:workers(*)
+      `)
+      .eq('work_day_id', workDayId);
+
+    if (error) throw error;
+    return data || [];
+  },
+
+  addWorkDayAssignment: async (assignment: Omit<WorkDayAssignment, 'id' | 'created_at'>): Promise<WorkDayAssignment> => {
+    const { data, error } = await supabase
+      .from('work_day_assignments')
+      .insert([{
+        work_day_id: assignment.work_day_id || assignment.workDayId,
+        worker_id: assignment.worker_id || assignment.workerId,
+        amount: assignment.amount,
+        hours: assignment.hours
+      }])
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
+  updateWorkDayAssignment: async (assignmentId: string, updates: Partial<WorkDayAssignment>): Promise<WorkDayAssignment> => {
+    const updateData: Record<string, unknown> = {};
+    if (updates.amount !== undefined) updateData.amount = updates.amount;
+    if (updates.hours !== undefined) updateData.hours = updates.hours;
+
+    const { data, error } = await supabase
+      .from('work_day_assignments')
+      .update(updateData)
+      .eq('id', assignmentId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
+  deleteWorkDayAssignment: async (assignmentId: string): Promise<void> => {
+    const { error } = await supabase
+      .from('work_day_assignments')
+      .delete()
+      .eq('id', assignmentId);
+
+    if (error) throw error;
+  },
+
+  deleteWorkDayAssignmentsByWorkDay: async (workDayId: string): Promise<void> => {
+    const { error } = await supabase
+      .from('work_day_assignments')
+      .delete()
+      .eq('work_day_id', workDayId);
 
     if (error) throw error;
   },
