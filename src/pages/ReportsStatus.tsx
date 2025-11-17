@@ -185,7 +185,7 @@ const ReportsStatus = () => {
         paymentStatus,
         workDays: [] // Очищуємо робочі дні, оскільки це зведений звіт
       };
-    }).filter(report => report !== null) as any[];
+    }).filter(report => report !== null && report.remainingAmount > 0) as any[];
     
     // Сортуємо за сумою боргу (від більшого до меншого)
     return consolidatedReports.sort((a, b) => {
