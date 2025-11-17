@@ -602,20 +602,20 @@ const Index = () => {
           </div>
 
           {/* Month Statistics */}
-          <div className="grid grid-cols-2 gap-2">
-            <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-2 text-center border border-purple-200/60">
-              <p className="text-xs text-purple-700 font-medium">Годин</p>
-              <p className="text-lg font-bold text-purple-900">{decimalToHours(monthStats.totalHours)}</p>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-3.5 text-center border border-purple-200/60">
+              <p className="text-sm text-purple-700 font-medium">Годин</p>
+              <p className="text-xl font-bold text-purple-900">{decimalToHours(monthStats.totalHours)}</p>
             </div>
-            <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-2 text-center border border-blue-200/60">
-              <p className="text-xs text-blue-700 font-medium">Заробіток</p>
-              <p className="text-lg font-bold text-blue-900">{Math.round(monthStats.totalEarned)}€</p>
+            <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-3.5 text-center border border-blue-200/60">
+              <p className="text-sm text-blue-700 font-medium">Заробіток</p>
+              <p className="text-xl font-bold text-blue-900">{Math.round(monthStats.totalEarned)}€</p>
             </div>
           </div>
         </div>
       </div>
 
-      <main className="container mx-auto px-4 pt-36 pb-6 space-y-4">
+      <main className="container mx-auto px-4 pt-36 pb-6 space-y-5">
         {/* Return to Current Month Button */}
         {!isCurrentMonth && !isCustomPeriodMode && (
           <div className="flex justify-center mb-4">
@@ -688,7 +688,7 @@ const Index = () => {
 
                 {/* Work Days for this date */}
                 {daysData.length > 0 && (
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     {daysData.map((day, dayIndex) => (
                       <div key={`${day.reportId}-${day.id}`}>
                         <div className="flex gap-2">
@@ -702,23 +702,23 @@ const Index = () => {
                                 navigate(`/report/${day.reportId}/day/${day.id}`);
                               }
                             }}
-                            className={`flex-1 rounded-lg p-2 sm:p-3 hover:shadow-md transition-smooth cursor-pointer ${
+                            className={`flex-1 rounded-xl p-3.5 sm:p-4 hover:shadow-lg transition-smooth cursor-pointer ${
                               day.is_planned
                                 ? 'bg-gradient-to-br from-amber-50/80 to-orange-50/80 dark:from-amber-950/30 dark:to-orange-950/30 border-2 border-dashed border-amber-400/70 dark:border-amber-500/70'
                                 : `bg-card border border-border ${dayIndex === daysData.length - 1 ? 'shadow-[0_4px_16px_0_rgba(31,38,135,0.15)]' : 'shadow-sm'}`
                             }`}
                           >
-                            <div className="flex items-center justify-between gap-2 sm:gap-3">
+                            <div className="flex items-center justify-between gap-3 sm:gap-3">
                               {/* Ліва частина: індикатор + ім'я */}
-                              <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
+                              <div className="flex items-center gap-2 sm:gap-2.5 min-w-0 flex-1">
                                 {!day.is_planned && (
                                   <DropdownMenu>
                                     <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                                      <button className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center flex-shrink-0 transition-all hover:scale-110 ${
+                                      <button className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center flex-shrink-0 transition-all hover:scale-110 ${
                                         day.paymentStatus === 'paid' ? 'bg-success/20 hover:bg-success/30' :
                                         day.paymentStatus === 'partial' ? 'bg-warning/20 hover:bg-warning/30' : 'bg-destructive/20 hover:bg-destructive/30'
                                       }`}>
-                                        <span className={`text-[10px] sm:text-xs font-bold ${
+                                        <span className={`text-sm sm:text-base font-bold ${
                                           day.paymentStatus === 'paid' ? 'text-success' :
                                           day.paymentStatus === 'partial' ? 'text-warning' : 'text-destructive'
                                         }`}>
@@ -788,7 +788,7 @@ const Index = () => {
                                     </DropdownMenuContent>
                                   </DropdownMenu>
                                 )}
-                                <h3 className={`text-xs sm:text-sm font-semibold truncate ${
+                                <h3 className={`text-sm sm:text-base font-semibold truncate ${
                                   day.paymentStatus === 'paid' ? 'text-success' : 'text-foreground'
                                 }`}>
                                   {day.clientName}
@@ -796,34 +796,34 @@ const Index = () => {
 
                                 {/* Worker badge - inline if single worker */}
                                 {!day.is_planned && day.assignments && day.assignments.length === 1 && (
-                                  <div className="flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-800 ml-2">
+                                  <div className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-800 ml-2">
                                     <div
-                                      className="w-2 h-2 rounded-full"
+                                      className="w-2.5 h-2.5 rounded-full"
                                       style={{ backgroundColor: day.assignments[0].worker?.color || '#3b82f6' }}
                                     />
-                                    <span className="text-[10px]">{day.assignments[0].worker?.name}</span>
+                                    <span className="text-xs">{day.assignments[0].worker?.name}</span>
                                   </div>
                                 )}
                               </div>
 
                               {/* Права частина: години + сума АБО бейдж "Заплановано" */}
                               {day.is_planned ? (
-                                <div className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300">
-                                  <Calendar className="w-3.5 h-3.5" />
-                                  <span className="text-[10px] font-semibold">Заплановано</span>
+                                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300">
+                                  <Calendar className="w-4 h-4" />
+                                  <span className="text-xs font-semibold">Заплановано</span>
                                 </div>
                               ) : (
-                                <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
-                                  <div className="bg-purple-50 rounded-lg px-1.5 sm:px-2 py-0.5 sm:py-1 flex items-center gap-0.5 sm:gap-1 min-w-[60px] sm:min-w-[70px]">
-                                    <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-purple-600 flex-shrink-0" />
-                                    <span className="text-xs sm:text-sm font-bold text-foreground tabular-nums">
+                                <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+                                  <div className="bg-purple-50 rounded-lg px-2.5 sm:px-3 py-1.5 sm:py-1.5 flex items-center gap-1 sm:gap-1.5 min-w-[70px] sm:min-w-[80px]">
+                                    <Clock className="w-4 h-4 sm:w-4.5 sm:h-4.5 text-purple-600 flex-shrink-0" />
+                                    <span className="text-sm sm:text-base font-bold text-foreground tabular-nums">
                                       {decimalToHours(day.workerHours !== undefined ? day.workerHours : day.hours)}
                                     </span>
                                   </div>
 
-                                  <div className="bg-blue-50 rounded-lg px-1.5 sm:px-2 py-0.5 sm:py-1 flex items-center gap-0.5 sm:gap-1 min-w-[60px] sm:min-w-[70px]">
-                                    <Euro className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-600 flex-shrink-0" />
-                                    <span className="text-xs sm:text-sm font-bold text-foreground tabular-nums">
+                                  <div className="bg-blue-50 rounded-lg px-2.5 sm:px-3 py-1.5 sm:py-1.5 flex items-center gap-1 sm:gap-1.5 min-w-[70px] sm:min-w-[80px]">
+                                    <Euro className="w-4 h-4 sm:w-4.5 sm:h-4.5 text-blue-600 flex-shrink-0" />
+                                    <span className="text-sm sm:text-base font-bold text-foreground tabular-nums">
                                       {Math.round(day.workerAmount !== undefined ? day.workerAmount : day.amount)}
                                     </span>
                                   </div>
@@ -832,22 +832,22 @@ const Index = () => {
                             </div>
 
                             {day.note && (
-                              <p className="text-xs text-muted-foreground mt-2 truncate">📝 {day.note}</p>
+                              <p className="text-sm text-muted-foreground mt-2.5 truncate">📝 {day.note}</p>
                             )}
                             
                             {/* Worker badges - below if multiple workers */}
                             {day.assignments && day.assignments.length > 1 && (
-                              <div className="flex flex-wrap gap-1 mt-2">
+                              <div className="flex flex-wrap gap-1.5 mt-2.5">
                                 {day.assignments.map(assignment => (
                                   <div 
                                     key={assignment.id}
-                                    className="flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-800"
+                                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-800"
                                   >
                                     <div 
-                                      className="w-2 h-2 rounded-full" 
+                                      className="w-2.5 h-2.5 rounded-full" 
                                       style={{ backgroundColor: assignment.worker?.color || '#3b82f6' }}
                                     />
-                                    <span className="text-[10px]">{assignment.worker?.name}</span>
+                                    <span className="text-xs">{assignment.worker?.name}</span>
                                   </div>
                                 ))}
                               </div>
