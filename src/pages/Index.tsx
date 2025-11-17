@@ -571,7 +571,7 @@ const Index = () => {
                 onClick={handleOpenDatePicker}
                 className="px-5 py-2 rounded-2xl hover:bg-primary/10 transition-all active:scale-95 cursor-pointer"
               >
-                <span className="text-base font-extrabold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
+                <span className="text-lg font-extrabold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
                   {isCustomPeriodMode && customStartDate && customEndDate
                     ? `${customStartDate.toLocaleDateString("uk-UA", { day: 'numeric', month: 'short' })} - ${customEndDate.toLocaleDateString("uk-UA", { day: 'numeric', month: 'short', year: 'numeric' })}`
                     : formatMonthYear(currentMonth)}
@@ -603,13 +603,13 @@ const Index = () => {
 
           {/* Month Statistics */}
           <div className="grid grid-cols-2 gap-3">
-            <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-3.5 text-center border border-purple-200/60">
-              <p className="text-sm text-purple-700 font-medium">Годин</p>
-              <p className="text-xl font-bold text-purple-900">{decimalToHours(monthStats.totalHours)}</p>
+            <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-4 text-center border border-purple-200/60">
+              <p className="text-base text-purple-700 font-semibold">Годин</p>
+              <p className="text-2xl font-bold text-purple-900">{decimalToHours(monthStats.totalHours)}</p>
             </div>
-            <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-3.5 text-center border border-blue-200/60">
-              <p className="text-sm text-blue-700 font-medium">Заробіток</p>
-              <p className="text-xl font-bold text-blue-900">{Math.round(monthStats.totalEarned)}€</p>
+            <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4 text-center border border-blue-200/60">
+              <p className="text-base text-blue-700 font-semibold">Заробіток</p>
+              <p className="text-2xl font-bold text-blue-900">{Math.round(monthStats.totalEarned)}€</p>
             </div>
           </div>
         </div>
@@ -657,20 +657,20 @@ const Index = () => {
               <div key={dateKey} className="space-y-2" data-no-swipe>
                 {/* Day Header - Sticky (Telegram style) */}
                 <div className="sticky top-[140px] z-30 flex flex-col items-center gap-2 py-1.5">
-                  <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full shadow-sm ${
+                  <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full shadow-sm ${
                     isToday
                       ? 'bg-gradient-to-r from-red-500/25 to-rose-500/25 backdrop-blur-xl border border-red-400/40 dark:border-red-500/40'
                       : 'bg-card/95 backdrop-blur-xl border border-border/50'
                   }`}>
-                    <Calendar className={`w-3.5 h-3.5 ${
+                    <Calendar className={`w-4 h-4 ${
                       isToday ? 'text-red-600 dark:text-red-400' : daysData.length === 0 ? 'text-muted-foreground' : 'text-foreground'
                     }`} />
-                    <span className={`text-xs font-semibold ${
+                    <span className={`text-sm font-bold ${
                       isToday ? 'text-red-700 dark:text-red-300' : daysData.length === 0 ? 'text-muted-foreground' : 'text-foreground'
                     }`}>
                       {dayNumber}
                     </span>
-                    <span className={`text-xs font-medium ${
+                    <span className={`text-sm font-semibold ${
                       isToday ? 'text-red-700 dark:text-red-300' : daysData.length === 0 ? 'text-muted-foreground' : 'text-foreground'
                     }`}>
                       {dayName}
@@ -788,7 +788,7 @@ const Index = () => {
                                     </DropdownMenuContent>
                                   </DropdownMenu>
                                 )}
-                                <h3 className={`text-sm sm:text-base font-semibold truncate ${
+                                <h3 className={`text-base sm:text-lg font-bold truncate ${
                                   day.paymentStatus === 'paid' ? 'text-success' : 'text-foreground'
                                 }`}>
                                   {day.clientName}
@@ -796,34 +796,34 @@ const Index = () => {
 
                                 {/* Worker badge - inline if single worker */}
                                 {!day.is_planned && day.assignments && day.assignments.length === 1 && (
-                                  <div className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-800 ml-2">
+                                  <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium bg-gray-100 dark:bg-gray-800 ml-2">
                                     <div
-                                      className="w-2.5 h-2.5 rounded-full"
+                                      className="w-3 h-3 rounded-full"
                                       style={{ backgroundColor: day.assignments[0].worker?.color || '#3b82f6' }}
                                     />
-                                    <span className="text-xs">{day.assignments[0].worker?.name}</span>
+                                    <span className="text-sm">{day.assignments[0].worker?.name}</span>
                                   </div>
                                 )}
                               </div>
 
                               {/* Права частина: години + сума АБО бейдж "Заплановано" */}
                               {day.is_planned ? (
-                                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300">
-                                  <Calendar className="w-4 h-4" />
-                                  <span className="text-xs font-semibold">Заплановано</span>
+                                <div className="flex items-center gap-2 px-4 py-2 rounded-full text-base font-semibold bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300">
+                                  <Calendar className="w-5 h-5" />
+                                  <span className="text-sm font-bold">Заплановано</span>
                                 </div>
                               ) : (
-                                <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
-                                  <div className="bg-purple-50 rounded-lg px-2.5 sm:px-3 py-1.5 sm:py-1.5 flex items-center gap-1 sm:gap-1.5 min-w-[70px] sm:min-w-[80px]">
-                                    <Clock className="w-4 h-4 sm:w-4.5 sm:h-4.5 text-purple-600 flex-shrink-0" />
-                                    <span className="text-sm sm:text-base font-bold text-foreground tabular-nums">
+                                <div className="flex items-center gap-2 flex-shrink-0">
+                                  <div className="bg-purple-50 rounded-xl px-3.5 py-2 flex items-center gap-2 min-w-[85px]">
+                                    <Clock className="w-5 h-5 text-purple-600 flex-shrink-0" />
+                                    <span className="text-base font-bold text-foreground tabular-nums">
                                       {decimalToHours(day.workerHours !== undefined ? day.workerHours : day.hours)}
                                     </span>
                                   </div>
 
-                                  <div className="bg-blue-50 rounded-lg px-2.5 sm:px-3 py-1.5 sm:py-1.5 flex items-center gap-1 sm:gap-1.5 min-w-[70px] sm:min-w-[80px]">
-                                    <Euro className="w-4 h-4 sm:w-4.5 sm:h-4.5 text-blue-600 flex-shrink-0" />
-                                    <span className="text-sm sm:text-base font-bold text-foreground tabular-nums">
+                                  <div className="bg-blue-50 rounded-xl px-3.5 py-2 flex items-center gap-2 min-w-[85px]">
+                                    <Euro className="w-5 h-5 text-blue-600 flex-shrink-0" />
+                                    <span className="text-base font-bold text-foreground tabular-nums">
                                       {Math.round(day.workerAmount !== undefined ? day.workerAmount : day.amount)}
                                     </span>
                                   </div>
@@ -832,22 +832,22 @@ const Index = () => {
                             </div>
 
                             {day.note && (
-                              <p className="text-sm text-muted-foreground mt-2.5 truncate">📝 {day.note}</p>
+                              <p className="text-base text-muted-foreground mt-3 truncate">📝 {day.note}</p>
                             )}
-                            
+
                             {/* Worker badges - below if multiple workers */}
                             {day.assignments && day.assignments.length > 1 && (
-                              <div className="flex flex-wrap gap-1.5 mt-2.5">
+                              <div className="flex flex-wrap gap-2 mt-3">
                                 {day.assignments.map(assignment => (
-                                  <div 
+                                  <div
                                     key={assignment.id}
-                                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-800"
+                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium bg-gray-100 dark:bg-gray-800"
                                   >
-                                    <div 
-                                      className="w-2.5 h-2.5 rounded-full" 
+                                    <div
+                                      className="w-3 h-3 rounded-full"
                                       style={{ backgroundColor: assignment.worker?.color || '#3b82f6' }}
                                     />
-                                    <span className="text-xs">{assignment.worker?.name}</span>
+                                    <span className="text-sm">{assignment.worker?.name}</span>
                                   </div>
                                 ))}
                               </div>
