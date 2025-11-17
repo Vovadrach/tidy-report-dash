@@ -11,15 +11,17 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
-import { ChevronDown, Plus, Check, X, Trash2 } from "lucide-react";
+import { ChevronDown, Plus, Check, X, Trash2, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
+import { api } from "@/lib/api";
 
 export const WorkerSelector = () => {
-  const { workers, selectedWorkerId, setSelectedWorkerId, loading, addWorker, deleteWorker } = useWorker();
+  const { workers, selectedWorkerId, setSelectedWorkerId, loading, addWorker, deleteWorker, loadWorkers } = useWorker();
   const [isAddingWorker, setIsAddingWorker] = useState(false);
   const [newWorkerName, setNewWorkerName] = useState('');
   const [workerToDelete, setWorkerToDelete] = useState<string | null>(null);
   const [isOpen, setIsOpen] = useState(false);
+  const [isRemoving, setIsRemoving] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
 
@@ -94,7 +96,7 @@ export const WorkerSelector = () => {
       await deleteWorker(workerToDelete);
       setWorkerToDelete(null);
       toast.success('Працівника видалено');
-      
+
       // If deleted worker was selected, switch to "all"
       if (selectedWorkerId === workerToDelete) {
         setSelectedWorkerId('all');
@@ -102,6 +104,27 @@ export const WorkerSelector = () => {
     } catch (error) {
       toast.error('Помилка видалення працівника');
       console.error(error);
+    }
+  };
+
+  const handleRemoveDuplicates = async () => {
+    setIsRemoving(true);
+    try {
+      const result = await api.removeDuplicateWorkers('Лідія');
+
+      if (result.success) {
+        toast.success(result.message);
+        // Reload workers to reflect changes
+        await loadWorkers();
+        setIsOpen(false);
+      } else {
+        toast.error(result.message);
+      }
+    } catch (error) {
+      toast.error('Помилка видалення дублікатів');
+      console.error(error);
+    } finally {
+      setIsRemoving(false);
     }
   };
 
@@ -149,6 +172,25 @@ export const WorkerSelector = () => {
           }}
         >
           <div className="p-4 space-y-2 max-h-[50vh] overflow-y-auto">
+              {/* Remove Duplicates Button */}
+              {workers.filter(w => w.name.toLowerCase().includes('лідія')).length > 1 && (
+                <>
+                  <button
+                    onClick={handleRemoveDuplicates}
+                    disabled={isRemoving}
+                    className="w-full p-3 rounded-xl bg-gradient-to-br from-orange-50/60 to-red-50/40 hover:from-orange-100/70 hover:to-red-100/50 border border-orange-200/30 transition-all duration-200 active:scale-[0.98] disabled:opacity-50"
+                  >
+                    <div className="flex items-center justify-center gap-2">
+                      <AlertTriangle className="w-4 h-4 text-orange-600" />
+                      <span className="text-xs font-bold text-orange-700">
+                        {isRemoving ? 'Видалення...' : 'Видалити дублікати Лідія'}
+                      </span>
+                    </div>
+                  </button>
+                  <div className="h-px bg-gradient-to-r from-transparent via-gray-300/50 to-transparent my-1" />
+                </>
+              )}
+
               {/* Add Worker Section */}
               {isAddingWorker ? (
                 <div className="p-3 rounded-xl bg-gradient-to-br from-green-50/80 to-emerald-50/60 border border-green-200/40">

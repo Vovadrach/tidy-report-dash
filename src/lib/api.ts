@@ -402,6 +402,99 @@ export const api = {
     return data;
   },
 
+  removeDuplicateWorkers: async (workerName: string = 'Лідія'): Promise<{ success: boolean; message: string; keepWorker?: Worker }> => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('Not authenticated');
+
+    try {
+      // Отримуємо всіх працівників з таким іменем
+      const { data: workers, error: workersError } = await supabase
+        .from('workers')
+        .select('*')
+        .eq('user_id', user.id)
+        .ilike('name', workerName)
+        .order('created_at', { ascending: true });
+
+      if (workersError) throw workersError;
+
+      if (!workers || workers.length === 0) {
+        return { success: false, message: `Працівників з іменем "${workerName}" не знайдено` };
+      }
+
+      if (workers.length === 1) {
+        return { success: true, message: 'Дублікатів не знайдено', keepWorker: workers[0] };
+      }
+
+      // Отримуємо кількість прив'язок для кожного працівника
+      const workersWithAssignments = await Promise.all(
+        workers.map(async (worker) => {
+          const { data: assignments } = await supabase
+            .from('work_day_assignments')
+            .select('id')
+            .eq('worker_id', worker.id);
+
+          return {
+            ...worker,
+            assignmentsCount: assignments?.length || 0
+          };
+        })
+      );
+
+      // Визначаємо працівника для збереження (найбільше прив'язок, потім найстаріший)
+      const keepWorker = workersWithAssignments.reduce((best, current) => {
+        if (current.assignmentsCount > best.assignmentsCount) return current;
+        if (current.assignmentsCount < best.assignmentsCount) return best;
+        return new Date(current.created_at) < new Date(best.created_at) ? current : best;
+      });
+
+      // Видаляємо дублікати
+      const workersToDelete = workersWithAssignments.filter(w => w.id !== keepWorker.id);
+
+      for (const worker of workersToDelete) {
+        // Переприв'язуємо всі робочі дні
+        if (worker.assignmentsCount > 0) {
+          const { error: updateError } = await supabase
+            .from('work_day_assignments')
+            .update({ worker_id: keepWorker.id })
+            .eq('worker_id', worker.id);
+
+          if (updateError) {
+            console.error('Error reassigning work days:', updateError);
+          }
+        }
+
+        // Видаляємо працівника
+        const { error: deleteError } = await supabase
+          .from('workers')
+          .delete()
+          .eq('id', worker.id);
+
+        if (deleteError) {
+          console.error('Error deleting worker:', deleteError);
+        }
+      }
+
+      // Встановлюємо is_primary тільки для одного працівника
+      const { error: updatePrimaryError } = await supabase
+        .from('workers')
+        .update({ is_primary: true })
+        .eq('id', keepWorker.id);
+
+      if (updatePrimaryError) {
+        console.error('Error updating primary status:', updatePrimaryError);
+      }
+
+      return {
+        success: true,
+        message: `Успішно видалено ${workersToDelete.length} дублікат(и). Залишено працівника з ${keepWorker.assignmentsCount} прив'язками.`,
+        keepWorker
+      };
+    } catch (error) {
+      console.error('Error removing duplicates:', error);
+      return { success: false, message: 'Помилка видалення дублікатів' };
+    }
+  },
+
   // Work Day Assignments
   getWorkDayAssignments: async (workDayId: string): Promise<WorkDayAssignment[]> => {
     const { data, error } = await supabase

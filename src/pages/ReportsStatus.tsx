@@ -128,9 +128,10 @@ const ReportsStatus = () => {
   };
 
   const sortedReports = useMemo(() => {
-    // Фільтруємо звіти - показуємо тільки неоплачені та частково оплачені
-    const unpaidReports = reports.filter(report => 
-      report.paymentStatus === 'unpaid' || report.paymentStatus === 'partial'
+    // Фільтруємо звіти - показуємо тільки неоплачені та частково оплачені з ненульовим залишком
+    const unpaidReports = reports.filter(report =>
+      (report.paymentStatus === 'unpaid' || report.paymentStatus === 'partial') &&
+      report.remainingAmount > 0
     );
     
     // Якщо немає неоплачених звітів, повертаємо порожній масив
