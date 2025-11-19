@@ -645,7 +645,7 @@ const Index = () => {
             <p className="text-muted-foreground text-sm">в цьому місяці</p>
           </div>
         ) : (
-          groupedByDay.map(({ date: dateKey, days: daysData }) => {
+          groupedByDay.map(({ date: dateKey, days: daysData }, groupIndex) => {
             const date = new Date(dateKey);
             const dayNames = ["Неділя", "Понеділок", "Вівторок", "Середа", "Четвер", "П'ятниця", "Субота"];
             const dayName = dayNames[date.getDay()];
@@ -656,21 +656,24 @@ const Index = () => {
             return (
               <div key={dateKey} className="space-y-2" data-no-swipe>
                 {/* Day Header - Sticky (Telegram style) */}
-                <div className="sticky top-[140px] z-30 flex flex-col items-center gap-2 py-1.5">
-                  <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full shadow-sm ${
+                <div
+                  className="sticky top-[140px] flex flex-col items-center gap-1.5 py-1"
+                  style={{ zIndex: 30 + groupIndex }}
+                >
+                  <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full shadow-sm ${
                     isToday
                       ? 'bg-gradient-to-r from-red-500/25 to-rose-500/25 backdrop-blur-xl border border-red-400/40 dark:border-red-500/40'
                       : 'bg-card/95 backdrop-blur-xl border border-border/50'
                   }`}>
-                    <Calendar className={`w-4 h-4 ${
+                    <Calendar className={`w-3.5 h-3.5 ${
                       isToday ? 'text-red-600 dark:text-red-400' : daysData.length === 0 ? 'text-muted-foreground' : 'text-foreground'
                     }`} />
-                    <span className={`text-sm font-bold ${
+                    <span className={`text-xs font-bold ${
                       isToday ? 'text-red-700 dark:text-red-300' : daysData.length === 0 ? 'text-muted-foreground' : 'text-foreground'
                     }`}>
                       {dayNumber}
                     </span>
-                    <span className={`text-sm font-semibold ${
+                    <span className={`text-xs font-semibold ${
                       isToday ? 'text-red-700 dark:text-red-300' : daysData.length === 0 ? 'text-muted-foreground' : 'text-foreground'
                     }`}>
                       {dayName}
@@ -688,7 +691,7 @@ const Index = () => {
 
                 {/* Work Days for this date */}
                 {daysData.length > 0 && (
-                  <div className="space-y-3">
+                  <div className="space-y-2">
                     {daysData.map((day, dayIndex) => (
                       <div key={`${day.reportId}-${day.id}`}>
                         <div className="flex gap-2">
@@ -702,23 +705,23 @@ const Index = () => {
                                 navigate(`/report/${day.reportId}/day/${day.id}`);
                               }
                             }}
-                            className={`flex-1 rounded-xl p-2.5 sm:p-3.5 hover:shadow-lg transition-smooth cursor-pointer ${
+                            className={`flex-1 rounded-lg p-2 sm:p-2.5 hover:shadow-lg transition-smooth cursor-pointer ${
                               day.is_planned
                                 ? 'bg-gradient-to-br from-amber-50/80 to-orange-50/80 dark:from-amber-950/30 dark:to-orange-950/30 border-2 border-dashed border-amber-400/70 dark:border-amber-500/70'
                                 : `bg-card border border-border ${dayIndex === daysData.length - 1 ? 'shadow-[0_4px_16px_0_rgba(31,38,135,0.15)]' : 'shadow-sm'}`
                             }`}
                           >
-                            <div className="flex items-center justify-between gap-2 sm:gap-2.5">
+                            <div className="flex items-center justify-between gap-1.5 sm:gap-2">
                               {/* Ліва частина: індикатор + ім'я */}
-                              <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
+                              <div className="flex items-center gap-1 sm:gap-1.5 min-w-0 flex-1">
                                 {!day.is_planned && (
                                   <DropdownMenu>
                                     <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                                      <button className={`w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center flex-shrink-0 transition-all hover:scale-110 ${
+                                      <button className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center flex-shrink-0 transition-all hover:scale-110 ${
                                         day.paymentStatus === 'paid' ? 'bg-success/20 hover:bg-success/30' :
                                         day.paymentStatus === 'partial' ? 'bg-warning/20 hover:bg-warning/30' : 'bg-destructive/20 hover:bg-destructive/30'
                                       }`}>
-                                        <span className={`text-xs sm:text-sm font-bold ${
+                                        <span className={`text-[10px] sm:text-xs font-bold ${
                                           day.paymentStatus === 'paid' ? 'text-success' :
                                           day.paymentStatus === 'partial' ? 'text-warning' : 'text-destructive'
                                         }`}>
@@ -788,7 +791,7 @@ const Index = () => {
                                     </DropdownMenuContent>
                                   </DropdownMenu>
                                 )}
-                                <h3 className={`text-sm sm:text-base font-bold truncate ${
+                                <h3 className={`text-xs sm:text-sm font-bold truncate ${
                                   day.paymentStatus === 'paid' ? 'text-success' : 'text-foreground'
                                 }`}>
                                   {day.clientName}
@@ -796,34 +799,34 @@ const Index = () => {
 
                                 {/* Worker badge - inline if single worker */}
                                 {!day.is_planned && day.assignments && day.assignments.length === 1 && (
-                                  <div className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-800 ml-1.5">
+                                  <div className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-gray-100 dark:bg-gray-800 ml-1">
                                     <div
-                                      className="w-2.5 h-2.5 rounded-full"
+                                      className="w-2 h-2 rounded-full"
                                       style={{ backgroundColor: day.assignments[0].worker?.color || '#3b82f6' }}
                                     />
-                                    <span className="text-xs">{day.assignments[0].worker?.name}</span>
+                                    <span className="text-[10px]">{day.assignments[0].worker?.name}</span>
                                   </div>
                                 )}
                               </div>
 
                               {/* Права частина: години + сума АБО бейдж "Заплановано" */}
                               {day.is_planned ? (
-                                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-semibold bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300">
-                                  <Calendar className="w-4 h-4" />
-                                  <span className="text-xs font-bold">Заплановано</span>
+                                <div className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300">
+                                  <Calendar className="w-3.5 h-3.5" />
+                                  <span className="text-[10px] font-bold">Заплановано</span>
                                 </div>
                               ) : (
-                                <div className="flex items-center gap-1.5 flex-shrink-0">
-                                  <div className="bg-purple-50 rounded-lg px-2.5 py-1.5 flex items-center gap-1.5 min-w-[70px]">
-                                    <Clock className="w-4 h-4 text-purple-600 flex-shrink-0" />
-                                    <span className="text-sm font-bold text-foreground tabular-nums">
+                                <div className="flex items-center gap-1 flex-shrink-0">
+                                  <div className="bg-purple-50 rounded-md px-2 py-1 flex items-center gap-1 min-w-[55px]">
+                                    <Clock className="w-3.5 h-3.5 text-purple-600 flex-shrink-0" />
+                                    <span className="text-xs font-bold text-foreground tabular-nums">
                                       {decimalToHours(day.workerHours !== undefined ? day.workerHours : day.hours)}
                                     </span>
                                   </div>
 
-                                  <div className="bg-blue-50 rounded-lg px-2.5 py-1.5 flex items-center gap-1.5 min-w-[70px]">
-                                    <Euro className="w-4 h-4 text-blue-600 flex-shrink-0" />
-                                    <span className="text-sm font-bold text-foreground tabular-nums">
+                                  <div className="bg-blue-50 rounded-md px-2 py-1 flex items-center gap-1 min-w-[55px]">
+                                    <Euro className="w-3.5 h-3.5 text-blue-600 flex-shrink-0" />
+                                    <span className="text-xs font-bold text-foreground tabular-nums">
                                       {Math.round(day.workerAmount !== undefined ? day.workerAmount : day.amount)}
                                     </span>
                                   </div>
@@ -832,22 +835,22 @@ const Index = () => {
                             </div>
 
                             {day.note && (
-                              <p className="text-sm text-muted-foreground mt-2.5 truncate">📝 {day.note}</p>
+                              <p className="text-xs text-muted-foreground mt-2 truncate">📝 {day.note}</p>
                             )}
 
                             {/* Worker badges - below if multiple workers */}
                             {day.assignments && day.assignments.length > 1 && (
-                              <div className="flex flex-wrap gap-1.5 mt-2.5">
+                              <div className="flex flex-wrap gap-1 mt-2">
                                 {day.assignments.map(assignment => (
                                   <div
                                     key={assignment.id}
-                                    className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-800"
+                                    className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-gray-100 dark:bg-gray-800"
                                   >
                                     <div
-                                      className="w-2.5 h-2.5 rounded-full"
+                                      className="w-2 h-2 rounded-full"
                                       style={{ backgroundColor: assignment.worker?.color || '#3b82f6' }}
                                     />
-                                    <span className="text-xs">{assignment.worker?.name}</span>
+                                    <span className="text-[10px]">{assignment.worker?.name}</span>
                                   </div>
                                 ))}
                               </div>
