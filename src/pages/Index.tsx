@@ -615,7 +615,7 @@ const Index = () => {
         </div>
       </div>
 
-      <main className="container mx-auto px-4 pt-36 pb-6 space-y-5">
+      <main className="container mx-auto px-4 pt-[152px] pb-6 space-y-5">
         {/* Return to Current Month Button */}
         {!isCurrentMonth && !isCustomPeriodMode && (
           <div className="flex justify-center mb-4">
@@ -657,8 +657,11 @@ const Index = () => {
               <div key={dateKey} className="space-y-2" data-no-swipe>
                 {/* Day Header - Sticky (Telegram style) */}
                 <div
-                  className="sticky top-[140px] flex flex-col items-center gap-1.5 py-1"
-                  style={{ zIndex: 30 + groupIndex }}
+                  className="sticky flex flex-col items-center gap-1.5 py-1.5 bg-background/80"
+                  style={{
+                    top: '152px',
+                    zIndex: 50 + groupIndex
+                  }}
                 >
                   <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full shadow-sm ${
                     isToday
