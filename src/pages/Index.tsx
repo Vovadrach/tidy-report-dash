@@ -660,7 +660,7 @@ const Index = () => {
                   className="sticky flex flex-col items-center gap-1.5 py-1.5 bg-background/80"
                   style={{
                     top: '152px',
-                    zIndex: 50 + groupIndex
+                    zIndex: 30
                   }}
                 >
                   <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full shadow-sm ${

@@ -522,19 +522,17 @@ const WorkDayDetails = () => {
         </div>
 
         {/* Note */}
-        {(editNote || true) && (
-          <div>
-            <Textarea
-              value={editNote}
-              onChange={(e) => {
-                setEditNote(e.target.value);
-                setHasUnsavedChanges(true);
-              }}
-              placeholder="📝 Нотатка..."
-              className="min-h-[80px] resize-none text-sm bg-background border border-border rounded-lg px-3 py-2.5 focus-visible:ring-1 focus-visible:ring-primary focus-visible:border-primary transition-all placeholder:text-muted-foreground"
-            />
-          </div>
-        )}
+        <div>
+          <Textarea
+            value={editNote}
+            onChange={(e) => {
+              setEditNote(e.target.value);
+              setHasUnsavedChanges(true);
+            }}
+            placeholder="📝 Нотатка..."
+            className="min-h-[80px] resize-none text-sm bg-background border border-border rounded-lg px-3 py-2.5 focus-visible:ring-1 focus-visible:ring-primary focus-visible:border-primary transition-all placeholder:text-muted-foreground"
+          />
+        </div>
 
         {/* Delete Report Button */}
         <button

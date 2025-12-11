@@ -138,7 +138,7 @@ const ReportsStatus = () => {
     if (unpaidReports.length === 0) return [];
     
     // Групуємо звіти за клієнтами
-    const clientReports = new Map<string, any[]>();
+    const clientReports = new Map<string, Report[]>();
     
     unpaidReports.forEach(report => {
       const clientId = report.clientId || report.client_id || '';
@@ -185,7 +185,7 @@ const ReportsStatus = () => {
         paymentStatus,
         workDays: [] // Очищуємо робочі дні, оскільки це зведений звіт
       };
-    }).filter(report => report !== null && report.remainingAmount > 0) as any[];
+    }).filter(report => report !== null && report.remainingAmount > 0) as Report[];
     
     // Сортуємо за сумою боргу (від більшого до меншого)
     return consolidatedReports.sort((a, b) => {
