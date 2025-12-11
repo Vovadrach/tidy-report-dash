@@ -73,7 +73,7 @@ const SelectClient = () => {
               <h1 className="text-lg font-bold text-foreground">Оберіть клієнта</h1>
             </div>
             <button
-              onClick={() => navigate('/client-management')}
+              onClick={() => navigate('/client-management?returnTo=/select-client')}
               className="h-10 w-10 rounded-md bg-primary/10 hover:bg-primary/20 transition-all shadow-sm hover:shadow flex items-center justify-center"
             >
               <UserPlus className="w-5 h-5 text-primary stroke-[2.5]" />
@@ -114,7 +114,7 @@ const SelectClient = () => {
                 <p className="text-xl font-semibold text-foreground mb-2">Немає клієнтів</p>
                 <p className="text-muted-foreground text-sm mb-4">Додайте першого клієнта</p>
                 <button
-                  onClick={() => navigate('/client-management')}
+                  onClick={() => navigate('/client-management?returnTo=/select-client')}
                   className="bg-gradient-to-br from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 dark:from-blue-950 dark:to-blue-900 text-blue-700 dark:text-blue-300 px-6 py-3 rounded-xl shadow-md hover:shadow-lg transition-all backdrop-blur-sm border border-blue-200/60 dark:border-blue-700/60 flex items-center gap-2 font-semibold"
                 >
                   <UserPlus className="w-5 h-5" />
