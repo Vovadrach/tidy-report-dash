@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "@/lib/api";
 import { Client } from "@/types/report";
-import { User, UserPlus, LogOut, ChevronRight, Search } from "lucide-react";
+import { User, UserPlus, SignOut as LogOut, CaretRight as ChevronRight, MagnifyingGlass as Search } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { Input } from "@/components/ui/input";
@@ -63,14 +63,14 @@ const SelectClient = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Fixed top section */}
-      <div className="fixed top-0 left-0 right-0 z-40 glass-header">
+      <div className="fixed top-0 left-0 right-0 z-40 app-bar">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2.5">
-              <div className="icon-badge icon-badge-blue rounded-full">
+              <div className="icon-badge icon-badge-time rounded-full">
                 <User className="w-5 h-5" />
               </div>
-              <h1 className="text-lg font-bold tracking-tight text-foreground">Оберіть клієнта</h1>
+              <h1 className="num-display text-xl text-foreground">Оберіть клієнта</h1>
             </div>
             <button
               onClick={() => navigate('/client-management?returnTo=/select-client')}
@@ -87,7 +87,7 @@ const SelectClient = () => {
         {/* Search Input */}
         <div className="surface-card p-3">
           <div className="flex items-center gap-3">
-            <div className="icon-badge icon-badge-violet rounded-full">
+            <div className="icon-badge icon-badge-time rounded-full">
               <Search className="w-5 h-5" />
             </div>
             <Input
@@ -133,7 +133,7 @@ const SelectClient = () => {
             >
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3 flex-1 min-w-0">
-                  <div className="icon-badge icon-badge-blue w-12 h-12 rounded-full">
+                  <div className="icon-badge icon-badge-time w-12 h-12 rounded-full">
                     <User className="w-6 h-6" />
                   </div>
                   <h3 className="text-base font-bold text-foreground truncate">
@@ -141,7 +141,7 @@ const SelectClient = () => {
                   </h3>
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
-                  <div className="chip chip-blue">
+                  <div className="chip chip-money">
                     <span>{client.hourlyRate || client.hourly_rate || 0}€</span>
                     <span className="font-medium opacity-70">/год</span>
                   </div>

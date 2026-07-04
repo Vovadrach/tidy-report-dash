@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { api } from "@/lib/api";
 import { Report, WorkDay, Client, PaymentStatus } from "@/types/report";
-import { Clock, Euro, CheckCircle2, XCircle, AlertCircle, ArrowLeft } from "lucide-react";
+import { Clock, CurrencyEur as Euro, CheckCircle as CheckCircle2, XCircle, WarningCircle as AlertCircle } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import { BottomNavigation } from "@/components/BottomNavigation";
 import { decimalToHours } from "@/utils/timeFormat";
@@ -234,9 +234,9 @@ const ClientReports = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Fixed top section */}
-      <div className="fixed top-0 left-0 right-0 z-40 glass-header">
+      <div className="fixed top-0 left-0 right-0 z-40 app-bar">
         <div className="container mx-auto px-4 py-4">
-          <h1 className="text-xl font-bold tracking-tight text-center text-foreground">{client.name}</h1>
+          <h1 className="num-display text-xl text-center text-foreground">{client.name}</h1>
         </div>
       </div>
 
@@ -245,11 +245,11 @@ const ClientReports = () => {
         {unpaidWorkDays && unpaidWorkDays.length > 0 && (
           <div className="surface-card p-4 shadow-sm space-y-3">
             <div className="grid grid-cols-2 gap-3">
-              <div className="chip chip-amber p-3 text-lg rounded-xl">
+              <div className="chip chip-due p-3 text-lg rounded-xl">
                 <AlertCircle className="w-5 h-5" />
                 <span>{Math.round(unpaidAmount)}€</span>
               </div>
-              <div className="chip chip-violet p-3 text-lg rounded-xl">
+              <div className="chip chip-time p-3 text-lg rounded-xl">
                 <Clock className="w-5 h-5" />
                 <span>{decimalToHours(unpaidHours)}</span>
               </div>
@@ -410,19 +410,19 @@ const ClientReports = () => {
 
                   {/* Права частина: години + загальна сума + залишок */}
                   <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
-                    <div className="chip chip-violet min-w-[58px]">
+                    <div className="chip chip-time min-w-[58px]">
                       <Clock className="w-3.5 h-3.5 flex-shrink-0" />
                       <span>{decimalToHours(workerData.hours)}</span>
                     </div>
 
-                    <div className="chip chip-blue min-w-[58px]">
+                    <div className="chip chip-money min-w-[58px]">
                       <Euro className="w-3.5 h-3.5 flex-shrink-0" />
                       <span>{Math.round(workerData.amount)}</span>
                     </div>
 
                     {/* Залишок до оплати */}
                     {displayStatus !== 'paid' && (
-                      <div className={`chip min-w-[58px] ${displayStatus === 'partial' ? 'chip-amber' : 'chip-rose'}`}>
+                      <div className={`chip min-w-[58px] ${displayStatus === 'partial' ? 'chip-due' : 'chip-alert'}`}>
                         <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
                         <span>{Math.round(remainingAmount)}</span>
                       </div>

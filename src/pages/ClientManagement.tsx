@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { api } from '@/lib/api';
 import { Client } from '@/types/report';
-import { Pencil, Trash2, Plus, Euro, Users } from 'lucide-react';
+import { PencilSimple as Pencil, Trash as Trash2, Plus, CurrencyEur as Euro, UsersThree as Users } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import { BottomNavigation } from '@/components/BottomNavigation';
 import {
@@ -127,9 +127,9 @@ const ClientManagement = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Fixed top section */}
-      <div className="fixed top-0 left-0 right-0 z-40 glass-header">
+      <div className="fixed top-0 left-0 right-0 z-40 app-bar">
         <div className="container mx-auto px-4 py-4">
-          <h1 className="text-lg font-bold tracking-tight text-center text-foreground">Управління клієнтами</h1>
+          <h1 className="num-display text-xl text-center text-foreground">Управління клієнтами</h1>
         </div>
       </div>
 
@@ -137,7 +137,7 @@ const ClientManagement = () => {
         {/* Add Client Button */}
         <button
           onClick={() => setIsAddDialogOpen(true)}
-          className="w-full bg-success text-success-foreground rounded-2xl p-4 font-bold shadow-md hover:shadow-lg hover:bg-success/90 transition-all active:scale-[0.98]"
+          className="w-full bg-success text-success-foreground rounded-full p-4 font-bold shadow-md hover:shadow-lg hover:bg-success/90 transition-all active:scale-[0.98]"
         >
           <div className="flex items-center justify-center gap-2">
             <Plus className="w-5 h-5" />
@@ -164,7 +164,7 @@ const ClientManagement = () => {
                 </div>
 
                 {/* Hourly Rate Badge */}
-                <div className="chip chip-blue flex-shrink-0">
+                <div className="chip chip-money flex-shrink-0">
                   <Euro className="w-3.5 h-3.5" />
                   <span>{client.hourlyRate || client.hourly_rate}€/год</span>
                 </div>
@@ -218,7 +218,7 @@ const ClientManagement = () => {
             </div>
             <button
               onClick={handleAddClient}
-              className="w-full bg-success text-success-foreground rounded-xl h-11 font-bold shadow-sm hover:bg-success/90 transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+              className="w-full bg-success text-success-foreground rounded-full h-11 font-bold shadow-sm hover:bg-success/90 transition-all active:scale-[0.98] flex items-center justify-center gap-2"
             >
               <Plus className="w-4 h-4" />
               <span>Додати</span>
@@ -255,7 +255,7 @@ const ClientManagement = () => {
             </div>
             <button
               onClick={handleUpdateClient}
-              className="w-full bg-primary text-primary-foreground rounded-xl h-11 font-bold shadow-sm hover:bg-primary/90 transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+              className="w-full bg-primary text-primary-foreground rounded-full h-11 font-bold shadow-sm hover:bg-primary/90 transition-all active:scale-[0.98] flex items-center justify-center gap-2"
             >
               <Pencil className="w-4 h-4" />
               <span>Зберегти</span>

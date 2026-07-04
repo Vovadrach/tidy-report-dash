@@ -11,7 +11,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
-import { ChevronDown, Plus, Check, X, Trash2, AlertTriangle } from "lucide-react";
+import { CaretDown as ChevronDown, Plus, Check, X, Trash as Trash2, Warning as AlertTriangle } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
 
@@ -134,7 +134,7 @@ export const WorkerSelector = () => {
       <button
         ref={buttonRef}
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full glass-dock rounded-full px-5 py-2.5 transition-all duration-150 active:scale-95 relative"
+        className="w-full dock rounded-full px-5 py-2.5 transition-all duration-150 active:scale-95 relative"
         style={
           selectedWorker
             ? { background: `linear-gradient(135deg, ${selectedWorker.color}26, ${selectedWorker.color}4d)` }
@@ -158,7 +158,7 @@ export const WorkerSelector = () => {
           isOpen ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'
         }`}
       >
-        <div className="glass-dock rounded-3xl overflow-hidden shadow-xl">
+        <div className="dock rounded-3xl overflow-hidden shadow-xl">
           <div className="p-4 space-y-2 max-h-[50vh] overflow-y-auto">
               {/* Remove Duplicates Button */}
               {workers.filter(w => w.name.toLowerCase().includes('лідія')).length > 1 && (
@@ -166,11 +166,11 @@ export const WorkerSelector = () => {
                   <button
                     onClick={handleRemoveDuplicates}
                     disabled={isRemoving}
-                    className="w-full p-3 rounded-xl bg-amber-500/10 hover:bg-amber-500/15 border border-amber-500/25 transition-all duration-200 active:scale-[0.98] disabled:opacity-50"
+                    className="w-full p-3 rounded-xl bg-warning/10 hover:bg-warning/15 border border-warning/25 transition-all duration-200 active:scale-[0.98] disabled:opacity-50"
                   >
                     <div className="flex items-center justify-center gap-2">
-                      <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-                      <span className="text-xs font-bold text-amber-700 dark:text-amber-300">
+                      <AlertTriangle className="w-4 h-4 text-warning" />
+                      <span className="text-xs font-bold text-warning">
                         {isRemoving ? 'Видалення...' : 'Видалити дублікати Лідія'}
                       </span>
                     </div>

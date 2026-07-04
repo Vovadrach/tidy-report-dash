@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { api } from "@/lib/api";
 import { Report, WorkDay, Client, PaymentStatus } from "@/types/report";
-import { Clock, Euro, Trash2, Calendar } from "lucide-react";
+import { Clock, CurrencyEur as Euro, Trash as Trash2, CalendarBlank as Calendar } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import { BottomNavigation } from "@/components/BottomNavigation";
 import {
@@ -319,11 +319,11 @@ const WorkDayDetails = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Fixed top section with glassmorphism */}
-      <div className="fixed top-0 left-0 right-0 z-40 glass-header">
+      <div className="fixed top-0 left-0 right-0 z-40 app-bar">
         <div className="container mx-auto px-4 py-3">
           {/* Client Name */}
           <div className="text-center mb-3">
-            <h1 className="text-base font-bold tracking-tight text-foreground">{client.name}</h1>
+            <h1 className="num-display text-xl text-foreground">{client.name}</h1>
           </div>
 
           {/* Statistics Cards */}
@@ -331,30 +331,30 @@ const WorkDayDetails = () => {
             {/* Години блок - clickable */}
             <div
               onClick={() => setIsTimePickerOpen(true)}
-              className="stat-tile stat-tile-violet cursor-pointer active:scale-95 transition-transform"
+              className="stat-tile stat-tile-time cursor-pointer active:scale-95 transition-transform"
             >
-              <div className="icon-badge icon-badge-violet w-9 h-9">
+              <div className="icon-badge icon-badge-time w-9 h-9">
                 <Clock className="w-4 h-4" />
               </div>
               <div className="min-w-0 flex-1 overflow-hidden">
-                <p className="text-[10px] font-medium text-muted-foreground mb-0.5 truncate">Години</p>
+                <p className="micro-label mb-0.5 truncate">Години</p>
                 <div className="flex items-baseline gap-1">
-                  <p className="text-lg font-bold text-foreground tabular-nums leading-none truncate">{decimalToHours(currentHours)}</p>
-                  <p className="text-xs font-semibold text-muted-foreground flex-shrink-0">год</p>
+                  <p className="num-display text-xl text-foreground leading-none truncate">{decimalToHours(currentHours)}</p>
+                  <p className="text-xs font-bold text-muted-foreground/70 flex-shrink-0">год</p>
                 </div>
               </div>
             </div>
 
             {/* Сума блок */}
-            <div className="stat-tile stat-tile-blue">
-              <div className="icon-badge icon-badge-blue w-9 h-9">
+            <div className="stat-tile stat-tile-money">
+              <div className="icon-badge icon-badge-money w-9 h-9">
                 <Euro className="w-4 h-4" />
               </div>
               <div className="min-w-0 flex-1 overflow-hidden">
-                <p className="text-[10px] font-medium text-muted-foreground mb-0.5 truncate">Сума</p>
+                <p className="micro-label mb-0.5 truncate">Сума</p>
                 <div className="flex items-baseline gap-1">
-                  <p className="text-lg font-bold text-foreground tabular-nums leading-none truncate">{Math.round(currentAmount)}</p>
-                  <p className="text-xs font-semibold text-muted-foreground flex-shrink-0">€</p>
+                  <p className="num-display text-xl text-foreground leading-none truncate">{Math.round(currentAmount)}</p>
+                  <p className="text-xs font-bold text-muted-foreground/70 flex-shrink-0">€</p>
                 </div>
               </div>
             </div>
@@ -388,8 +388,8 @@ const WorkDayDetails = () => {
                 onClick={handleSetPartial}
                 className={`h-10 rounded-xl text-[11px] font-bold transition-all active:scale-95 ${
                   status === "partial"
-                    ? "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-2 border-amber-500/60 shadow-sm"
-                    : "bg-transparent text-muted-foreground border border-border hover:bg-amber-500/5"
+                    ? "bg-warning/12 text-warning border-2 border-warning/60 shadow-sm"
+                    : "bg-transparent text-muted-foreground border border-border hover:bg-warning/5"
                 }`}
               >
                 Частково
@@ -430,12 +430,12 @@ const WorkDayDetails = () => {
                     onChange={(e) => setPartialAmount(e.target.value)}
                     placeholder="Додати суму"
                     max={currentAmount - dayPaidAmount}
-                    className="flex-1 h-10 text-sm rounded-xl bg-background border-amber-400/50 focus-visible:ring-amber-500"
+                    className="flex-1 h-10 text-sm rounded-xl bg-background border-warning/40 focus-visible:ring-warning"
                   />
                   <button
                     onClick={handleApplyPartial}
                     disabled={!partialAmount || parseFloat(partialAmount) > (currentAmount - dayPaidAmount) || parseFloat(partialAmount) <= 0}
-                    className="h-10 px-4 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-600 text-white transition-colors active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                    className="h-10 px-4 rounded-xl text-xs font-bold bg-warning hover:bg-warning/90 text-warning-foreground transition-colors active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
                   >
                     Додати
                   </button>
@@ -443,15 +443,15 @@ const WorkDayDetails = () => {
 
                 {/* Payment Info Display */}
                 {dayPaidAmount > 0 && (
-                  <div className="bg-amber-500/8 rounded-xl p-2.5">
+                  <div className="bg-warning/8 rounded-xl p-2.5">
                     <div className="grid grid-cols-2 gap-2 text-xs">
                       <div className="flex flex-col">
                         <span className="text-muted-foreground">Оплачено:</span>
                         <span className="font-bold text-foreground">{Math.round(dayPaidAmount)}€</span>
                       </div>
                       <div className="flex flex-col text-right">
-                        <span className="text-amber-600 dark:text-amber-400 font-medium">Залишок:</span>
-                        <span className="font-bold text-amber-600 dark:text-amber-400 tabular-nums">{Math.round(currentAmount - dayPaidAmount)}€</span>
+                        <span className="text-warning font-medium">Залишок:</span>
+                        <span className="font-bold text-warning tabular-nums">{Math.round(currentAmount - dayPaidAmount)}€</span>
                       </div>
                     </div>
                   </div>

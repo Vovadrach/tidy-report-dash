@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Plus, Check, X } from 'lucide-react';
+import { Plus, Check, X } from '@phosphor-icons/react';
 import { Worker } from '@/types/report';
 
 interface WorkerAssignmentDialogProps {
@@ -185,16 +185,16 @@ export const WorkerAssignmentDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md w-[95vw] max-h-[90vh] p-0 gap-0">
+      <DialogContent className="sm:max-w-md w-[95vw] max-h-[90vh] p-0 gap-0 rounded-3xl">
         {/* Header */}
         <div className="p-4 border-b">
-          <h2 className="text-lg font-bold text-center mb-3">Розподіл працівників</h2>
-          <div className="bg-green-50 dark:bg-green-950/30 rounded-lg p-3 text-center">
-            <div className="text-sm text-muted-foreground mb-1">Загальна сума</div>
-            <div className="text-2xl font-bold text-green-600 dark:text-green-400">{totalAmount}€</div>
+          <h2 className="num-display text-xl text-center mb-3">Розподіл працівників</h2>
+          <div className="stat-tile stat-tile-ok justify-center rounded-2xl p-3 text-center flex-col gap-1">
+            <div className="micro-label">Загальна сума</div>
+            <div className="num-display text-2xl text-success">{totalAmount}€</div>
             {selectedWorkers.length > 0 && (
               <div className="text-xs mt-2 text-muted-foreground">
-                Залишок: <span className={remainingAmount === 0 ? 'text-green-600' : 'text-orange-600'}>{Math.round(remainingAmount)}€</span>
+                Залишок: <span className={`font-bold ${remainingAmount === 0 ? 'text-success' : 'text-warning'}`}>{Math.round(remainingAmount)}€</span>
               </div>
             )}
           </div>
@@ -232,7 +232,7 @@ export const WorkerAssignmentDialog = ({
                     <button
                       key={worker.id}
                       onClick={() => toggleWorker(worker.id)}
-                      className="px-3 py-2 rounded-full text-sm font-medium flex items-center gap-2 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border whitespace-nowrap hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors flex-shrink-0"
+                      className="px-3 py-2 rounded-full text-sm font-semibold flex items-center gap-2 bg-secondary text-secondary-foreground border border-border whitespace-nowrap hover:bg-muted transition-colors flex-shrink-0"
                     >
                       <div
                         className="w-3 h-3 rounded-full"
@@ -251,13 +251,13 @@ export const WorkerAssignmentDialog = ({
               {!isAddingWorker ? (
                 <button
                   onClick={() => setIsAddingWorker(true)}
-                  className="w-full px-4 py-2.5 rounded-lg border-2 border-dashed border-green-500/60 flex items-center justify-center gap-2 bg-green-50/50 dark:bg-green-950/30 hover:bg-green-100 dark:hover:bg-green-900/40 transition-colors"
+                  className="w-full px-4 py-2.5 rounded-full border-2 border-dashed border-success/50 flex items-center justify-center gap-2 bg-success/8 hover:bg-success/12 transition-colors"
                 >
-                  <Plus className="w-4 h-4 text-green-600 dark:text-green-400" />
-                  <span className="text-sm font-medium text-green-600 dark:text-green-400">Додати нового працівника</span>
+                  <Plus className="w-4 h-4 text-success" />
+                  <span className="text-sm font-bold text-success">Додати нового працівника</span>
                 </button>
               ) : (
-                <div className="w-full px-3 py-2 rounded-lg border-2 border-green-500 bg-green-50 dark:bg-green-950/50 flex items-center gap-2">
+                <div className="w-full px-3 py-2 rounded-full border-2 border-success bg-success/8 flex items-center gap-2">
                   <Input
                     value={newWorkerName}
                     onChange={(e) => setNewWorkerName(e.target.value)}
@@ -275,7 +275,7 @@ export const WorkerAssignmentDialog = ({
                   <button
                     onClick={handleAddWorker}
                     disabled={!newWorkerName.trim()}
-                    className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center hover:bg-green-600 transition-colors disabled:opacity-50"
+                    className="w-8 h-8 rounded-full bg-success flex items-center justify-center hover:bg-success/90 transition-colors disabled:opacity-50 flex-shrink-0"
                   >
                     <Check className="w-4 h-4 text-white" />
                   </button>
@@ -284,7 +284,7 @@ export const WorkerAssignmentDialog = ({
                       setIsAddingWorker(false);
                       setNewWorkerName('');
                     }}
-                    className="w-8 h-8 rounded-full bg-red-500 flex items-center justify-center hover:bg-red-600 transition-colors"
+                    className="w-8 h-8 rounded-full bg-destructive flex items-center justify-center hover:bg-destructive/90 transition-colors flex-shrink-0"
                   >
                     <X className="w-4 h-4 text-white" />
                   </button>
@@ -306,7 +306,7 @@ export const WorkerAssignmentDialog = ({
                   if (!worker) return null;
 
                   return (
-                    <div key={workerId} className="bg-gray-50 dark:bg-gray-900/30 rounded-lg p-3 border">
+                    <div key={workerId} className="bg-secondary/60 rounded-2xl p-3 border border-border">
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => toggleWorker(workerId)}
@@ -323,7 +323,7 @@ export const WorkerAssignmentDialog = ({
 
                         <button
                           onClick={() => toggleWorker(workerId)}
-                          className="w-6 h-6 rounded-full bg-red-500 hover:bg-red-600 flex items-center justify-center transition-colors flex-shrink-0"
+                          className="w-6 h-6 rounded-full bg-destructive hover:bg-destructive/90 flex items-center justify-center transition-colors flex-shrink-0"
                           title="Видалити"
                         >
                           <X className="w-3 h-3 text-white" />
@@ -358,8 +358,8 @@ export const WorkerAssignmentDialog = ({
 
           {/* Validation Message */}
           {selectedWorkers.length > 0 && !isValid() && (
-            <div className="bg-orange-50 dark:bg-orange-950/30 border-l-4 border-orange-500 p-2 rounded">
-              <p className="text-xs font-medium text-orange-700 dark:text-orange-400">
+            <div className="bg-warning/10 border-l-4 border-warning p-2.5 rounded-lg">
+              <p className="text-xs font-bold text-warning">
                 {remainingAmount > 0
                   ? `Залишилось розподілити ${Math.round(remainingAmount)}€`
                   : `Сума перевищує загальну на ${Math.abs(Math.round(remainingAmount))}€`
@@ -383,7 +383,7 @@ export const WorkerAssignmentDialog = ({
               variant="default"
               disabled={!isValid()}
               onClick={handleConfirm}
-              className="flex-1 bg-green-600 hover:bg-green-700"
+              className="flex-1 bg-success hover:bg-success/90 text-success-foreground"
             >
               Підтвердити
             </Button>

@@ -1,5 +1,5 @@
 import { Report } from "@/types/report";
-import { Clock, Euro } from "lucide-react";
+import { Clock, CurrencyEur as Euro } from "@phosphor-icons/react";
 import { useNavigate } from "react-router-dom";
 import { decimalToHours } from "@/utils/timeFormat";
 
@@ -33,12 +33,12 @@ export const ReportCard = ({ report }: ReportCardProps) => {
       </div>
 
       <div className="grid grid-cols-2 gap-2">
-        <div className="chip chip-violet py-2 text-sm">
+        <div className="chip chip-time py-2 text-sm">
           <Clock className="w-4 h-4" />
           <span>{decimalToHours(totalHours)}</span>
         </div>
 
-        <div className="chip chip-amber py-2 text-sm">
+        <div className="chip chip-due py-2 text-sm">
           <Euro className="w-4 h-4" />
           <span>{remainingAmount}€</span>
         </div>

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { api } from "@/lib/api";
 import { Report, Client, WorkDay, PaymentStatus } from "@/types/report";
-import { Clock, Euro, AlertCircle, CheckCircle2, XCircle, Calendar } from "lucide-react";
+import { Clock, CurrencyEur as Euro, WarningCircle as AlertCircle, CheckCircle as CheckCircle2, XCircle, CalendarBlank as Calendar } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import { BottomNavigation } from "@/components/BottomNavigation";
 import { decimalToHours } from "@/utils/timeFormat";
@@ -232,17 +232,17 @@ const ReportDetails = () => {
       <main className="container mx-auto px-4 pt-6 pb-dock max-w-4xl space-y-4">
         {/* Client Header */}
         <div className="surface-card p-5 shadow-sm">
-          <h1 className="text-2xl font-bold tracking-tight text-center text-foreground">{report.clientName || report.client_name}</h1>
+          <h1 className="num-display text-2xl text-center text-foreground">{report.clientName || report.client_name}</h1>
         </div>
 
         {/* Summary Cards - Only unpaid amount and hours */}
         <div className="surface-card p-4 shadow-sm space-y-3">
           <div className="grid grid-cols-2 gap-3">
-            <div className="chip chip-amber p-3 text-lg rounded-xl">
+            <div className="chip chip-due p-3 text-lg rounded-xl">
               <AlertCircle className="w-5 h-5" />
               <span>{Math.round(unpaidAmount)}€</span>
             </div>
-            <div className="chip chip-violet p-3 text-lg rounded-xl">
+            <div className="chip chip-time p-3 text-lg rounded-xl">
               <Clock className="w-5 h-5" />
               <span>{decimalToHours(unpaidHours)}</span>
             </div>
@@ -362,7 +362,7 @@ const ReportDetails = () => {
                       {/* Віконце 1: ДАТА - клікабельне */}
                       <div
                         onClick={() => navigate(`/report/${report.id}/day/${day.id}`)}
-                        className="chip chip-blue px-3 py-2.5 rounded-xl text-sm cursor-pointer transition-transform active:scale-95"
+                        className="chip chip-money px-3 py-2.5 rounded-xl text-sm cursor-pointer transition-transform active:scale-95"
                       >
                         <Calendar className="w-4 h-4 flex-shrink-0" />
                         <span>
@@ -373,7 +373,7 @@ const ReportDetails = () => {
                       {/* Віконце 2: ГОДИНИ - клікабельне */}
                       <div
                         onClick={() => navigate(`/report/${report.id}/day/${day.id}`)}
-                        className="chip chip-violet px-3 py-2.5 rounded-xl text-sm cursor-pointer transition-transform active:scale-95"
+                        className="chip chip-time px-3 py-2.5 rounded-xl text-sm cursor-pointer transition-transform active:scale-95"
                       >
                         <Clock className="w-4 h-4 flex-shrink-0" />
                         <span>

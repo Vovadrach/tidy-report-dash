@@ -51,7 +51,7 @@ const Register = () => {
           <div className="mx-auto mb-4 w-16 h-16 rounded-3xl gradient-primary shadow-lg flex items-center justify-center">
             <span className="text-3xl">✨</span>
           </div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-foreground">Реєстрація</h1>
+          <h1 className="num-display text-4xl text-foreground">Реєстрація</h1>
           <p className="text-sm text-muted-foreground mt-1.5">Облік прибирання апартаментів</p>
         </div>
         <div className="surface-card rounded-3xl p-8 shadow-md">

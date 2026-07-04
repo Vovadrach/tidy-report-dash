@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { api } from "@/lib/api";
 import { Report, WorkDay, PaymentStatus } from "@/types/report";
-import { Clock, TrendingUp, CheckCircle2, XCircle, AlertCircle, Calendar, Loader2, Euro, ChevronLeft, ChevronRight, X, Undo2, Redo2 } from "lucide-react";
+import { Clock, CheckCircle as CheckCircle2, XCircle, WarningCircle as AlertCircle, CalendarBlank as Calendar, CircleNotch as Loader2, CurrencyEur as Euro, CaretLeft as ChevronLeft, CaretRight as ChevronRight, X, ArrowCounterClockwise as Undo2, ArrowClockwise as Redo2, CaretDown as ChevronDown } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import { BottomNavigation } from "@/components/BottomNavigation";
 import { WorkerSelector } from "@/components/WorkerSelector";
@@ -16,7 +16,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ChevronDown } from "lucide-react";
 import { useWorker } from "@/contexts/WorkerContext";
 
 // Helper functions for month calculation
@@ -548,7 +547,7 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Month Navigator */}
-      <div className="fixed top-0 left-0 right-0 z-40 glass-header" data-no-swipe>
+      <div className="fixed top-0 left-0 right-0 z-40 app-bar" data-no-swipe>
         <div className="container mx-auto px-4 py-3">
           {/* Navigation Controls */}
           <div className="flex items-center justify-between mb-3">
@@ -569,7 +568,7 @@ const Index = () => {
                 onClick={handleOpenDatePicker}
                 className="px-5 py-1.5 rounded-full hover:bg-primary/10 transition-all active:scale-95 cursor-pointer"
               >
-                <span className="text-lg font-extrabold tracking-tight bg-gradient-to-r from-blue-600 to-violet-600 dark:from-blue-400 dark:to-violet-400 bg-clip-text text-transparent">
+                <span className="num-display text-[1.45rem] text-foreground">
                   {isCustomPeriodMode && customStartDate && customEndDate
                     ? `${customStartDate.toLocaleDateString("uk-UA", { day: 'numeric', month: 'short' })} - ${customEndDate.toLocaleDateString("uk-UA", { day: 'numeric', month: 'short', year: 'numeric' })}`
                     : formatMonthYear(currentMonth)}
@@ -601,22 +600,22 @@ const Index = () => {
 
           {/* Month Statistics */}
           <div className="grid grid-cols-2 gap-2.5">
-            <div className="stat-tile stat-tile-violet">
-              <div className="icon-badge icon-badge-violet">
+            <div className="stat-tile stat-tile-time">
+              <div className="icon-badge icon-badge-time">
                 <Clock className="w-5 h-5" />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-xs font-medium text-muted-foreground">Годин</p>
-                <p className="text-xl font-bold text-foreground tabular-nums leading-tight">{decimalToHours(monthStats.totalHours)}</p>
+                <p className="micro-label">Годин</p>
+                <p className="num-display text-[1.4rem] text-foreground leading-tight">{decimalToHours(monthStats.totalHours)}</p>
               </div>
             </div>
-            <div className="stat-tile stat-tile-blue">
-              <div className="icon-badge icon-badge-blue">
+            <div className="stat-tile stat-tile-money">
+              <div className="icon-badge icon-badge-money">
                 <Euro className="w-5 h-5" />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-xs font-medium text-muted-foreground">Заробіток</p>
-                <p className="text-xl font-bold text-foreground tabular-nums leading-tight">{Math.round(monthStats.totalEarned)}€</p>
+                <p className="micro-label">Заробіток</p>
+                <p className="num-display text-[1.4rem] text-foreground leading-tight">{Math.round(monthStats.totalEarned)}€</p>
               </div>
             </div>
           </div>
@@ -648,7 +647,7 @@ const Index = () => {
 
         {groupedByDay.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center">
-            <div className="icon-badge icon-badge-blue w-16 h-16 rounded-2xl mb-4">
+            <div className="icon-badge icon-badge-money w-16 h-16 rounded-2xl mb-4">
               <Calendar className="w-8 h-8" />
             </div>
             <p className="text-xl font-semibold text-foreground mb-2">Немає записів</p>
@@ -675,19 +674,19 @@ const Index = () => {
                 >
                   <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full shadow-sm backdrop-blur-xl border ${
                     isToday
-                      ? 'bg-rose-500/12 border-rose-400/40 dark:bg-rose-500/15 dark:border-rose-500/40'
-                      : 'bg-card/90 border-border/60'
+                      ? 'bg-primary/10 border-primary/30'
+                      : 'bg-card/95 border-border'
                   }`}>
                     <Calendar className={`w-3.5 h-3.5 ${
-                      isToday ? 'text-rose-600 dark:text-rose-400' : daysData.length === 0 ? 'text-muted-foreground' : 'text-foreground'
+                      isToday ? 'text-primary' : daysData.length === 0 ? 'text-muted-foreground' : 'text-foreground'
                     }`} />
                     <span className={`text-xs font-bold tabular-nums ${
-                      isToday ? 'text-rose-700 dark:text-rose-300' : daysData.length === 0 ? 'text-muted-foreground' : 'text-foreground'
+                      isToday ? 'text-primary' : daysData.length === 0 ? 'text-muted-foreground' : 'text-foreground'
                     }`}>
                       {dayNumber}
                     </span>
                     <span className={`text-xs font-semibold ${
-                      isToday ? 'text-rose-700 dark:text-rose-300' : daysData.length === 0 ? 'text-muted-foreground' : 'text-foreground'
+                      isToday ? 'text-primary' : daysData.length === 0 ? 'text-muted-foreground' : 'text-foreground'
                     }`}>
                       {dayName}
                       {isToday && ' (Сьогодні)'}
@@ -720,7 +719,7 @@ const Index = () => {
                             }}
                             className={`flex-1 rounded-xl p-2 sm:p-2.5 cursor-pointer ${
                               day.is_planned
-                                ? 'bg-gradient-to-br from-amber-50/80 to-orange-50/60 dark:from-amber-950/30 dark:to-orange-950/30 border-2 border-dashed border-amber-400/70 dark:border-amber-500/60 surface-card-hover'
+                                ? 'bg-warning/8 border-2 border-dashed border-warning/45 rounded-xl surface-card-hover'
                                 : `surface-card surface-card-hover ${dayIndex === daysData.length - 1 ? 'shadow-md' : ''}`
                             }`}
                           >
@@ -824,20 +823,20 @@ const Index = () => {
 
                               {/* Права частина: години + сума АБО бейдж "Заплановано" */}
                               {day.is_planned ? (
-                                <div className="chip chip-amber rounded-full">
+                                <div className="chip chip-due rounded-full">
                                   <Calendar className="w-3.5 h-3.5" />
                                   <span className="text-[10px] font-bold">Заплановано</span>
                                 </div>
                               ) : (
                                 <div className="flex items-center gap-1 flex-shrink-0">
-                                  <div className="chip chip-violet min-w-[55px]">
+                                  <div className="chip chip-time min-w-[55px]">
                                     <Clock className="w-3.5 h-3.5 flex-shrink-0" />
                                     <span>
                                       {decimalToHours(day.workerHours !== undefined ? day.workerHours : day.hours)}
                                     </span>
                                   </div>
 
-                                  <div className="chip chip-blue min-w-[55px]">
+                                  <div className="chip chip-money min-w-[55px]">
                                     <Euro className="w-3.5 h-3.5 flex-shrink-0" />
                                     <span>
                                       {Math.round(day.workerAmount !== undefined ? day.workerAmount : day.amount)}
@@ -873,7 +872,7 @@ const Index = () => {
 
                         {/* Inline Partial Payment Input - appears beside the card */}
                         {partialPaymentDayId === day.id && (
-                          <div className="mt-2 surface-card p-3 border-amber-400/50 dark:border-amber-600/50" onClick={(e) => e.stopPropagation()}>
+                          <div className="mt-2 surface-card p-3 border-warning/40" onClick={(e) => e.stopPropagation()}>
                             <div className="flex gap-2 items-start">
                               <div className="flex-1">
                                 <Input
@@ -892,7 +891,7 @@ const Index = () => {
                                   parseFloat(partialPaymentAmount) <= 0 ||
                                   (parseFloat(partialPaymentAmount) + (day.day_paid_amount || 0)) > (day.workerAmount !== undefined ? day.workerAmount : day.amount)
                                 }
-                                className="h-9 px-3 rounded-lg text-sm font-semibold bg-amber-500 hover:bg-amber-600 text-white transition-colors active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="h-9 px-4 rounded-full text-sm font-bold bg-warning hover:bg-warning/90 text-warning-foreground transition-colors active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                               >
                                 ✓
                               </button>
@@ -901,7 +900,7 @@ const Index = () => {
                                   setPartialPaymentDayId(null);
                                   setPartialPaymentAmount("");
                                 }}
-                                className="h-9 px-3 rounded-lg text-sm font-semibold bg-secondary hover:bg-muted text-secondary-foreground transition-colors active:scale-95"
+                                className="h-9 px-4 rounded-full text-sm font-bold bg-secondary hover:bg-muted text-secondary-foreground transition-colors active:scale-95"
                               >
                                 ✕
                               </button>

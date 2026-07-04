@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { ReportCard } from "@/components/ReportCard";
 import { api } from "@/lib/api";
 import { Report, Client } from "@/types/report";
-import { Clock, Euro, ArrowLeft } from "lucide-react";
+import { Clock, CurrencyEur as Euro } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import { BottomNavigation } from "@/components/BottomNavigation";
 import { decimalToHours } from "@/utils/timeFormat";
@@ -287,34 +287,34 @@ const ReportsStatus = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Fixed top section with glassmorphism */}
-      <div className="fixed top-0 left-0 right-0 z-40 glass-header">
+      <div className="fixed top-0 left-0 right-0 z-40 app-bar">
         <div className="container mx-auto px-4 py-4">
           {/* Statistics Cards */}
           <div className="grid grid-cols-2 gap-3 mb-4">
             {/* Години блок */}
-            <div className="stat-tile stat-tile-violet p-4">
-              <div className="icon-badge icon-badge-violet">
+            <div className="stat-tile stat-tile-time p-4">
+              <div className="icon-badge icon-badge-time">
                 <Clock className="w-5 h-5" />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-xs font-medium text-muted-foreground mb-0.5">Години</p>
+                <p className="micro-label mb-1">Години</p>
                 <div className="flex items-baseline gap-1">
-                  <p className="text-xl font-bold text-foreground tabular-nums">{decimalToHours(unpaidSummary.totalUnpaidHours)}</p>
-                  <p className="text-sm font-semibold text-muted-foreground">год</p>
+                  <p className="num-display text-[1.4rem] text-foreground">{decimalToHours(unpaidSummary.totalUnpaidHours)}</p>
+                  <p className="text-sm font-bold text-muted-foreground/70">год</p>
                 </div>
               </div>
             </div>
 
             {/* Сума блок */}
-            <div className="stat-tile stat-tile-amber p-4">
-              <div className="icon-badge icon-badge-amber">
+            <div className="stat-tile stat-tile-due p-4">
+              <div className="icon-badge icon-badge-due">
                 <Euro className="w-5 h-5" />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-xs font-medium text-muted-foreground mb-0.5">Сума</p>
+                <p className="micro-label mb-1">Сума</p>
                 <div className="flex items-baseline gap-1">
-                  <p className="text-xl font-bold text-foreground tabular-nums">{Math.round(unpaidSummary.totalUnpaidAmount)}</p>
-                  <p className="text-sm font-semibold text-muted-foreground">€</p>
+                  <p className="num-display text-[1.4rem] text-foreground">{Math.round(unpaidSummary.totalUnpaidAmount)}</p>
+                  <p className="text-sm font-bold text-muted-foreground/70">€</p>
                 </div>
               </div>
             </div>
@@ -322,7 +322,7 @@ const ReportsStatus = () => {
 
           {/* Page Title */}
           <div className="text-center">
-            <h1 className="text-base font-bold tracking-tight text-foreground">
+            <h1 className="micro-label !text-foreground/70">
               Очікую оплату
             </h1>
           </div>

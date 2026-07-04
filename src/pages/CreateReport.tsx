@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { api } from "@/lib/api";
 import { Client, Report, WorkDay, PaymentStatus, Worker, WorkDayAssignment } from "@/types/report";
-import { Calendar, Plus, Euro, Users, FileText, Trash2, Save } from "lucide-react";
+import { CalendarBlank as Calendar, Plus, CurrencyEur as Euro, UsersThree as Users, Note as FileText, Trash as Trash2, FloppyDisk as Save } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import { HomeDock } from "@/components/HomeDock";
 import {
@@ -713,9 +713,9 @@ const CreateReport = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Fixed top section with client info - Compact */}
-      <div className="fixed top-0 left-0 right-0 z-40 glass-header">
+      <div className="fixed top-0 left-0 right-0 z-40 app-bar">
         <div className="container mx-auto px-4 py-2.5">
-          <h1 className="text-lg font-bold tracking-tight text-foreground text-center">
+          <h1 className="num-display text-xl text-foreground text-center">
             {selectedClient?.name || "Завантаження..."}
           </h1>
         </div>
@@ -726,7 +726,7 @@ const CreateReport = () => {
           {/* Date Card - Compact */}
           <div className="surface-card p-3">
             <div className="flex items-center gap-2">
-              <div className="icon-badge icon-badge-emerald w-8 h-8 rounded-full">
+              <div className="icon-badge icon-badge-ok w-8 h-8 rounded-full">
                 <Calendar className="w-4 h-4" />
               </div>
               <Input
@@ -935,8 +935,8 @@ const CreateReport = () => {
                   onClick={() => setWorkPaymentStatus("partial")}
                   className={`h-10 rounded-xl text-xs font-bold transition-all active:scale-95 ${
                     workPaymentStatus === "partial"
-                      ? "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-2 border-amber-500/60 shadow-sm"
-                      : "bg-transparent text-muted-foreground border border-border hover:bg-amber-500/5"
+                      ? "bg-warning/12 text-warning border-2 border-warning/60 shadow-sm"
+                      : "bg-transparent text-muted-foreground border border-border hover:bg-warning/5"
                   }`}
                 >
                   Частково
@@ -953,7 +953,7 @@ const CreateReport = () => {
                     className="h-9 pr-8 text-center font-medium rounded-md"
                   />
                   <div className="absolute right-2 top-1/2 -translate-y-1/2">
-                    <Euro className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                    <Euro className="w-4 h-4 text-warning" />
                   </div>
                 </div>
               )}
@@ -1009,7 +1009,7 @@ const CreateReport = () => {
                 variant="outline"
                 size="lg"
                 onClick={handlePlanWork}
-                className="w-full h-12 text-sm font-bold rounded-xl border-2 border-dashed border-amber-400/70 dark:border-amber-500/60 bg-amber-500/8 hover:bg-amber-500/12 text-amber-700 dark:text-amber-300 transition-all active:scale-[0.98] shadow-xs"
+                className="w-full h-12 text-sm font-bold rounded-full border-2 border-dashed border-warning/50 bg-warning/8 hover:bg-warning/12 text-warning transition-all active:scale-[0.98] shadow-xs"
                 disabled={!selectedClientId}
               >
                 <Calendar className="w-4 h-4 mr-2" />

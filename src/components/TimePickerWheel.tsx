@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import { Clock, Euro } from "lucide-react";
+import { Clock, CurrencyEur as Euro } from "@phosphor-icons/react";
 import { Input } from "@/components/ui/input";
 
 interface TimePickerWheelProps {
@@ -231,10 +231,10 @@ export const TimePickerWheel = ({ value, onChange, placeholder = "0:00", hourlyR
       {/* Input Display */}
       <div
         onClick={handleOpen}
-        className="flex items-center gap-1.5 px-2 py-2 rounded-xl border-2 border-violet-300/60 dark:border-violet-700/60 bg-transparent cursor-pointer hover:border-violet-400/70 transition-all overflow-hidden"
+        className="flex items-center gap-1.5 px-2 py-2 rounded-xl border-2 border-primary/25 bg-transparent cursor-pointer hover:border-primary/45 transition-all overflow-hidden"
         style={{ width: '100%', boxSizing: 'border-box' }}
       >
-        <Clock className="w-4 h-4 text-violet-600 dark:text-violet-400 flex-shrink-0" />
+        <Clock className="w-4 h-4 text-primary flex-shrink-0" />
         <span className="text-sm font-semibold text-foreground truncate flex-1 text-center">{displayValue}</span>
       </div>
 
@@ -348,7 +348,7 @@ export const TimePickerWheel = ({ value, onChange, placeholder = "0:00", hourlyR
                       placeholder=""
                       className="flex-1 px-4 py-3 text-center text-xl font-bold rounded-xl border-2 border-primary/30 focus-visible:ring-primary"
                     />
-                    <div className="icon-badge icon-badge-blue w-12 h-12">
+                    <div className="icon-badge icon-badge-money w-12 h-12">
                       <Euro className="w-5 h-5" />
                     </div>
                   </div>

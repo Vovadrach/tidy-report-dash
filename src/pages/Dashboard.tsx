@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { api } from "@/lib/api";
 import { Report, Client, WorkDay } from "@/types/report";
-import { DollarSign, Clock, TrendingUp, Users, ChevronDown, AlertCircle, ArrowLeft } from "lucide-react";
+import { Wallet as DollarSign, Clock, TrendUp as TrendingUp, UsersThree as Users, CaretDown as ChevronDown, WarningCircle as AlertCircle } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import {
   DropdownMenu,
@@ -304,12 +304,12 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="fixed top-0 left-0 right-0 z-40 glass-header">
+      <div className="fixed top-0 left-0 right-0 z-40 app-bar">
         <div className="container mx-auto px-4 py-4">
           <div className="flex gap-3 justify-center max-w-[600px] mx-auto">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className={`group relative overflow-hidden px-5 py-3.5 rounded-2xl border shadow-xs hover:shadow-sm transition-all active:scale-[0.98] flex-1 min-w-0 ${
+                <button className={`group relative overflow-hidden px-5 py-3.5 rounded-full border shadow-xs hover:shadow-sm transition-all active:scale-[0.98] flex-1 min-w-0 ${
                   selectedYear !== null && selectedYear !== new Date().getFullYear() || selectedMonth !== new Date().getMonth()
                     ? "bg-primary/10 border-primary/40"
                     : "bg-card border-border"
@@ -414,7 +414,7 @@ const Dashboard = () => {
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className={`group relative overflow-hidden px-5 py-3.5 rounded-2xl border shadow-xs hover:shadow-sm transition-all active:scale-[0.98] flex-1 min-w-0 ${
+                <button className={`group relative overflow-hidden px-5 py-3.5 rounded-full border shadow-xs hover:shadow-sm transition-all active:scale-[0.98] flex-1 min-w-0 ${
                   selectedClientId !== "all"
                     ? "bg-accent/12 border-accent/40"
                     : "bg-card border-border"
@@ -465,7 +465,7 @@ const Dashboard = () => {
         {/* Client Name Header - показується тільки при виборі конкретного клієнта */}
         {selectedClientId !== "all" && (
           <div className="surface-card p-6 shadow-sm text-center">
-            <h1 className="text-2xl font-bold text-foreground">{getClientLabel(selectedClientId)}</h1>
+            <h1 className="num-display text-2xl text-foreground">{getClientLabel(selectedClientId)}</h1>
           </div>
         )}
 
@@ -475,29 +475,29 @@ const Dashboard = () => {
           {/* PRIMARY CARDS - Main Information */}
 
           {/* Total Earned */}
-          <div className="stat-tile stat-tile-blue p-4">
-            <div className="icon-badge icon-badge-blue">
+          <div className="stat-tile stat-tile-money p-4">
+            <div className="icon-badge icon-badge-money">
               <TrendingUp className="w-5 h-5" />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-xs font-medium text-muted-foreground mb-0.5">Зароблено</p>
+              <p className="micro-label mb-1">Зароблено</p>
               <div className="flex items-baseline gap-1">
-                <p className="text-xl font-bold text-foreground tabular-nums">{Math.round(stats.totalEarned)}</p>
-                <p className="text-sm font-semibold text-muted-foreground">€</p>
+                <p className="num-display text-[1.4rem] text-foreground">{Math.round(stats.totalEarned)}</p>
+                <p className="text-sm font-bold text-muted-foreground/70">€</p>
               </div>
             </div>
           </div>
 
           {/* Total Hours */}
-          <div className="stat-tile stat-tile-violet p-4">
-            <div className="icon-badge icon-badge-violet">
+          <div className="stat-tile stat-tile-time p-4">
+            <div className="icon-badge icon-badge-time">
               <Clock className="w-5 h-5" />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-xs font-medium text-muted-foreground mb-0.5">Години</p>
+              <p className="micro-label mb-1">Години</p>
               <div className="flex items-baseline gap-1">
-                <p className="text-xl font-bold text-foreground tabular-nums">{decimalToHours(stats.totalHours)}</p>
-                <p className="text-sm font-semibold text-muted-foreground">год</p>
+                <p className="num-display text-[1.4rem] text-foreground">{decimalToHours(stats.totalHours)}</p>
+                <p className="text-sm font-bold text-muted-foreground/70">год</p>
               </div>
             </div>
           </div>
@@ -506,32 +506,32 @@ const Dashboard = () => {
 
           {/* Paid Amount */}
           <div className={`stat-tile p-4 ${
-            stats.totalRemaining === 0 && stats.totalEarned > 0 ? "stat-tile-emerald" : "stat-tile-neutral"
+            stats.totalRemaining === 0 && stats.totalEarned > 0 ? "stat-tile-ok" : "stat-tile-neutral"
           }`}>
-            <div className="icon-badge icon-badge-emerald">
+            <div className="icon-badge icon-badge-ok">
               <DollarSign className="w-5 h-5" />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-xs font-medium text-muted-foreground mb-0.5">Сплачено</p>
+              <p className="micro-label mb-1">Сплачено</p>
               <div className="flex items-baseline gap-1">
-                <p className={`text-xl font-bold tabular-nums ${
+                <p className={`num-display text-[1.4rem] ${
                   stats.totalRemaining === 0 && stats.totalEarned > 0 ? "text-success" : "text-foreground"
                 }`}>{Math.round(stats.totalPaid)}</p>
-                <p className="text-sm font-semibold text-muted-foreground">€</p>
+                <p className="text-sm font-bold text-muted-foreground/70">€</p>
               </div>
             </div>
           </div>
 
           {/* Remaining Amount */}
-          <div className={`stat-tile p-4 ${stats.totalRemaining > 0 ? "stat-tile-amber" : "stat-tile-neutral"}`}>
-            <div className="icon-badge icon-badge-amber">
+          <div className={`stat-tile p-4 ${stats.totalRemaining > 0 ? "stat-tile-due" : "stat-tile-neutral"}`}>
+            <div className="icon-badge icon-badge-due">
               <DollarSign className="w-5 h-5" />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-xs font-medium text-muted-foreground mb-0.5">Залишок</p>
+              <p className="micro-label mb-1">Залишок</p>
               <div className="flex items-baseline gap-1">
-                <p className="text-xl font-bold text-foreground tabular-nums">{Math.round(stats.totalRemaining)}</p>
-                <p className="text-sm font-semibold text-muted-foreground">€</p>
+                <p className="num-display text-[1.4rem] text-foreground">{Math.round(stats.totalRemaining)}</p>
+                <p className="text-sm font-bold text-muted-foreground/70">€</p>
               </div>
             </div>
           </div>
@@ -542,16 +542,16 @@ const Dashboard = () => {
         {selectedClientId === "all" && debtsBreakdown.length > 0 && (
           <div className="surface-card p-5 shadow-sm">
             <div className="flex items-center gap-3 mb-4">
-              <div className="icon-badge icon-badge-amber">
+              <div className="icon-badge icon-badge-due">
                 <AlertCircle className="w-5 h-5" />
               </div>
-              <h2 className="text-lg font-bold text-foreground">Борги по клієнтах</h2>
+              <h2 className="num-display text-xl text-foreground">Борги по клієнтах</h2>
             </div>
             <div className="space-y-2.5">
               {debtsBreakdown.map((debt, index) => (
                 <div key={index} className="flex items-center justify-between p-3.5 bg-warning/5 rounded-xl border border-warning/15 transition-smooth hover:bg-warning/10">
                   <span className="font-semibold text-foreground text-sm">{debt.name}</span>
-                  <span className="chip chip-amber text-sm">{Math.round(debt.remaining)}€</span>
+                  <span className="chip chip-due text-sm">{Math.round(debt.remaining)}€</span>
                 </div>
               ))}
             </div>
@@ -562,10 +562,10 @@ const Dashboard = () => {
         {selectedClientId === "all" && clientLeaderboard.length > 0 && (
           <div className="surface-card p-5 shadow-sm">
             <div className="flex items-center gap-3 mb-4">
-              <div className="icon-badge icon-badge-blue">
+              <div className="icon-badge icon-badge-money">
                 <Users className="w-5 h-5" />
               </div>
-              <h2 className="text-lg font-bold text-foreground">Топ клієнтів</h2>
+              <h2 className="num-display text-xl text-foreground">Топ клієнтів</h2>
             </div>
             <div className="space-y-2.5">
               {clientLeaderboard.slice(0, 5).map((client, index) => (
