@@ -35,8 +35,15 @@ const Login = () => {
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center px-4">
-      <div className="bg-card rounded-lg p-8 shadow-md max-w-md w-full border border-border">
-        <h1 className="text-3xl font-bold text-center text-foreground mb-8">Вхід</h1>
+      <div className="w-full max-w-md">
+        <div className="text-center mb-8">
+          <div className="mx-auto mb-4 w-16 h-16 rounded-3xl gradient-primary shadow-lg flex items-center justify-center">
+            <span className="text-3xl">✨</span>
+          </div>
+          <h1 className="text-3xl font-extrabold tracking-tight text-foreground">Вхід</h1>
+          <p className="text-sm text-muted-foreground mt-1.5">Облік прибирання апартаментів</p>
+        </div>
+        <div className="surface-card rounded-3xl p-8 shadow-md">
         
         <form onSubmit={handleLogin} className="space-y-6">
           <div className="space-y-2">
@@ -48,7 +55,7 @@ const Login = () => {
               onChange={(e) => setEmail(e.target.value)}
               placeholder="your@email.com"
               disabled={loading}
-              className="rounded-md"
+              className="h-11 rounded-xl"
             />
           </div>
 
@@ -61,13 +68,13 @@ const Login = () => {
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
               disabled={loading}
-              className="rounded-md"
+              className="h-11 rounded-xl"
             />
           </div>
 
           <Button 
             type="submit" 
-            className="w-full rounded-md" 
+            className="w-full rounded-xl" 
             size="lg"
             disabled={loading}
           >
@@ -85,6 +92,7 @@ const Login = () => {
             </button>
           </div>
         </form>
+        </div>
       </div>
     </div>
   );

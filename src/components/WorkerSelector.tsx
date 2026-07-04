@@ -134,24 +134,19 @@ export const WorkerSelector = () => {
       <button
         ref={buttonRef}
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full backdrop-blur-xl border border-white/10 shadow-[0_4px_16px_0_rgba(31,38,135,0.15),0_8px_24px_0_rgba(0,0,0,0.1)] rounded-full px-5 py-2.5 transition-all duration-150 active:scale-95 relative"
-        style={{
-          background: selectedWorker
-            ? `linear-gradient(135deg, ${selectedWorker.color}30, ${selectedWorker.color}50)`
-            : 'linear-gradient(135deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02))',
-          backdropFilter: 'blur(20px)'
-        }}
+        className="w-full glass-dock rounded-full px-5 py-2.5 transition-all duration-150 active:scale-95 relative"
+        style={
+          selectedWorker
+            ? { background: `linear-gradient(135deg, ${selectedWorker.color}26, ${selectedWorker.color}4d)` }
+            : undefined
+        }
       >
-        <div className="flex items-center justify-center gap-2">
-          <span
-            className="text-sm font-bold tracking-[-0.01em] whitespace-nowrap"
-            style={{ color: '#3C3C43' }}
-          >
+        <div className="flex items-center justify-center gap-2 text-foreground/80">
+          <span className="text-sm font-bold tracking-tight whitespace-nowrap">
             {selectedWorkerName}
           </span>
           <ChevronDown
             className={`w-3.5 h-3.5 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`}
-            style={{ color: '#3C3C43' }}
           />
         </div>
       </button>
@@ -163,14 +158,7 @@ export const WorkerSelector = () => {
           isOpen ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'
         }`}
       >
-        <div
-          className="rounded-3xl overflow-hidden shadow-[0_-4px_32px_rgba(0,0,0,0.12),0_-2px_16px_rgba(0,0,0,0.08)] border border-white/20"
-          style={{
-            background: 'linear-gradient(to bottom, rgba(255,255,255,0.95), rgba(255,255,255,0.85))',
-            backdropFilter: 'blur(40px)',
-            WebkitBackdropFilter: 'blur(40px)',
-          }}
-        >
+        <div className="glass-dock rounded-3xl overflow-hidden shadow-xl">
           <div className="p-4 space-y-2 max-h-[50vh] overflow-y-auto">
               {/* Remove Duplicates Button */}
               {workers.filter(w => w.name.toLowerCase().includes('лідія')).length > 1 && (
@@ -178,28 +166,28 @@ export const WorkerSelector = () => {
                   <button
                     onClick={handleRemoveDuplicates}
                     disabled={isRemoving}
-                    className="w-full p-3 rounded-xl bg-gradient-to-br from-orange-50/60 to-red-50/40 hover:from-orange-100/70 hover:to-red-100/50 border border-orange-200/30 transition-all duration-200 active:scale-[0.98] disabled:opacity-50"
+                    className="w-full p-3 rounded-xl bg-amber-500/10 hover:bg-amber-500/15 border border-amber-500/25 transition-all duration-200 active:scale-[0.98] disabled:opacity-50"
                   >
                     <div className="flex items-center justify-center gap-2">
-                      <AlertTriangle className="w-4 h-4 text-orange-600" />
-                      <span className="text-xs font-bold text-orange-700">
+                      <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                      <span className="text-xs font-bold text-amber-700 dark:text-amber-300">
                         {isRemoving ? 'Видалення...' : 'Видалити дублікати Лідія'}
                       </span>
                     </div>
                   </button>
-                  <div className="h-px bg-gradient-to-r from-transparent via-gray-300/50 to-transparent my-1" />
+                  <div className="h-px bg-border/70 my-1" />
                 </>
               )}
 
               {/* Add Worker Section */}
               {isAddingWorker ? (
-                <div className="p-3 rounded-xl bg-gradient-to-br from-green-50/80 to-emerald-50/60 border border-green-200/40">
+                <div className="p-3 rounded-xl bg-success/10 border border-success/25">
                   <div className="flex gap-2">
                     <Input
                       value={newWorkerName}
                       onChange={(e) => setNewWorkerName(e.target.value)}
                       placeholder="Ім'я працівника"
-                      className="h-9 text-sm rounded-lg border-green-300/50 bg-white/80 backdrop-blur-sm focus-visible:ring-green-400"
+                      className="h-9 text-sm rounded-lg border-success/40 bg-card focus-visible:ring-success"
                       autoFocus
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') handleAddWorker();
@@ -211,7 +199,7 @@ export const WorkerSelector = () => {
                     />
                     <button
                       onClick={handleAddWorker}
-                      className="h-9 w-9 rounded-lg bg-gradient-to-br from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white flex items-center justify-center transition-all shadow-md hover:shadow-lg active:scale-95 flex-shrink-0"
+                      className="h-9 w-9 rounded-lg bg-success hover:bg-success/90 text-success-foreground flex items-center justify-center transition-all shadow-sm active:scale-95 flex-shrink-0"
                     >
                       <Check className="w-4 h-4" />
                     </button>
@@ -220,25 +208,25 @@ export const WorkerSelector = () => {
                         setIsAddingWorker(false);
                         setNewWorkerName('');
                       }}
-                      className="h-9 w-9 rounded-lg bg-white/80 hover:bg-white border border-gray-200 flex items-center justify-center transition-all active:scale-95 flex-shrink-0"
+                      className="h-9 w-9 rounded-lg bg-card hover:bg-secondary border border-border flex items-center justify-center transition-all active:scale-95 flex-shrink-0"
                     >
-                      <X className="w-4 h-4 text-gray-600" />
+                      <X className="w-4 h-4 text-muted-foreground" />
                     </button>
                   </div>
                 </div>
               ) : (
                 <button
                   onClick={() => setIsAddingWorker(true)}
-                  className="w-full p-3 rounded-xl bg-gradient-to-br from-green-50/60 to-emerald-50/40 hover:from-green-100/70 hover:to-emerald-100/50 border border-green-200/30 transition-all duration-200 active:scale-[0.98]"
+                  className="w-full p-3 rounded-xl bg-success/8 hover:bg-success/12 border border-success/25 transition-all duration-200 active:scale-[0.98]"
                 >
                   <div className="flex items-center justify-center gap-2">
-                    <Plus className="w-4 h-4 text-green-600" />
-                    <span className="text-xs font-bold text-green-700">Додати працівника</span>
+                    <Plus className="w-4 h-4 text-success" />
+                    <span className="text-xs font-bold text-success">Додати працівника</span>
                   </div>
                 </button>
               )}
 
-              <div className="h-px bg-gradient-to-r from-transparent via-gray-300/50 to-transparent my-1" />
+              <div className="h-px bg-border/70 my-1" />
 
               {/* All option */}
               <button
@@ -248,23 +236,23 @@ export const WorkerSelector = () => {
                 }}
                 className={`w-full p-3 rounded-xl transition-all duration-200 active:scale-[0.98] ${
                   selectedWorkerId === 'all'
-                    ? 'bg-gradient-to-br from-gray-100 to-gray-200/80 border-2 border-gray-300/60 shadow-md'
-                    : 'bg-white/40 hover:bg-white/60 border border-gray-200/40'
+                    ? 'bg-secondary border-2 border-border shadow-sm'
+                    : 'bg-card/50 hover:bg-secondary/60 border border-border/50'
                 }`}
               >
                 <div className="flex items-center gap-3">
                   <div
-                    className="w-3.5 h-3.5 rounded-full shadow-sm flex-shrink-0 bg-gray-400"
+                    className="w-3.5 h-3.5 rounded-full shadow-sm flex-shrink-0 bg-muted-foreground/50"
                   />
                   <span className={`text-sm font-bold flex-1 text-left ${
-                    selectedWorkerId === 'all' ? 'text-gray-700' : 'text-gray-600'
+                    selectedWorkerId === 'all' ? 'text-foreground' : 'text-muted-foreground'
                   }`}>
                     Всі
                   </span>
                 </div>
               </button>
 
-              <div className="h-px bg-gradient-to-r from-transparent via-gray-300/50 to-transparent my-1" />
+              <div className="h-px bg-border/70 my-1" />
 
               {/* Workers list */}
               {workers.map(worker => (
@@ -276,8 +264,8 @@ export const WorkerSelector = () => {
                     }}
                     className={`w-full p-3 rounded-xl transition-all duration-200 active:scale-[0.98] ${
                       selectedWorkerId === worker.id
-                        ? 'bg-gradient-to-br from-blue-500/30 to-purple-500/30 border-2 border-blue-400/40 shadow-md'
-                        : 'bg-white/40 hover:bg-white/60 border border-gray-200/40'
+                        ? 'bg-primary/12 border-2 border-primary/40 shadow-sm'
+                        : 'bg-card/50 hover:bg-secondary/60 border border-border/50'
                     }`}
                   >
                     <div className="flex items-center gap-3">
@@ -286,12 +274,12 @@ export const WorkerSelector = () => {
                         style={{ backgroundColor: worker.color }}
                       />
                       <span className={`text-sm font-bold flex-1 text-left ${
-                        selectedWorkerId === worker.id ? 'text-blue-700' : 'text-gray-700'
+                        selectedWorkerId === worker.id ? 'text-primary' : 'text-foreground'
                       }`}>
                         {worker.name}
                       </span>
                       {worker.is_primary && (
-                        <span className="text-xs text-gray-500 font-medium">(основний)</span>
+                        <span className="text-xs text-muted-foreground font-medium">(основний)</span>
                       )}
                     </div>
                   </button>
@@ -303,7 +291,7 @@ export const WorkerSelector = () => {
                         setWorkerToDelete(worker.id);
                         setIsOpen(false);
                       }}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-lg hover:bg-red-500/20 text-red-600 transition-colors"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-lg hover:bg-destructive/15 text-destructive transition-colors"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -314,7 +302,7 @@ export const WorkerSelector = () => {
         </div>
       </div>
       <AlertDialog open={!!workerToDelete} onOpenChange={(open) => !open && setWorkerToDelete(null)}>
-        <AlertDialogContent className="bg-card border border-border">
+        <AlertDialogContent className="w-[calc(100%-3rem)] max-w-md rounded-3xl">
           <AlertDialogHeader>
             <AlertDialogTitle>Видалити працівника?</AlertDialogTitle>
             <AlertDialogDescription>
@@ -327,7 +315,7 @@ export const WorkerSelector = () => {
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteWorker}
-              className="bg-red-600 hover:bg-red-700 text-white"
+              className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
             >
               Видалити
             </AlertDialogAction>

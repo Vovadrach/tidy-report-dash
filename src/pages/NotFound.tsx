@@ -10,7 +10,7 @@ const NotFound = () => {
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center">
-      <div className="text-center bg-card rounded-lg p-8 shadow-md border border-border">
+      <div className="text-center surface-card rounded-3xl p-8 shadow-md">
         <h1 className="mb-4 text-4xl font-bold text-foreground">404</h1>
         <p className="mb-4 text-xl text-muted-foreground">Сторінку не знайдено</p>
         <a href="/" className="text-primary hover:text-primary/80 underline transition-smooth">

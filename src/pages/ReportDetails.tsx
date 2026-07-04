@@ -213,7 +213,7 @@ const ReportDetails = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-secondary flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <p className="text-muted-foreground">Завантаження...</p>
       </div>
     );
@@ -221,30 +221,30 @@ const ReportDetails = () => {
 
   if (!report) {
     return (
-      <div className="min-h-screen bg-gradient-secondary flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <p className="text-muted-foreground">Звіт не знайдено</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background pb-32 pt-4">
-      <main className="container mx-auto px-4 py-6 max-w-4xl space-y-4">
+    <div className="min-h-screen bg-background">
+      <main className="container mx-auto px-4 pt-6 pb-dock max-w-4xl space-y-4">
         {/* Client Header */}
-        <div className="bg-card rounded-lg p-6 shadow-md border border-border">
-          <h1 className="text-2xl font-semibold text-center text-foreground">{report.clientName || report.client_name}</h1>
+        <div className="surface-card p-5 shadow-sm">
+          <h1 className="text-2xl font-bold tracking-tight text-center text-foreground">{report.clientName || report.client_name}</h1>
         </div>
 
         {/* Summary Cards - Only unpaid amount and hours */}
-        <div className="bg-card rounded-lg p-4 shadow-md border border-border space-y-3">
+        <div className="surface-card p-4 shadow-sm space-y-3">
           <div className="grid grid-cols-2 gap-3">
-            <div className="bg-warning/10 rounded-md p-3 flex items-center justify-center gap-2">
-              <AlertCircle className="w-5 h-5 text-warning" />
-              <p className="text-lg font-bold text-warning">{Math.round(unpaidAmount)}€</p>
+            <div className="chip chip-amber p-3 text-lg rounded-xl">
+              <AlertCircle className="w-5 h-5" />
+              <span>{Math.round(unpaidAmount)}€</span>
             </div>
-            <div className="bg-primary/10 rounded-md p-3 flex items-center justify-center gap-2">
-              <Clock className="w-5 h-5 text-primary" />
-              <p className="text-lg font-bold text-foreground">{decimalToHours(unpaidHours)}</p>
+            <div className="chip chip-violet p-3 text-lg rounded-xl">
+              <Clock className="w-5 h-5" />
+              <span>{decimalToHours(unpaidHours)}</span>
             </div>
           </div>
 
@@ -252,7 +252,7 @@ const ReportDetails = () => {
           {unpaidDays.length > 0 && (
             <Button
               onClick={handleMarkAllAsPaid}
-              className="w-full bg-gradient-to-br from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold shadow-md"
+              className="w-full bg-success hover:bg-success/90 text-success-foreground font-bold shadow-sm rounded-xl"
               size="sm"
             >
               <CheckCircle2 className="w-4 h-4 mr-2" />
@@ -262,7 +262,7 @@ const ReportDetails = () => {
         </div>
 
         {/* Work Days - Only unpaid or partial */}
-        <div className="bg-card rounded-lg p-6 shadow-md border border-border">
+        <div className="surface-card p-4 shadow-sm">
           <div className="space-y-3">
             {unpaidDays.length === 0 ? (
               <p className="text-center text-muted-foreground py-8">Всі робочі дні оплачені</p>
@@ -274,7 +274,7 @@ const ReportDetails = () => {
                 return (
                   <div
                     key={day.id}
-                    className="bg-gradient-to-br from-card/80 to-card/60 backdrop-blur-xl rounded-2xl p-3 sm:p-4 border border-border/50 shadow-lg hover:shadow-xl transition-all"
+                    className="surface-card surface-card-hover p-3 sm:p-4"
                   >
                     {/* Статус індикатор зверху */}
                     <div className="flex items-center gap-2 mb-3">
@@ -295,7 +295,7 @@ const ReportDetails = () => {
                             </span>
                           </button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent className="bg-card backdrop-blur-xl border border-border shadow-lg rounded-xl z-[100] p-1.5 min-w-[140px]">
+                        <DropdownMenuContent className="z-[100] rounded-xl p-1.5 min-w-[150px] shadow-lg">
                           {/* Active status first */}
                           {status === 'paid' && (
                             <DropdownMenuItem
@@ -362,10 +362,10 @@ const ReportDetails = () => {
                       {/* Віконце 1: ДАТА - клікабельне */}
                       <div
                         onClick={() => navigate(`/report/${report.id}/day/${day.id}`)}
-                        className="bg-blue-50 rounded-lg px-3 py-2.5 border border-blue-200 flex items-center justify-center gap-2 cursor-pointer hover:bg-blue-100 transition-colors"
+                        className="chip chip-blue px-3 py-2.5 rounded-xl text-sm cursor-pointer transition-transform active:scale-95"
                       >
-                        <Calendar className="w-4 h-4 text-blue-600 flex-shrink-0" />
-                        <span className="text-sm font-bold text-foreground tabular-nums whitespace-nowrap">
+                        <Calendar className="w-4 h-4 flex-shrink-0" />
+                        <span>
                           {new Date(day.date).toLocaleDateString("uk-UA", { day: '2-digit', month: '2-digit' })}
                         </span>
                       </div>
@@ -373,10 +373,10 @@ const ReportDetails = () => {
                       {/* Віконце 2: ГОДИНИ - клікабельне */}
                       <div
                         onClick={() => navigate(`/report/${report.id}/day/${day.id}`)}
-                        className="bg-blue-50 rounded-lg px-3 py-2.5 border border-blue-200 flex items-center justify-center gap-2 cursor-pointer hover:bg-blue-100 transition-colors"
+                        className="chip chip-violet px-3 py-2.5 rounded-xl text-sm cursor-pointer transition-transform active:scale-95"
                       >
-                        <Clock className="w-4 h-4 text-blue-600 flex-shrink-0" />
-                        <span className="text-sm font-bold text-foreground tabular-nums whitespace-nowrap">
+                        <Clock className="w-4 h-4 flex-shrink-0" />
+                        <span>
                           {decimalToHours(workerData.hours)}
                         </span>
                       </div>

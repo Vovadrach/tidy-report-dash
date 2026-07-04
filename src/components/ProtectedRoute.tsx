@@ -6,9 +6,9 @@ export const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-secondary flex items-center justify-center">
-        <div className="glass-effect rounded-2xl p-8 shadow-xl">
-          <p className="text-foreground text-lg">Завантаження...</p>
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="surface-card rounded-3xl p-8 shadow-md">
+          <p className="text-muted-foreground text-lg animate-pulse">Завантаження...</p>
         </div>
       </div>
     );

@@ -9,6 +9,16 @@ import { Client } from '@/types/report';
 import { Pencil, Trash2, Plus, Euro, Users } from 'lucide-react';
 import { toast } from 'sonner';
 import { BottomNavigation } from '@/components/BottomNavigation';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 const ClientManagement = () => {
   const navigate = useNavigate();
@@ -18,6 +28,7 @@ const ClientManagement = () => {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   
+  const [clientToDelete, setClientToDelete] = useState<Client | null>(null);
   const [newClientName, setNewClientName] = useState('');
   const [newClientRate, setNewClientRate] = useState('');
   const [editClientName, setEditClientName] = useState('');
@@ -91,13 +102,12 @@ const ClientManagement = () => {
     }
   };
 
-  const handleDeleteClient = async (clientId: string) => {
-    if (!confirm('Ви впевнені, що хочете видалити цього клієнта? Це також видалить всі пов\'язані звіти.')) {
-      return;
-    }
+  const handleDeleteClient = async () => {
+    if (!clientToDelete) return;
 
     try {
-      await api.deleteClient(clientId);
+      await api.deleteClient(clientToDelete.id);
+      setClientToDelete(null);
       await loadClients();
       toast.success('Клієнта видалено', { duration: 2000 });
     } catch (error) {
@@ -108,26 +118,26 @@ const ClientManagement = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-secondary flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <p className="text-foreground text-lg">Завантаження...</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background pb-32 pt-4">
+    <div className="min-h-screen bg-background">
       {/* Fixed top section */}
-      <div className="fixed top-0 left-0 right-0 z-40 bg-white/5 dark:bg-gray-900/5 backdrop-blur-xl border-b border-white/10 shadow-[0_2px_16px_0_rgba(31,38,135,0.1)]">
+      <div className="fixed top-0 left-0 right-0 z-40 glass-header">
         <div className="container mx-auto px-4 py-4">
-          <h1 className="text-xl font-bold text-center text-foreground">Управління клієнтами</h1>
+          <h1 className="text-lg font-bold tracking-tight text-center text-foreground">Управління клієнтами</h1>
         </div>
       </div>
 
-      <main className="container mx-auto px-4 pt-20 max-w-4xl space-y-3">
+      <main className="container mx-auto px-4 pt-20 pb-dock max-w-4xl space-y-3">
         {/* Add Client Button */}
         <button
           onClick={() => setIsAddDialogOpen(true)}
-          className="w-full bg-gradient-to-br from-green-100 to-green-200 dark:from-green-900 dark:to-green-800 text-green-800 dark:text-green-100 shadow-[0_4px_16px_0_rgba(34,197,94,0.25)] border-2 border-green-400 dark:border-green-600 rounded-xl p-4 font-semibold transition-all active:scale-[0.98] hover:shadow-[0_6px_20px_0_rgba(34,197,94,0.3)]"
+          className="w-full bg-success text-success-foreground rounded-2xl p-4 font-bold shadow-md hover:shadow-lg hover:bg-success/90 transition-all active:scale-[0.98]"
         >
           <div className="flex items-center justify-center gap-2">
             <Plus className="w-5 h-5" />
@@ -145,7 +155,7 @@ const ClientManagement = () => {
           clients.map((client) => (
             <div
               key={client.id}
-              className="bg-card rounded-xl p-4 shadow-sm border border-border"
+              className="surface-card p-4"
             >
               <div className="flex items-center justify-between gap-3">
                 {/* Client Name */}
@@ -154,26 +164,24 @@ const ClientManagement = () => {
                 </div>
 
                 {/* Hourly Rate Badge */}
-                <div className="bg-blue-50 dark:bg-blue-950 rounded-lg px-3 py-1.5 flex items-center gap-1.5 flex-shrink-0">
-                  <Euro className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-                  <span className="font-semibold text-black dark:text-white text-sm">
-                    {client.hourlyRate || client.hourly_rate}€/год
-                  </span>
+                <div className="chip chip-blue flex-shrink-0">
+                  <Euro className="w-3.5 h-3.5" />
+                  <span>{client.hourlyRate || client.hourly_rate}€/год</span>
                 </div>
 
                 {/* Action Buttons */}
                 <div className="flex gap-1 flex-shrink-0">
                   <button
                     onClick={() => handleEditClick(client)}
-                    className="w-9 h-9 rounded-lg flex items-center justify-center bg-blue-50 dark:bg-blue-950 hover:bg-blue-100 dark:hover:bg-blue-900 transition-colors active:scale-95"
+                    className="w-9 h-9 rounded-xl flex items-center justify-center bg-primary/10 hover:bg-primary/15 transition-colors active:scale-95"
                   >
-                    <Pencil className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                    <Pencil className="w-4 h-4 text-primary" />
                   </button>
                   <button
-                    onClick={() => handleDeleteClient(client.id)}
-                    className="w-9 h-9 rounded-lg flex items-center justify-center bg-red-50 dark:bg-red-950 hover:bg-red-100 dark:hover:bg-red-900 transition-colors active:scale-95"
+                    onClick={() => setClientToDelete(client)}
+                    className="w-9 h-9 rounded-xl flex items-center justify-center bg-destructive/10 hover:bg-destructive/15 transition-colors active:scale-95"
                   >
-                    <Trash2 className="w-4 h-4 text-red-600 dark:text-red-400" />
+                    <Trash2 className="w-4 h-4 text-destructive" />
                   </button>
                 </div>
               </div>
@@ -184,7 +192,7 @@ const ClientManagement = () => {
 
       {/* Add Client Dialog */}
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-        <DialogContent className="bg-card border border-border shadow-xl max-w-md rounded-xl">
+        <DialogContent className="w-[calc(100%-3rem)] max-w-md rounded-3xl shadow-xl">
           <DialogHeader>
             <DialogTitle className="text-lg font-bold text-foreground text-center">Додати клієнта</DialogTitle>
           </DialogHeader>
@@ -195,7 +203,7 @@ const ClientManagement = () => {
                 value={newClientName}
                 onChange={(e) => setNewClientName(e.target.value)}
                 placeholder="Введіть назву"
-                className="h-11 rounded-lg"
+                className="h-11 rounded-xl"
               />
             </div>
             <div className="space-y-1.5">
@@ -205,12 +213,12 @@ const ClientManagement = () => {
                 value={newClientRate}
                 onChange={(e) => setNewClientRate(e.target.value)}
                 placeholder="Введіть ставку"
-                className="h-11 rounded-lg"
+                className="h-11 rounded-xl"
               />
             </div>
             <button
               onClick={handleAddClient}
-              className="w-full bg-gradient-to-br from-green-100 to-green-200 dark:from-green-900 dark:to-green-800 text-green-800 dark:text-green-100 shadow-[0_4px_16px_0_rgba(34,197,94,0.25)] border-2 border-green-400 dark:border-green-600 rounded-lg h-11 font-semibold transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+              className="w-full bg-success text-success-foreground rounded-xl h-11 font-bold shadow-sm hover:bg-success/90 transition-all active:scale-[0.98] flex items-center justify-center gap-2"
             >
               <Plus className="w-4 h-4" />
               <span>Додати</span>
@@ -221,7 +229,7 @@ const ClientManagement = () => {
 
       {/* Edit Client Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="bg-card border border-border shadow-xl max-w-md rounded-xl">
+        <DialogContent className="w-[calc(100%-3rem)] max-w-md rounded-3xl shadow-xl">
           <DialogHeader>
             <DialogTitle className="text-lg font-bold text-foreground text-center">Редагувати клієнта</DialogTitle>
           </DialogHeader>
@@ -232,7 +240,7 @@ const ClientManagement = () => {
                 value={editClientName}
                 onChange={(e) => setEditClientName(e.target.value)}
                 placeholder="Введіть назву"
-                className="h-11 rounded-lg"
+                className="h-11 rounded-xl"
               />
             </div>
             <div className="space-y-1.5">
@@ -242,12 +250,12 @@ const ClientManagement = () => {
                 value={editClientRate}
                 onChange={(e) => setEditClientRate(e.target.value)}
                 placeholder="Введіть ставку"
-                className="h-11 rounded-lg"
+                className="h-11 rounded-xl"
               />
             </div>
             <button
               onClick={handleUpdateClient}
-              className="w-full bg-gradient-to-br from-blue-100 to-blue-200 dark:from-blue-900 dark:to-blue-800 text-blue-800 dark:text-blue-100 shadow-[0_4px_16px_0_rgba(59,130,246,0.25)] border-2 border-blue-400 dark:border-blue-600 rounded-lg h-11 font-semibold transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+              className="w-full bg-primary text-primary-foreground rounded-xl h-11 font-bold shadow-sm hover:bg-primary/90 transition-all active:scale-[0.98] flex items-center justify-center gap-2"
             >
               <Pencil className="w-4 h-4" />
               <span>Зберегти</span>
@@ -255,6 +263,27 @@ const ClientManagement = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Client Confirmation */}
+      <AlertDialog open={!!clientToDelete} onOpenChange={(open) => !open && setClientToDelete(null)}>
+        <AlertDialogContent className="w-[calc(100%-3rem)] max-w-md rounded-3xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Видалити клієнта «{clientToDelete?.name}»?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Це також видалить всі пов'язані звіти. Цю дію неможливо скасувати.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Скасувати</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteClient}
+              className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+            >
+              Видалити
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Bottom Navigation */}
       <BottomNavigation />

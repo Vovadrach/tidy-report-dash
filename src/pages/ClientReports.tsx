@@ -232,33 +232,33 @@ const ClientReports = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-32 pt-4">
+    <div className="min-h-screen bg-background">
       {/* Fixed top section */}
-      <div className="fixed top-0 left-0 right-0 z-40 bg-white/5 dark:bg-gray-900/5 backdrop-blur-xl border-b border-white/10 shadow-[0_2px_16px_0_rgba(31,38,135,0.1)]">
+      <div className="fixed top-0 left-0 right-0 z-40 glass-header">
         <div className="container mx-auto px-4 py-4">
-          <h1 className="text-xl font-bold text-center text-foreground">{client.name}</h1>
+          <h1 className="text-xl font-bold tracking-tight text-center text-foreground">{client.name}</h1>
         </div>
       </div>
 
-      <main className="container mx-auto px-4 pt-20 max-w-4xl space-y-3">
+      <main className="container mx-auto px-4 pt-20 pb-dock max-w-4xl space-y-3">
         {/* Summary Cards - Unpaid amount and hours */}
         {unpaidWorkDays && unpaidWorkDays.length > 0 && (
-          <div className="bg-card rounded-lg p-4 shadow-md border border-border space-y-3">
+          <div className="surface-card p-4 shadow-sm space-y-3">
             <div className="grid grid-cols-2 gap-3">
-              <div className="bg-warning/10 rounded-md p-3 flex items-center justify-center gap-2">
-                <AlertCircle className="w-5 h-5 text-warning" />
-                <p className="text-lg font-bold text-warning">{Math.round(unpaidAmount)}€</p>
+              <div className="chip chip-amber p-3 text-lg rounded-xl">
+                <AlertCircle className="w-5 h-5" />
+                <span>{Math.round(unpaidAmount)}€</span>
               </div>
-              <div className="bg-primary/10 rounded-md p-3 flex items-center justify-center gap-2">
-                <Clock className="w-5 h-5 text-primary" />
-                <p className="text-lg font-bold text-foreground">{decimalToHours(unpaidHours)}</p>
+              <div className="chip chip-violet p-3 text-lg rounded-xl">
+                <Clock className="w-5 h-5" />
+                <span>{decimalToHours(unpaidHours)}</span>
               </div>
             </div>
 
             {/* Mark All as Paid Button */}
             <Button
               onClick={handleMarkAllAsPaid}
-              className="w-full bg-gradient-to-br from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold shadow-md"
+              className="w-full bg-success hover:bg-success/90 text-success-foreground font-bold shadow-sm rounded-xl"
               size="sm"
             >
               <CheckCircle2 className="w-4 h-4 mr-2" />
@@ -300,7 +300,7 @@ const ClientReports = () => {
               <div
                 key={`${day.reportId}-${day.id}`}
                 onClick={() => navigate(`/report/${day.reportId}/day/${day.id}`)}
-                className="bg-gradient-to-br from-card/80 to-card/60 backdrop-blur-xl rounded-2xl p-3 sm:p-4 border border-border/50 shadow-lg hover:shadow-xl transition-all cursor-pointer"
+                className="surface-card surface-card-hover p-3 sm:p-4 cursor-pointer"
               >
                 <div className="flex items-start justify-between gap-2 sm:gap-3">
                   {/* Ліва частина: статус + дата */}
@@ -323,7 +323,7 @@ const ClientReports = () => {
                             </span>
                           </button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent className="bg-card backdrop-blur-xl border border-border shadow-lg rounded-xl z-[100] p-1.5 min-w-[140px]">
+                        <DropdownMenuContent className="z-[100] rounded-xl p-1.5 min-w-[150px] shadow-lg">
                           {/* Active status first */}
                           {status === 'paid' && (
                             <DropdownMenuItem
@@ -410,33 +410,21 @@ const ClientReports = () => {
 
                   {/* Права частина: години + загальна сума + залишок */}
                   <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
-                    <div className="bg-purple-50 rounded-lg px-1.5 sm:px-2 py-0.5 sm:py-1 flex items-center gap-0.5 sm:gap-1 min-w-[60px] sm:min-w-[70px]">
-                      <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-purple-600 flex-shrink-0" />
-                      <span className="text-xs sm:text-sm font-bold text-foreground tabular-nums">
-                        {decimalToHours(workerData.hours)}
-                      </span>
+                    <div className="chip chip-violet min-w-[58px]">
+                      <Clock className="w-3.5 h-3.5 flex-shrink-0" />
+                      <span>{decimalToHours(workerData.hours)}</span>
                     </div>
 
-                    <div className="bg-blue-50 rounded-lg px-1.5 sm:px-2 py-0.5 sm:py-1 flex items-center gap-0.5 sm:gap-1 min-w-[60px] sm:min-w-[70px]">
-                      <Euro className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-600 flex-shrink-0" />
-                      <span className="text-xs sm:text-sm font-bold text-foreground tabular-nums">
-                        {Math.round(workerData.amount)}
-                      </span>
+                    <div className="chip chip-blue min-w-[58px]">
+                      <Euro className="w-3.5 h-3.5 flex-shrink-0" />
+                      <span>{Math.round(workerData.amount)}</span>
                     </div>
 
                     {/* Залишок до оплати */}
                     {displayStatus !== 'paid' && (
-                      <div className={`rounded-lg px-1.5 sm:px-2 py-0.5 sm:py-1 flex items-center gap-0.5 sm:gap-1 min-w-[60px] sm:min-w-[70px] ${
-                        displayStatus === 'partial' ? 'bg-orange-50' : 'bg-red-50'
-                      }`}>
-                        <AlertCircle className={`w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0 ${
-                          displayStatus === 'partial' ? 'text-orange-600' : 'text-red-600'
-                        }`} />
-                        <span className={`text-xs sm:text-sm font-bold tabular-nums ${
-                          displayStatus === 'partial' ? 'text-orange-600' : 'text-red-600'
-                        }`}>
-                          {Math.round(remainingAmount)}
-                        </span>
+                      <div className={`chip min-w-[58px] ${displayStatus === 'partial' ? 'chip-amber' : 'chip-rose'}`}>
+                        <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+                        <span>{Math.round(remainingAmount)}</span>
                       </div>
                     )}
                   </div>

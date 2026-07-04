@@ -5,9 +5,19 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { api } from "@/lib/api";
 import { Client, Report, WorkDay, PaymentStatus, Worker, WorkDayAssignment } from "@/types/report";
-import { User, Calendar, Clock, Plus, Euro, ArrowLeft, X, House, Check, Users, FileText, Trash2, Save } from "lucide-react";
+import { Calendar, Plus, Euro, Users, FileText, Trash2, Save } from "lucide-react";
 import { toast } from "sonner";
-import { BottomNavigation } from "@/components/BottomNavigation";
+import { HomeDock } from "@/components/HomeDock";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { TimePickerWheel } from "@/components/TimePickerWheel";
 import { useWorker } from "@/contexts/WorkerContext";
 import { WorkerAssignmentDialog } from "@/components/WorkerAssignmentDialog";
@@ -60,6 +70,7 @@ const CreateReport = () => {
   // Editing planned work day
   const [editingWorkDayId, setEditingWorkDayId] = useState<string | null>(null);
   const [editingReportId, setEditingReportId] = useState<string | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   const addWorkerRef = useRef<HTMLDivElement>(null);
   
@@ -278,10 +289,6 @@ const CreateReport = () => {
 
   const handleDeletePlannedWork = async () => {
     if (!editingWorkDayId) return;
-
-    if (!confirm("Ви впевнені, що хочете видалити цей запланований запис?")) {
-      return;
-    }
 
     try {
       await api.deleteWorkDay(editingWorkDayId);
@@ -704,23 +711,23 @@ const CreateReport = () => {
   const selectedClient = clients.find(c => c.id === selectedClientId);
 
   return (
-    <div className="min-h-screen bg-background pb-20 pt-4">
+    <div className="min-h-screen bg-background">
       {/* Fixed top section with client info - Compact */}
-      <div className="fixed top-0 left-0 right-0 z-40 bg-white/5 dark:bg-gray-900/5 backdrop-blur-xl border-b border-white/10 shadow-sm">
+      <div className="fixed top-0 left-0 right-0 z-40 glass-header">
         <div className="container mx-auto px-4 py-2.5">
-          <h1 className="text-lg font-bold text-foreground text-center">
+          <h1 className="text-lg font-bold tracking-tight text-foreground text-center">
             {selectedClient?.name || "Завантаження..."}
           </h1>
         </div>
       </div>
 
-      <main className="container mx-auto px-4 pt-20 pb-6 max-w-md">
+      <main className="container mx-auto px-4 pt-20 pb-dock-sm max-w-md">
         <div className="space-y-3">
           {/* Date Card - Compact */}
-          <div className="bg-card rounded-lg p-3 shadow-sm border border-border">
+          <div className="surface-card p-3">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950 dark:to-green-900 flex items-center justify-center flex-shrink-0 border border-green-200/60 dark:border-green-700/60">
-                <Calendar className="w-4 h-4 text-green-600 dark:text-green-400" />
+              <div className="icon-badge icon-badge-emerald w-8 h-8 rounded-full">
+                <Calendar className="w-4 h-4" />
               </div>
               <Input
                 type="date"
@@ -732,7 +739,7 @@ const CreateReport = () => {
           </div>
 
           {/* Main Time & Rate Card - Redesigned for Mobile */}
-          <div className="bg-card rounded-lg shadow-sm border border-border overflow-hidden">
+          <div className="surface-card overflow-hidden">
             {/* Time Picker Wheels - Full Width */}
             <div className="p-3 border-b border-border/50">
               <div className="flex items-center justify-between px-2">
@@ -853,10 +860,10 @@ const CreateReport = () => {
           {(hours > 0 || minutes > 0) && selectedClientId && workers.length > 0 && (
             <button
               onClick={() => setWorkerDialogOpen(true)}
-              className="w-full bg-card rounded-lg p-3 shadow-sm border border-border hover:border-green-500/50 transition-all flex items-center justify-between"
+              className="w-full surface-card surface-card-hover p-3 flex items-center justify-between"
             >
               <div className="flex items-center gap-2">
-                <Users className="w-5 h-5 text-green-500" />
+                <Users className="w-5 h-5 text-accent" />
                 <span className="text-sm font-bold">
                   {selectedWorkers.length > 0 
                     ? `Працівники (${selectedWorkers.length})` 
@@ -871,13 +878,13 @@ const CreateReport = () => {
                     return (
                       <div
                         key={workerId}
-                        className="w-6 h-6 rounded-full border-2 border-white dark:border-gray-800"
+                        className="w-6 h-6 rounded-full border-2 border-card"
                         style={{ backgroundColor: worker.color }}
                       />
                     );
                   })}
                   {selectedWorkers.length > 3 && (
-                    <div className="w-6 h-6 rounded-full bg-gray-300 dark:bg-gray-700 border-2 border-white dark:border-gray-800 flex items-center justify-center text-xs font-bold">
+                    <div className="w-6 h-6 rounded-full bg-muted border-2 border-card flex items-center justify-center text-xs font-bold">
                       +{selectedWorkers.length - 3}
                     </div>
                   )}
@@ -900,14 +907,14 @@ const CreateReport = () => {
 
           {/* Payment Status Selection - Compact */}
           {(hours > 0 || minutes > 0) && selectedClientId && (
-            <div className="bg-card rounded-lg p-3 shadow-sm border border-border">
+            <div className="surface-card p-3">
               <div className="grid grid-cols-3 gap-1.5">
                 <button
                   onClick={() => setWorkPaymentStatus("paid")}
-                  className={`h-10 rounded-lg text-xs font-bold transition-all ${
+                  className={`h-10 rounded-xl text-xs font-bold transition-all active:scale-95 ${
                     workPaymentStatus === "paid"
-                      ? "bg-gradient-to-br from-green-100 to-green-200 dark:from-green-900 dark:to-green-800 text-green-800 dark:text-green-100 shadow-md border border-green-300/60 dark:border-green-600/60"
-                      : "bg-green-50/30 dark:bg-green-950/20 text-green-600/60 dark:text-green-400/60 border border-green-200/30 dark:border-green-800/30"
+                      ? "bg-success/12 text-success border-2 border-success/60 shadow-sm"
+                      : "bg-transparent text-muted-foreground border border-border hover:bg-success/5"
                   }`}
                 >
                   Оплачено
@@ -915,10 +922,10 @@ const CreateReport = () => {
 
                 <button
                   onClick={() => setWorkPaymentStatus("unpaid")}
-                  className={`h-10 rounded-lg text-xs font-bold transition-all ${
+                  className={`h-10 rounded-xl text-xs font-bold transition-all active:scale-95 ${
                     workPaymentStatus === "unpaid"
-                      ? "bg-gradient-to-br from-red-100 to-red-200 dark:from-red-900 dark:to-red-800 text-red-800 dark:text-red-100 shadow-md border border-red-300/60 dark:border-red-600/60"
-                      : "bg-red-50/30 dark:bg-red-950/20 text-red-600/60 dark:text-red-400/60 border border-red-200/30 dark:border-red-800/30"
+                      ? "bg-destructive/12 text-destructive border-2 border-destructive/60 shadow-sm"
+                      : "bg-transparent text-muted-foreground border border-border hover:bg-destructive/5"
                   }`}
                 >
                   Не оплачено
@@ -926,10 +933,10 @@ const CreateReport = () => {
 
                 <button
                   onClick={() => setWorkPaymentStatus("partial")}
-                  className={`h-10 rounded-lg text-xs font-bold transition-all ${
+                  className={`h-10 rounded-xl text-xs font-bold transition-all active:scale-95 ${
                     workPaymentStatus === "partial"
-                      ? "bg-gradient-to-br from-orange-100 to-orange-200 dark:from-orange-900 dark:to-orange-800 text-orange-800 dark:text-orange-100 shadow-md border border-orange-300/60 dark:border-orange-600/60"
-                      : "bg-orange-50/30 dark:bg-orange-950/20 text-orange-600/60 dark:text-orange-400/60 border border-orange-200/30 dark:border-orange-800/30"
+                      ? "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-2 border-amber-500/60 shadow-sm"
+                      : "bg-transparent text-muted-foreground border border-border hover:bg-amber-500/5"
                   }`}
                 >
                   Частково
@@ -946,7 +953,7 @@ const CreateReport = () => {
                     className="h-9 pr-8 text-center font-medium rounded-md"
                   />
                   <div className="absolute right-2 top-1/2 -translate-y-1/2">
-                    <Euro className="w-4 h-4 text-orange-600 dark:text-orange-400" />
+                    <Euro className="w-4 h-4 text-amber-600 dark:text-amber-400" />
                   </div>
                 </div>
               )}
@@ -955,7 +962,7 @@ const CreateReport = () => {
 
           {/* Note Field */}
           {selectedClientId && (
-            <div className="bg-card rounded-lg p-3 shadow-sm border border-border">
+            <div className="surface-card p-3">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
                   <FileText className="w-4 h-4 text-muted-foreground" />
@@ -990,7 +997,7 @@ const CreateReport = () => {
               <Button
                 variant="ghost"
                 size="lg"
-                onClick={handleDeletePlannedWork}
+                onClick={() => setIsDeleteDialogOpen(true)}
                 className="w-full h-12 text-sm font-semibold text-destructive hover:text-destructive hover:bg-destructive/10"
               >
                 <Trash2 className="w-4 h-4 mr-2" />
@@ -1002,7 +1009,7 @@ const CreateReport = () => {
                 variant="outline"
                 size="lg"
                 onClick={handlePlanWork}
-                className="w-full h-12 text-sm font-bold rounded-lg border-2 border-dashed border-orange-400 dark:border-orange-500 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 hover:from-amber-100 hover:to-orange-100 dark:hover:from-amber-900/40 dark:hover:to-orange-900/40 hover:border-orange-500 dark:hover:border-orange-400 text-orange-700 dark:text-orange-300 transition-all shadow-sm hover:shadow-md"
+                className="w-full h-12 text-sm font-bold rounded-xl border-2 border-dashed border-amber-400/70 dark:border-amber-500/60 bg-amber-500/8 hover:bg-amber-500/12 text-amber-700 dark:text-amber-300 transition-all active:scale-[0.98] shadow-xs"
                 disabled={!selectedClientId}
               >
                 <Calendar className="w-4 h-4 mr-2" />
@@ -1016,7 +1023,7 @@ const CreateReport = () => {
                 <Button
                   variant="ghost"
                   size="lg"
-                  onClick={handleDeletePlannedWork}
+                  onClick={() => setIsDeleteDialogOpen(true)}
                   className="h-12 px-4 text-destructive hover:text-destructive hover:bg-destructive/10"
                 >
                   <Trash2 className="w-4 h-4" />
@@ -1026,7 +1033,7 @@ const CreateReport = () => {
                 variant="default"
                 size="lg"
                 onClick={handleCreateReport}
-                className={`h-12 text-sm font-bold rounded-lg bg-gradient-to-br from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 shadow-lg hover:shadow-xl ${editingWorkDayId ? 'flex-1' : 'w-full'}`}
+                className={`h-12 text-sm font-bold rounded-lg gradient-primary hover:opacity-95 shadow-md hover:shadow-lg ${editingWorkDayId ? 'flex-1' : 'w-full'}`}
                 disabled={
                   !selectedClientId ||
                   (hours === 0 && minutes === 0) ||
@@ -1043,50 +1050,28 @@ const CreateReport = () => {
         </div>
       </main>
 
-      {/* Home Button - floating at bottom */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 pointer-events-none">
-        <div className="absolute inset-0 pointer-events-none" style={{ height: '200px' }}>
-          <div
-            className="absolute inset-0 backdrop-blur-xl"
-            style={{
-              maskImage: 'linear-gradient(to top, black 0%, black 30%, transparent 100%)',
-              WebkitMaskImage: 'linear-gradient(to top, black 0%, black 30%, transparent 100%)'
-            }}
-          ></div>
-          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/90 via-30% to-transparent"></div>
-        </div>
-
-        <div className="px-6 pb-6 relative pointer-events-auto">
-          <div className="flex justify-center">
-            <button
-              onClick={() => navigate('/')}
-              className="flex flex-col items-center justify-center gap-[2px] h-[56px] rounded-full transition-all duration-150 active:scale-95 px-8 bg-white/5 dark:bg-gray-900/5 backdrop-blur-xl border border-white/10 shadow-[0_4px_16px_0_rgba(31,38,135,0.15),0_8px_24px_0_rgba(0,0,0,0.1)]"
-              style={{ backgroundColor: 'rgba(0, 0, 0, 0.045)' }}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent className="w-[calc(100%-3rem)] max-w-md rounded-3xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Видалити запис?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Запланований запис буде видалено назавжди. Цю дію неможливо скасувати.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Скасувати</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeletePlannedWork}
+              className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
             >
-              <House className="w-[27px] h-[27px]" style={{ color: '#007AFF' }} strokeWidth={2.5} fill="currentColor" />
-              <span
-                className="text-[10.5px] font-medium tracking-[-0.01em]"
-                style={{ color: '#007AFF' }}
-              >
-                Головна
-              </span>
-            </button>
-          </div>
-        </div>
-      </div>
+              Видалити
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
-      {/* Hide scrollbar CSS */}
-      <style>{`
-        .scrollbar-hide::-webkit-scrollbar {
-          display: none;
-        }
-        .scrollbar-hide {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-          -webkit-overflow-scrolling: touch;
-          touch-action: pan-y;
-        }
-      `}</style>
+      <HomeDock />
+
     </div>
   );
 };

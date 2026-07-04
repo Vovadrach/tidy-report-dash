@@ -546,21 +546,19 @@ const Index = () => {
   }
 
   return (
-    <div
-      className="min-h-screen bg-background pb-32 pt-4"
-    >
+    <div className="min-h-screen bg-background">
       {/* Month Navigator */}
-      <div className="fixed top-0 left-0 right-0 z-40 bg-white/5 dark:bg-gray-900/5 backdrop-blur-xl border-b border-white/10 shadow-[0_2px_16px_0_rgba(31,38,135,0.1)]" data-no-swipe>
+      <div className="fixed top-0 left-0 right-0 z-40 glass-header" data-no-swipe>
         <div className="container mx-auto px-4 py-3">
           {/* Navigation Controls */}
           <div className="flex items-center justify-between mb-3">
             {!isCustomPeriodMode ? (
               <button
                 onClick={goToPreviousMonth}
-                className="p-2.5 rounded-xl hover:bg-primary/10 transition-all active:scale-95"
+                className="p-2.5 rounded-full text-primary hover:bg-primary/10 transition-all active:scale-90"
                 aria-label="Попередній місяць"
               >
-                <ChevronLeft className="w-5 h-5 text-primary stroke-[3]" />
+                <ChevronLeft className="w-5 h-5 stroke-[2.75]" />
               </button>
             ) : (
               <div className="w-10"></div>
@@ -569,9 +567,9 @@ const Index = () => {
             <div className="flex flex-col items-center gap-1">
               <button
                 onClick={handleOpenDatePicker}
-                className="px-5 py-2 rounded-2xl hover:bg-primary/10 transition-all active:scale-95 cursor-pointer"
+                className="px-5 py-1.5 rounded-full hover:bg-primary/10 transition-all active:scale-95 cursor-pointer"
               >
-                <span className="text-lg font-extrabold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
+                <span className="text-lg font-extrabold tracking-tight bg-gradient-to-r from-blue-600 to-violet-600 dark:from-blue-400 dark:to-violet-400 bg-clip-text text-transparent">
                   {isCustomPeriodMode && customStartDate && customEndDate
                     ? `${customStartDate.toLocaleDateString("uk-UA", { day: 'numeric', month: 'short' })} - ${customEndDate.toLocaleDateString("uk-UA", { day: 'numeric', month: 'short', year: 'numeric' })}`
                     : formatMonthYear(currentMonth)}
@@ -591,10 +589,10 @@ const Index = () => {
             {!isCustomPeriodMode ? (
               <button
                 onClick={goToNextMonth}
-                className="p-2.5 rounded-xl hover:bg-primary/10 transition-all active:scale-95"
+                className="p-2.5 rounded-full text-primary hover:bg-primary/10 transition-all active:scale-90"
                 aria-label="Наступний місяць"
               >
-                <ChevronRight className="w-5 h-5 text-primary stroke-[3]" />
+                <ChevronRight className="w-5 h-5 stroke-[2.75]" />
               </button>
             ) : (
               <div className="w-10"></div>
@@ -603,25 +601,35 @@ const Index = () => {
 
           {/* Month Statistics */}
           <div className="grid grid-cols-2 gap-2.5">
-            <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-3 text-center border border-purple-200/60">
-              <p className="text-sm text-purple-700 font-semibold">Годин</p>
-              <p className="text-xl font-bold text-purple-900">{decimalToHours(monthStats.totalHours)}</p>
+            <div className="stat-tile stat-tile-violet">
+              <div className="icon-badge icon-badge-violet">
+                <Clock className="w-5 h-5" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-medium text-muted-foreground">Годин</p>
+                <p className="text-xl font-bold text-foreground tabular-nums leading-tight">{decimalToHours(monthStats.totalHours)}</p>
+              </div>
             </div>
-            <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-3 text-center border border-blue-200/60">
-              <p className="text-sm text-blue-700 font-semibold">Заробіток</p>
-              <p className="text-xl font-bold text-blue-900">{Math.round(monthStats.totalEarned)}€</p>
+            <div className="stat-tile stat-tile-blue">
+              <div className="icon-badge icon-badge-blue">
+                <Euro className="w-5 h-5" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-medium text-muted-foreground">Заробіток</p>
+                <p className="text-xl font-bold text-foreground tabular-nums leading-tight">{Math.round(monthStats.totalEarned)}€</p>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      <main className="container mx-auto px-4 pt-[152px] pb-6 space-y-5">
+      <main className="container mx-auto px-4 pt-[152px] pb-dock space-y-5">
         {/* Return to Current Month Button */}
         {!isCurrentMonth && !isCustomPeriodMode && (
           <div className="flex justify-center mb-4">
             <button
               onClick={goToCurrentMonth}
-              className="bg-primary/10 px-4 py-2 rounded-lg flex items-center gap-2"
+              className="bg-primary/10 hover:bg-primary/15 px-4 py-2 rounded-full flex items-center gap-2 transition-colors active:scale-95"
             >
               {currentMonth < getFirstDayOfMonth(new Date()) ? (
                 <>
@@ -640,7 +648,9 @@ const Index = () => {
 
         {groupedByDay.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center">
-            <Calendar className="w-16 h-16 text-muted-foreground mb-4" />
+            <div className="icon-badge icon-badge-blue w-16 h-16 rounded-2xl mb-4">
+              <Calendar className="w-8 h-8" />
+            </div>
             <p className="text-xl font-semibold text-foreground mb-2">Немає записів</p>
             <p className="text-muted-foreground text-sm">в цьому місяці</p>
           </div>
@@ -657,27 +667,27 @@ const Index = () => {
               <div key={dateKey} className="space-y-2" data-no-swipe>
                 {/* Day Header - Sticky (Telegram style) */}
                 <div
-                  className="sticky flex flex-col items-center gap-1.5 py-1.5 bg-background/80"
+                  className="sticky flex flex-col items-center gap-1.5 py-1.5"
                   style={{
                     top: '152px',
                     zIndex: 30
                   }}
                 >
-                  <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full shadow-sm ${
+                  <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full shadow-sm backdrop-blur-xl border ${
                     isToday
-                      ? 'bg-gradient-to-r from-red-500/25 to-rose-500/25 backdrop-blur-xl border border-red-400/40 dark:border-red-500/40'
-                      : 'bg-card/95 backdrop-blur-xl border border-border/50'
+                      ? 'bg-rose-500/12 border-rose-400/40 dark:bg-rose-500/15 dark:border-rose-500/40'
+                      : 'bg-card/90 border-border/60'
                   }`}>
                     <Calendar className={`w-3.5 h-3.5 ${
-                      isToday ? 'text-red-600 dark:text-red-400' : daysData.length === 0 ? 'text-muted-foreground' : 'text-foreground'
+                      isToday ? 'text-rose-600 dark:text-rose-400' : daysData.length === 0 ? 'text-muted-foreground' : 'text-foreground'
                     }`} />
-                    <span className={`text-xs font-bold ${
-                      isToday ? 'text-red-700 dark:text-red-300' : daysData.length === 0 ? 'text-muted-foreground' : 'text-foreground'
+                    <span className={`text-xs font-bold tabular-nums ${
+                      isToday ? 'text-rose-700 dark:text-rose-300' : daysData.length === 0 ? 'text-muted-foreground' : 'text-foreground'
                     }`}>
                       {dayNumber}
                     </span>
                     <span className={`text-xs font-semibold ${
-                      isToday ? 'text-red-700 dark:text-red-300' : daysData.length === 0 ? 'text-muted-foreground' : 'text-foreground'
+                      isToday ? 'text-rose-700 dark:text-rose-300' : daysData.length === 0 ? 'text-muted-foreground' : 'text-foreground'
                     }`}>
                       {dayName}
                       {isToday && ' (Сьогодні)'}
@@ -708,10 +718,10 @@ const Index = () => {
                                 navigate(`/report/${day.reportId}/day/${day.id}`);
                               }
                             }}
-                            className={`flex-1 rounded-lg p-2 sm:p-2.5 hover:shadow-lg transition-smooth cursor-pointer ${
+                            className={`flex-1 rounded-xl p-2 sm:p-2.5 cursor-pointer ${
                               day.is_planned
-                                ? 'bg-gradient-to-br from-amber-50/80 to-orange-50/80 dark:from-amber-950/30 dark:to-orange-950/30 border-2 border-dashed border-amber-400/70 dark:border-amber-500/70'
-                                : `bg-card border border-border ${dayIndex === daysData.length - 1 ? 'shadow-[0_4px_16px_0_rgba(31,38,135,0.15)]' : 'shadow-sm'}`
+                                ? 'bg-gradient-to-br from-amber-50/80 to-orange-50/60 dark:from-amber-950/30 dark:to-orange-950/30 border-2 border-dashed border-amber-400/70 dark:border-amber-500/60 surface-card-hover'
+                                : `surface-card surface-card-hover ${dayIndex === daysData.length - 1 ? 'shadow-md' : ''}`
                             }`}
                           >
                             <div className="flex items-center justify-between gap-1.5 sm:gap-2">
@@ -733,7 +743,7 @@ const Index = () => {
                                         </span>
                                       </button>
                                     </DropdownMenuTrigger>
-                                    <DropdownMenuContent className="bg-card backdrop-blur-xl border border-border shadow-lg rounded-xl z-[100] p-1.5 min-w-[140px]">
+                                    <DropdownMenuContent className="z-[100] rounded-xl p-1.5 min-w-[150px] shadow-lg">
                                       {/* Active status first */}
                                       {day.paymentStatus === 'paid' && (
                                         <DropdownMenuItem
@@ -802,7 +812,7 @@ const Index = () => {
 
                                 {/* Worker badge - inline if single worker */}
                                 {!day.is_planned && day.assignments && day.assignments.length === 1 && (
-                                  <div className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-gray-100 dark:bg-gray-800 ml-1">
+                                  <div className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-secondary text-secondary-foreground ml-1">
                                     <div
                                       className="w-2 h-2 rounded-full"
                                       style={{ backgroundColor: day.assignments[0].worker?.color || '#3b82f6' }}
@@ -814,22 +824,22 @@ const Index = () => {
 
                               {/* Права частина: години + сума АБО бейдж "Заплановано" */}
                               {day.is_planned ? (
-                                <div className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300">
+                                <div className="chip chip-amber rounded-full">
                                   <Calendar className="w-3.5 h-3.5" />
                                   <span className="text-[10px] font-bold">Заплановано</span>
                                 </div>
                               ) : (
                                 <div className="flex items-center gap-1 flex-shrink-0">
-                                  <div className="bg-purple-50 rounded-md px-2 py-1 flex items-center gap-1 min-w-[55px]">
-                                    <Clock className="w-3.5 h-3.5 text-purple-600 flex-shrink-0" />
-                                    <span className="text-xs font-bold text-foreground tabular-nums">
+                                  <div className="chip chip-violet min-w-[55px]">
+                                    <Clock className="w-3.5 h-3.5 flex-shrink-0" />
+                                    <span>
                                       {decimalToHours(day.workerHours !== undefined ? day.workerHours : day.hours)}
                                     </span>
                                   </div>
 
-                                  <div className="bg-blue-50 rounded-md px-2 py-1 flex items-center gap-1 min-w-[55px]">
-                                    <Euro className="w-3.5 h-3.5 text-blue-600 flex-shrink-0" />
-                                    <span className="text-xs font-bold text-foreground tabular-nums">
+                                  <div className="chip chip-blue min-w-[55px]">
+                                    <Euro className="w-3.5 h-3.5 flex-shrink-0" />
+                                    <span>
                                       {Math.round(day.workerAmount !== undefined ? day.workerAmount : day.amount)}
                                     </span>
                                   </div>
@@ -847,7 +857,7 @@ const Index = () => {
                                 {day.assignments.map(assignment => (
                                   <div
                                     key={assignment.id}
-                                    className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-gray-100 dark:bg-gray-800"
+                                    className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-secondary text-secondary-foreground"
                                   >
                                     <div
                                       className="w-2 h-2 rounded-full"
@@ -863,7 +873,7 @@ const Index = () => {
 
                         {/* Inline Partial Payment Input - appears beside the card */}
                         {partialPaymentDayId === day.id && (
-                          <div className="mt-2 bg-card rounded-lg p-3 border border-orange-300 dark:border-orange-700 shadow-sm" onClick={(e) => e.stopPropagation()}>
+                          <div className="mt-2 surface-card p-3 border-amber-400/50 dark:border-amber-600/50" onClick={(e) => e.stopPropagation()}>
                             <div className="flex gap-2 items-start">
                               <div className="flex-1">
                                 <Input
@@ -882,7 +892,7 @@ const Index = () => {
                                   parseFloat(partialPaymentAmount) <= 0 ||
                                   (parseFloat(partialPaymentAmount) + (day.day_paid_amount || 0)) > (day.workerAmount !== undefined ? day.workerAmount : day.amount)
                                 }
-                                className="h-9 px-3 rounded-lg text-sm font-medium bg-orange-500 hover:bg-orange-600 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="h-9 px-3 rounded-lg text-sm font-semibold bg-amber-500 hover:bg-amber-600 text-white transition-colors active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                               >
                                 ✓
                               </button>
@@ -891,7 +901,7 @@ const Index = () => {
                                   setPartialPaymentDayId(null);
                                   setPartialPaymentAmount("");
                                 }}
-                                className="h-9 px-3 rounded-lg text-sm font-medium bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 transition-colors"
+                                className="h-9 px-3 rounded-lg text-sm font-semibold bg-secondary hover:bg-muted text-secondary-foreground transition-colors active:scale-95"
                               >
                                 ✕
                               </button>
@@ -913,7 +923,7 @@ const Index = () => {
 
       {/* Custom Period Dialog */}
       <Dialog open={isDatePickerOpen} onOpenChange={setIsDatePickerOpen}>
-        <DialogContent className="bg-card border border-border shadow-xl w-[calc(100%-3rem)] max-w-md rounded-2xl left-1/2 -translate-x-1/2">
+        <DialogContent className="w-[calc(100%-3rem)] max-w-md rounded-3xl left-1/2 -translate-x-1/2 shadow-xl">
           <DialogHeader>
             <DialogTitle className="text-xl font-bold text-foreground">Виберіть період</DialogTitle>
           </DialogHeader>
@@ -925,20 +935,20 @@ const Index = () => {
                 {/* Year Selector */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <button className={`flex-1 backdrop-blur-xl px-4 py-3 rounded-xl border shadow-sm hover:shadow-md transition-all ${
+                    <button className={`flex-1 px-4 py-3 rounded-xl border shadow-xs hover:shadow-sm transition-all active:scale-[0.98] ${
                       userSelectedYear
-                        ? "bg-gradient-to-r from-blue-500/30 to-purple-500/30 border-blue-400/50 dark:border-blue-600/50"
+                        ? "bg-primary/10 border-primary/40"
                         : "bg-card border-border"
                     }`}>
                       <div className="flex items-center justify-between gap-2">
-                        <span className={`font-bold text-sm ${userSelectedYear ? "text-blue-700 dark:text-blue-300" : "text-foreground"}`}>
+                        <span className={`font-bold text-sm ${userSelectedYear ? "text-primary" : "text-foreground"}`}>
                           {selectedYear ?? "Рік"}
                         </span>
-                        <ChevronDown className="w-5 h-5 text-blue-600 dark:text-blue-400 stroke-[2.5]" />
+                        <ChevronDown className="w-5 h-5 text-primary stroke-[2.5]" />
                       </div>
                     </button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent className="bg-card backdrop-blur-xl border border-border shadow-lg rounded-lg z-[110] p-1.5 min-w-[140px] max-h-[300px] overflow-y-auto">
+                  <DropdownMenuContent className="z-[110] rounded-xl p-1.5 min-w-[140px] max-h-[300px] overflow-y-auto shadow-lg">
                     <div className="space-y-0.5">
                       {[2024, 2025, 2026, 2027, 2028, 2029, 2030].map((year) => (
                         <DropdownMenuItem
@@ -951,8 +961,8 @@ const Index = () => {
                           }}
                           className={`cursor-pointer rounded-md px-3 py-1.5 text-sm font-semibold transition-all ${
                             selectedYear === year
-                              ? "bg-gradient-to-r from-blue-500/40 to-purple-500/40 text-foreground"
-                              : "text-foreground hover:bg-gradient-to-r hover:from-blue-500/20 hover:to-purple-500/20"
+                              ? "bg-primary/15 text-primary"
+                              : "text-foreground hover:bg-primary/8"
                           }`}
                         >
                           {year}
@@ -965,22 +975,22 @@ const Index = () => {
                 {/* Month Selector */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <button className={`flex-1 backdrop-blur-xl px-4 py-3 rounded-xl border shadow-sm hover:shadow-md transition-all ${
+                    <button className={`flex-1 px-4 py-3 rounded-xl border shadow-xs hover:shadow-sm transition-all active:scale-[0.98] ${
                       userSelectedMonth
-                        ? "bg-gradient-to-r from-emerald-500/30 to-teal-500/30 border-emerald-400/50 dark:border-emerald-600/50"
+                        ? "bg-accent/12 border-accent/40"
                         : "bg-card border-border"
                     }`}>
                       <div className="flex items-center justify-between gap-2">
-                        <span className={`font-bold text-sm ${userSelectedMonth ? "text-emerald-700 dark:text-emerald-300" : "text-foreground"}`}>
+                        <span className={`font-bold text-sm ${userSelectedMonth ? "text-accent" : "text-foreground"}`}>
                           {selectedMonth !== null
                             ? ["Січень", "Лютий", "Березень", "Квітень", "Травень", "Червень", "Липень", "Серпень", "Вересень", "Жовтень", "Листопад", "Грудень"][selectedMonth]
                             : "Місяць"}
                         </span>
-                        <ChevronDown className="w-5 h-5 text-emerald-600 dark:text-emerald-400 stroke-[2.5]" />
+                        <ChevronDown className="w-5 h-5 text-accent stroke-[2.5]" />
                       </div>
                     </button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent className="bg-card backdrop-blur-xl border border-border shadow-lg rounded-lg z-[110] p-1.5 min-w-[140px] max-h-[300px] overflow-y-auto">
+                  <DropdownMenuContent className="z-[110] rounded-xl p-1.5 min-w-[140px] max-h-[300px] overflow-y-auto shadow-lg">
                     <div className="space-y-0.5">
                       <DropdownMenuItem
                         onClick={() => {
@@ -991,8 +1001,8 @@ const Index = () => {
                         }}
                         className={`cursor-pointer rounded-md px-3 py-1.5 text-sm font-semibold transition-all ${
                           selectedMonth === null
-                            ? "bg-gradient-to-r from-emerald-500/40 to-teal-500/40 text-foreground"
-                            : "text-foreground hover:bg-gradient-to-r hover:from-emerald-500/20 hover:to-teal-500/20"
+                            ? "bg-accent/15 text-accent"
+                            : "text-foreground hover:bg-accent/8"
                         }`}
                       >
                         Весь рік
@@ -1008,8 +1018,8 @@ const Index = () => {
                           }}
                           className={`cursor-pointer rounded-md px-3 py-1.5 text-sm font-semibold transition-all ${
                             selectedMonth === i
-                              ? "bg-gradient-to-r from-emerald-500/40 to-teal-500/40 text-foreground"
-                              : "text-foreground hover:bg-gradient-to-r hover:from-emerald-500/20 hover:to-teal-500/20"
+                              ? "bg-accent/15 text-accent"
+                              : "text-foreground hover:bg-accent/8"
                           }`}
                         >
                           {month}
@@ -1026,14 +1036,14 @@ const Index = () => {
               <Button
                 onClick={() => setIsDatePickerOpen(false)}
                 variant="outline"
-                className="flex-1 h-10 rounded-md"
+                className="flex-1 h-10 rounded-xl"
               >
                 Скасувати
               </Button>
               <Button
                 onClick={handleApplyCustomPeriod}
                 disabled={!tempStartDate || !tempEndDate}
-                className="flex-1 h-10 bg-primary hover:bg-primary/90 text-white rounded-md disabled:opacity-50"
+                className="flex-1 h-10 rounded-xl"
               >
                 Застосувати
               </Button>

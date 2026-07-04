@@ -285,40 +285,36 @@ const ReportsStatus = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-32 pt-4">
+    <div className="min-h-screen bg-background">
       {/* Fixed top section with glassmorphism */}
-      <div className="fixed top-0 left-0 right-0 z-40 bg-white/5 dark:bg-gray-900/5 backdrop-blur-xl border-b border-white/10 shadow-[0_2px_16px_0_rgba(31,38,135,0.1)]">
+      <div className="fixed top-0 left-0 right-0 z-40 glass-header">
         <div className="container mx-auto px-4 py-4">
           {/* Statistics Cards */}
           <div className="grid grid-cols-2 gap-3 mb-4">
             {/* Години блок */}
-            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-purple-50 to-violet-50 dark:from-purple-950 dark:to-violet-950 p-4 shadow-sm border border-border/50">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-purple-100 dark:bg-purple-900 flex items-center justify-center flex-shrink-0 border border-purple-200 dark:border-purple-800">
-                  <Clock className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-xs font-medium text-muted-foreground mb-0.5">Години</p>
-                  <div className="flex items-baseline gap-1">
-                    <p className="text-xl font-bold text-black dark:text-white">{decimalToHours(unpaidSummary.totalUnpaidHours)}</p>
-                    <p className="text-sm font-semibold text-black dark:text-white">год</p>
-                  </div>
+            <div className="stat-tile stat-tile-violet p-4">
+              <div className="icon-badge icon-badge-violet">
+                <Clock className="w-5 h-5" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-medium text-muted-foreground mb-0.5">Години</p>
+                <div className="flex items-baseline gap-1">
+                  <p className="text-xl font-bold text-foreground tabular-nums">{decimalToHours(unpaidSummary.totalUnpaidHours)}</p>
+                  <p className="text-sm font-semibold text-muted-foreground">год</p>
                 </div>
               </div>
             </div>
 
             {/* Сума блок */}
-            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-amber-50 to-yellow-50 dark:from-amber-950 dark:to-yellow-950 p-4 shadow-sm border border-border/50">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900 flex items-center justify-center flex-shrink-0 border border-amber-200 dark:border-amber-800">
-                  <Euro className="w-5 h-5 text-amber-600 dark:text-amber-400" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-xs font-medium text-muted-foreground mb-0.5">Сума</p>
-                  <div className="flex items-baseline gap-1">
-                    <p className="text-xl font-bold text-amber-800 dark:text-amber-200">{Math.round(unpaidSummary.totalUnpaidAmount)}</p>
-                    <p className="text-sm font-semibold text-amber-800 dark:text-amber-200">€</p>
-                  </div>
+            <div className="stat-tile stat-tile-amber p-4">
+              <div className="icon-badge icon-badge-amber">
+                <Euro className="w-5 h-5" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-medium text-muted-foreground mb-0.5">Сума</p>
+                <div className="flex items-baseline gap-1">
+                  <p className="text-xl font-bold text-foreground tabular-nums">{Math.round(unpaidSummary.totalUnpaidAmount)}</p>
+                  <p className="text-sm font-semibold text-muted-foreground">€</p>
                 </div>
               </div>
             </div>
@@ -326,14 +322,14 @@ const ReportsStatus = () => {
 
           {/* Page Title */}
           <div className="text-center">
-            <h1 className="text-xl font-bold text-amber-800 dark:text-amber-200">
-              не оплатили
+            <h1 className="text-base font-bold tracking-tight text-foreground">
+              Очікую оплату
             </h1>
           </div>
         </div>
       </div>
 
-      <main className="container mx-auto px-4 pt-40 pb-8 space-y-4">
+      <main className="container mx-auto px-4 pt-40 pb-dock space-y-4">
 
         {/* Reports Grid */}
         {sortedReports.length === 0 ? (

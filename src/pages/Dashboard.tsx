@@ -285,7 +285,7 @@ const Dashboard = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-secondary flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <p className="text-foreground text-lg">Завантаження...</p>
       </div>
     );
@@ -293,7 +293,7 @@ const Dashboard = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-secondary flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <p className="text-foreground text-lg mb-4">{error}</p>
           <Button onClick={loadData}>Спробувати знову</Button>
@@ -303,28 +303,28 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-32 pt-4">
-      <div className="fixed top-0 left-0 right-0 z-40 bg-white/5 dark:bg-gray-900/5 backdrop-blur-xl border-b border-white/10 shadow-[0_2px_16px_0_rgba(31,38,135,0.1)]">
+    <div className="min-h-screen bg-background">
+      <div className="fixed top-0 left-0 right-0 z-40 glass-header">
         <div className="container mx-auto px-4 py-4">
           <div className="flex gap-3 justify-center max-w-[600px] mx-auto">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className={`group relative overflow-hidden backdrop-blur-xl px-6 py-3.5 rounded-xl border shadow-sm hover:shadow-md transition-all duration-300 flex-1 min-w-0 ${
+                <button className={`group relative overflow-hidden px-5 py-3.5 rounded-2xl border shadow-xs hover:shadow-sm transition-all active:scale-[0.98] flex-1 min-w-0 ${
                   selectedYear !== null && selectedYear !== new Date().getFullYear() || selectedMonth !== new Date().getMonth()
-                    ? "bg-gradient-to-r from-blue-500/30 to-purple-500/30 border-blue-400/50 dark:border-blue-600/50"
+                    ? "bg-primary/10 border-primary/40"
                     : "bg-card border-border"
                 }`}>
                   <div className="relative flex items-center justify-between gap-2">
                     <span className={`font-bold text-sm truncate ${
                       selectedYear !== null && (selectedYear !== new Date().getFullYear() || selectedMonth !== new Date().getMonth())
-                        ? "text-blue-700 dark:text-blue-300"
+                        ? "text-primary"
                         : "text-foreground"
                     }`}>{getPeriodLabel()}</span>
-                    <ChevronDown className="w-5 h-5 text-blue-600 dark:text-blue-400 transition-colors duration-300 flex-shrink-0 stroke-[2.5]" />
+                    <ChevronDown className="w-5 h-5 text-primary flex-shrink-0 stroke-[2.5]" />
                   </div>
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent className="bg-card backdrop-blur-xl border border-border shadow-lg max-h-[85vh] overflow-y-auto rounded-xl z-[100] p-2 mt-2 w-[var(--radix-dropdown-menu-trigger-width)]" sideOffset={8}>
+              <DropdownMenuContent className="max-h-[85vh] overflow-y-auto rounded-2xl z-[100] p-2 mt-2 w-[var(--radix-dropdown-menu-trigger-width)] shadow-lg" sideOffset={8}>
                 <div className="space-y-1.5">
                   {/* All Time Option */}
                   <DropdownMenuItem
@@ -334,8 +334,8 @@ const Dashboard = () => {
                     }}
                     className={`cursor-pointer rounded-lg px-3 py-2 text-sm font-semibold transition-all duration-200 ${
                       selectedYear === null
-                        ? "bg-gradient-to-r from-purple-500/40 to-pink-500/40 dark:from-purple-600/40 dark:to-pink-600/40 text-foreground shadow-md"
-                        : "text-foreground hover:bg-gradient-to-r hover:from-purple-500/20 hover:to-pink-500/20"
+                        ? "bg-primary/15 text-primary"
+                        : "text-foreground hover:bg-primary/8"
                     }`}
                   >
                     За весь період
@@ -347,12 +347,12 @@ const Dashboard = () => {
                   {/* Year Selector */}
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <button className="w-full bg-gradient-to-r from-blue-500/20 to-purple-500/20 backdrop-blur-md px-3 py-2 rounded-lg font-bold text-sm text-foreground hover:from-blue-500/30 hover:to-purple-500/30 transition-all duration-200 flex items-center justify-between">
+                      <button className="w-full bg-primary/10 px-3 py-2 rounded-lg font-bold text-sm text-foreground hover:bg-primary/15 transition-all duration-200 flex items-center justify-between">
                         <span>Рік: {selectedYear ?? "Всі"}</span>
                         <ChevronDown className="w-4 h-4 stroke-[2.5]" />
                       </button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent className="bg-card backdrop-blur-xl border border-border shadow-lg rounded-lg z-[110] p-1.5 min-w-[140px]">
+                    <DropdownMenuContent className="rounded-xl z-[110] p-1.5 min-w-[140px] shadow-lg">
                       <div className="space-y-0.5">
                         {[2024, 2025, 2026, 2027, 2028, 2029, 2030].map((year) => (
                           <DropdownMenuItem
@@ -369,8 +369,8 @@ const Dashboard = () => {
                             }}
                             className={`cursor-pointer rounded-md px-3 py-1.5 text-sm font-semibold transition-all duration-200 ${
                               selectedYear === year
-                                ? "bg-gradient-to-r from-blue-500/40 to-purple-500/40 text-foreground"
-                                : "text-foreground hover:bg-gradient-to-r hover:from-blue-500/20 hover:to-purple-500/20"
+                                ? "bg-primary/15 text-primary"
+                                : "text-foreground hover:bg-primary/8"
                             }`}
                           >
                             {year}
@@ -399,8 +399,8 @@ const Dashboard = () => {
                           }}
                           className={`cursor-pointer rounded-lg px-3 py-2 text-sm font-semibold transition-all duration-200 ${
                             selectedMonth === i
-                              ? "bg-gradient-to-r from-blue-500/40 to-purple-500/40 text-foreground shadow-md"
-                              : "text-foreground hover:bg-gradient-to-r hover:from-blue-500/20 hover:to-purple-500/20"
+                              ? "bg-primary/15 text-primary"
+                              : "text-foreground hover:bg-primary/8"
                           }`}
                         >
                           {monthNames[i]}
@@ -414,29 +414,29 @@ const Dashboard = () => {
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className={`group relative overflow-hidden backdrop-blur-xl px-6 py-3.5 rounded-xl border shadow-sm hover:shadow-md transition-all duration-300 flex-1 min-w-0 ${
+                <button className={`group relative overflow-hidden px-5 py-3.5 rounded-2xl border shadow-xs hover:shadow-sm transition-all active:scale-[0.98] flex-1 min-w-0 ${
                   selectedClientId !== "all"
-                    ? "bg-gradient-to-r from-emerald-500/30 to-teal-500/30 border-emerald-400/50 dark:border-emerald-600/50"
+                    ? "bg-accent/12 border-accent/40"
                     : "bg-card border-border"
                 }`}>
                   <div className="relative flex items-center justify-between gap-2">
                     <span className={`font-bold text-sm truncate ${
                       selectedClientId !== "all"
-                        ? "text-emerald-700 dark:text-emerald-300"
+                        ? "text-accent"
                         : "text-foreground"
                     }`}>{getClientLabel(selectedClientId)}</span>
-                    <ChevronDown className="w-5 h-5 text-emerald-600 dark:text-emerald-400 transition-colors duration-300 flex-shrink-0 stroke-[2.5]" />
+                    <ChevronDown className="w-5 h-5 text-accent flex-shrink-0 stroke-[2.5]" />
                   </div>
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent className="bg-card backdrop-blur-xl border border-border shadow-lg rounded-xl z-[100] p-2 mt-2 max-h-[85vh] overflow-y-auto w-[var(--radix-dropdown-menu-trigger-width)]" sideOffset={8}>
+              <DropdownMenuContent className="rounded-2xl z-[100] p-2 mt-2 max-h-[85vh] overflow-y-auto w-[var(--radix-dropdown-menu-trigger-width)] shadow-lg" sideOffset={8}>
                 <div className="space-y-0.5">
                   <DropdownMenuItem
                     onClick={() => setSelectedClientId("all")}
                     className={`cursor-pointer rounded-lg px-3 py-2 text-sm font-semibold transition-all duration-200 ${
                       selectedClientId === "all"
-                        ? "bg-gradient-to-r from-emerald-500/40 to-teal-500/40 text-foreground shadow-md"
-                        : "text-foreground hover:bg-gradient-to-r hover:from-emerald-500/20 hover:to-teal-500/20"
+                        ? "bg-accent/15 text-accent"
+                        : "text-foreground hover:bg-accent/8"
                     }`}
                   >
                     Всі клієнти
@@ -447,8 +447,8 @@ const Dashboard = () => {
                       onClick={() => setSelectedClientId(client.id)}
                       className={`cursor-pointer rounded-lg px-3 py-2 text-sm font-semibold transition-all duration-200 ${
                         selectedClientId === client.id
-                          ? "bg-gradient-to-r from-emerald-500/40 to-teal-500/40 text-foreground shadow-md"
-                          : "text-foreground hover:bg-gradient-to-r hover:from-emerald-500/20 hover:to-teal-500/20"
+                          ? "bg-accent/15 text-accent"
+                          : "text-foreground hover:bg-accent/8"
                       }`}
                     >
                       {client.name}
@@ -461,47 +461,43 @@ const Dashboard = () => {
         </div>
       </div>
 
-      <main className="container mx-auto px-4 pt-24 pb-8 space-y-6">
+      <main className="container mx-auto px-4 pt-24 pb-dock space-y-5">
         {/* Client Name Header - показується тільки при виборі конкретного клієнта */}
         {selectedClientId !== "all" && (
-          <div className="glass-effect rounded-2xl p-6 shadow-xl text-center">
+          <div className="surface-card p-6 shadow-sm text-center">
             <h1 className="text-2xl font-bold text-foreground">{getClientLabel(selectedClientId)}</h1>
           </div>
         )}
 
         {/* Statistics Cards - Unified 4-card grid with elevated design */}
-        <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-3xl p-5 shadow-xl border border-white/20 dark:border-gray-800/50">
+        <div className="surface-card rounded-3xl p-4 shadow-sm">
           <div className="grid grid-cols-2 gap-3">
           {/* PRIMARY CARDS - Main Information */}
 
           {/* Total Earned */}
-          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950 dark:to-cyan-950 p-4 shadow-md border border-border/50 transition-smooth hover:shadow-lg">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-900 flex items-center justify-center flex-shrink-0 border border-blue-200 dark:border-blue-800">
-                <TrendingUp className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-xs font-medium text-muted-foreground mb-0.5">Зароблено</p>
-                <div className="flex items-baseline gap-1">
-                  <p className="text-xl font-bold text-black dark:text-white">{Math.round(stats.totalEarned)}</p>
-                  <p className="text-sm font-semibold text-black dark:text-white">€</p>
-                </div>
+          <div className="stat-tile stat-tile-blue p-4">
+            <div className="icon-badge icon-badge-blue">
+              <TrendingUp className="w-5 h-5" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-medium text-muted-foreground mb-0.5">Зароблено</p>
+              <div className="flex items-baseline gap-1">
+                <p className="text-xl font-bold text-foreground tabular-nums">{Math.round(stats.totalEarned)}</p>
+                <p className="text-sm font-semibold text-muted-foreground">€</p>
               </div>
             </div>
           </div>
 
           {/* Total Hours */}
-          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-purple-50 to-violet-50 dark:from-purple-950 dark:to-violet-950 p-4 shadow-md border border-border/50 transition-smooth hover:shadow-lg">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-purple-100 dark:bg-purple-900 flex items-center justify-center flex-shrink-0 border border-purple-200 dark:border-purple-800">
-                <Clock className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-xs font-medium text-muted-foreground mb-0.5">Години</p>
-                <div className="flex items-baseline gap-1">
-                  <p className="text-xl font-bold text-black dark:text-white">{decimalToHours(stats.totalHours)}</p>
-                  <p className="text-sm font-semibold text-black dark:text-white">год</p>
-                </div>
+          <div className="stat-tile stat-tile-violet p-4">
+            <div className="icon-badge icon-badge-violet">
+              <Clock className="w-5 h-5" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-medium text-muted-foreground mb-0.5">Години</p>
+              <div className="flex items-baseline gap-1">
+                <p className="text-xl font-bold text-foreground tabular-nums">{decimalToHours(stats.totalHours)}</p>
+                <p className="text-sm font-semibold text-muted-foreground">год</p>
               </div>
             </div>
           </div>
@@ -509,53 +505,33 @@ const Dashboard = () => {
           {/* SECONDARY CARDS - Less prominent styling */}
 
           {/* Paid Amount */}
-          <div className={`relative overflow-hidden rounded-2xl p-4 shadow-sm transition-smooth hover:shadow-md ${
-            stats.totalRemaining === 0 && stats.totalEarned > 0
-              ? "bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/40 dark:to-emerald-950/40 border border-green-200/60 dark:border-green-800/50"
-              : "bg-gray-50/60 dark:bg-gray-800/30 border border-gray-200/50 dark:border-gray-700/50"
+          <div className={`stat-tile p-4 ${
+            stats.totalRemaining === 0 && stats.totalEarned > 0 ? "stat-tile-emerald" : "stat-tile-neutral"
           }`}>
-            <div className="flex items-center gap-3">
-              <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                stats.totalRemaining === 0 && stats.totalEarned > 0
-                  ? "bg-success/25 dark:bg-success/30 border border-success/50 dark:border-success/60"
-                  : "bg-success/15 dark:bg-success/20 border border-success/30 dark:border-success/40"
-              }`}>
-                <DollarSign className="w-5 h-5 text-success dark:text-success" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className={`text-xs font-medium mb-0.5 ${
-                  stats.totalRemaining === 0 && stats.totalEarned > 0
-                    ? "text-success/80 dark:text-success/70"
-                    : "text-gray-500 dark:text-gray-400"
-                }`}>Сплачено</p>
-                <div className="flex items-baseline gap-1">
-                  <p className={`text-xl font-bold ${
-                    stats.totalRemaining === 0 && stats.totalEarned > 0
-                      ? "text-success dark:text-success"
-                      : "text-gray-700 dark:text-gray-200"
-                  }`}>{Math.round(stats.totalPaid)}</p>
-                  <p className={`text-sm font-semibold ${
-                    stats.totalRemaining === 0 && stats.totalEarned > 0
-                      ? "text-success dark:text-success"
-                      : "text-gray-700 dark:text-gray-200"
-                  }`}>€</p>
-                </div>
+            <div className="icon-badge icon-badge-emerald">
+              <DollarSign className="w-5 h-5" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-medium text-muted-foreground mb-0.5">Сплачено</p>
+              <div className="flex items-baseline gap-1">
+                <p className={`text-xl font-bold tabular-nums ${
+                  stats.totalRemaining === 0 && stats.totalEarned > 0 ? "text-success" : "text-foreground"
+                }`}>{Math.round(stats.totalPaid)}</p>
+                <p className="text-sm font-semibold text-muted-foreground">€</p>
               </div>
             </div>
           </div>
 
           {/* Remaining Amount */}
-          <div className="relative overflow-hidden rounded-2xl bg-gray-50/60 dark:bg-gray-800/30 p-4 shadow-sm border border-gray-200/50 dark:border-gray-700/50 transition-smooth hover:shadow-md">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-warning/15 dark:bg-warning/20 flex items-center justify-center flex-shrink-0 border border-warning/30 dark:border-warning/40">
-                <DollarSign className="w-5 h-5 text-warning dark:text-warning" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-0.5">Залишок</p>
-                <div className="flex items-baseline gap-1">
-                  <p className="text-xl font-bold text-gray-700 dark:text-gray-200">{Math.round(stats.totalRemaining)}</p>
-                  <p className="text-sm font-semibold text-gray-700 dark:text-gray-200">€</p>
-                </div>
+          <div className={`stat-tile p-4 ${stats.totalRemaining > 0 ? "stat-tile-amber" : "stat-tile-neutral"}`}>
+            <div className="icon-badge icon-badge-amber">
+              <DollarSign className="w-5 h-5" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-medium text-muted-foreground mb-0.5">Залишок</p>
+              <div className="flex items-baseline gap-1">
+                <p className="text-xl font-bold text-foreground tabular-nums">{Math.round(stats.totalRemaining)}</p>
+                <p className="text-sm font-semibold text-muted-foreground">€</p>
               </div>
             </div>
           </div>
@@ -564,18 +540,18 @@ const Dashboard = () => {
 
         {/* Debts Breakdown - тільки для всіх клієнтів */}
         {selectedClientId === "all" && debtsBreakdown.length > 0 && (
-          <div className="glass-card rounded-2xl p-6 shadow-md border border-border transition-smooth hover:shadow-lg">
-            <div className="flex items-center gap-3 mb-5">
-              <div className="w-10 h-10 rounded-xl bg-warning/10 flex items-center justify-center border border-warning/20">
-                <AlertCircle className="w-5 h-5 text-warning" />
+          <div className="surface-card p-5 shadow-sm">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="icon-badge icon-badge-amber">
+                <AlertCircle className="w-5 h-5" />
               </div>
               <h2 className="text-lg font-bold text-foreground">Борги по клієнтах</h2>
             </div>
             <div className="space-y-2.5">
               {debtsBreakdown.map((debt, index) => (
-                <div key={index} className="flex items-center justify-between p-3.5 bg-warning/5 rounded-xl border border-warning/10 transition-smooth hover:bg-warning/10 hover:border-warning/20">
+                <div key={index} className="flex items-center justify-between p-3.5 bg-warning/5 rounded-xl border border-warning/15 transition-smooth hover:bg-warning/10">
                   <span className="font-semibold text-foreground text-sm">{debt.name}</span>
-                  <span className="font-bold text-warning text-base">{Math.round(debt.remaining)}€</span>
+                  <span className="chip chip-amber text-sm">{Math.round(debt.remaining)}€</span>
                 </div>
               ))}
             </div>
@@ -584,25 +560,25 @@ const Dashboard = () => {
 
         {/* Client Leaderboard - тільки для всіх клієнтів */}
         {selectedClientId === "all" && clientLeaderboard.length > 0 && (
-          <div className="glass-card rounded-2xl p-6 shadow-md border border-border transition-smooth hover:shadow-lg">
-            <div className="flex items-center gap-3 mb-5">
-              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/20">
-                <Users className="w-5 h-5 text-primary" />
+          <div className="surface-card p-5 shadow-sm">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="icon-badge icon-badge-blue">
+                <Users className="w-5 h-5" />
               </div>
               <h2 className="text-lg font-bold text-foreground">Топ клієнтів</h2>
             </div>
             <div className="space-y-2.5">
               {clientLeaderboard.slice(0, 5).map((client, index) => (
-                <div key={index} className="flex items-center justify-between p-3.5 bg-muted/20 rounded-xl border border-border/50 transition-smooth hover:bg-muted/30 hover:shadow-sm">
+                <div key={index} className="flex items-center justify-between p-3.5 bg-muted/30 rounded-xl border border-border/50 transition-smooth hover:bg-muted/50">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500/20 to-purple-500/20 flex items-center justify-center font-bold text-primary text-sm border border-primary/20">
+                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary text-sm border border-primary/20 tabular-nums">
                       {index + 1}
                     </div>
                     <span className="font-semibold text-foreground text-sm">{client.name}</span>
                   </div>
                   <div className="flex items-center gap-3">
-                    <p className="text-xs text-muted-foreground font-medium">{decimalToHours(client.hours)} год</p>
-                    <p className="font-bold text-success text-base min-w-[60px] text-right">{Math.round(client.earned)}€</p>
+                    <p className="text-xs text-muted-foreground font-medium tabular-nums">{decimalToHours(client.hours)} год</p>
+                    <p className="font-bold text-success text-base min-w-[60px] text-right tabular-nums">{Math.round(client.earned)}€</p>
                   </div>
                 </div>
               ))}
