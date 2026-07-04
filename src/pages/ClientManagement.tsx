@@ -1,133 +1,83 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
+import { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { api } from '@/lib/api';
-import { Client } from '@/types/report';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { PencilSimple as Pencil, Trash as Trash2, Plus, CurrencyEur as Euro, UsersThree as Users } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import { BottomNavigation } from '@/components/BottomNavigation';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+import { useAddClient, useClients, useDeleteClient, useUpdateClient } from '@/data/queries';
+import type { Client } from '@/domain/types';
 
 const ClientManagement = () => {
-  const navigate = useNavigate();
-  const [clients, setClients] = useState<Client[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: clients = [], isLoading } = useClients();
+  const addClient = useAddClient();
+  const updateClient = useUpdateClient();
+  const deleteClient = useDeleteClient();
+
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
-  
   const [clientToDelete, setClientToDelete] = useState<Client | null>(null);
+
   const [newClientName, setNewClientName] = useState('');
   const [newClientRate, setNewClientRate] = useState('');
   const [editClientName, setEditClientName] = useState('');
   const [editClientRate, setEditClientRate] = useState('');
 
-  useEffect(() => {
-    loadClients();
-  }, []);
-
-  const loadClients = async () => {
-    try {
-      const data = await api.getClients();
-      setClients(data);
-    } catch (error) {
-      toast.error('Помилка завантаження клієнтів');
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleAddClient = async () => {
+  const handleAddClient = () => {
     if (!newClientName || !newClientRate) {
       toast.error('Заповніть всі поля');
       return;
     }
-
-    try {
-      await api.addClient({
-        name: newClientName,
-        hourly_rate: parseFloat(newClientRate),
-        hourlyRate: parseFloat(newClientRate),
-      });
-      
-      await loadClients();
-      setNewClientName('');
-      setNewClientRate('');
-      setIsAddDialogOpen(false);
-      toast.success('Клієнта додано', { duration: 2000 });
-    } catch (error) {
-      toast.error('Помилка додавання клієнта');
-      console.error(error);
-    }
+    addClient.mutate(
+      { name: newClientName, hourlyRate: parseFloat(newClientRate) },
+      {
+        onSuccess: () => {
+          setNewClientName('');
+          setNewClientRate('');
+          setIsAddDialogOpen(false);
+        },
+      },
+    );
   };
 
   const handleEditClick = (client: Client) => {
     setEditingClient(client);
     setEditClientName(client.name);
-    setEditClientRate((client.hourlyRate || client.hourly_rate || 0).toString());
+    setEditClientRate(client.hourlyRate.toString());
     setIsEditDialogOpen(true);
   };
 
-  const handleUpdateClient = async () => {
+  const handleUpdateClient = () => {
     if (!editingClient || !editClientName || !editClientRate) {
       toast.error('Заповніть всі поля');
       return;
     }
-
-    try {
-      await api.updateClient(editingClient.id, {
-        name: editClientName,
-        hourlyRate: parseFloat(editClientRate),
-      });
-      
-      await loadClients();
-      setIsEditDialogOpen(false);
-      setEditingClient(null);
-      toast.success('Клієнта оновлено', { duration: 2000 });
-    } catch (error) {
-      toast.error('Помилка оновлення клієнта');
-      console.error(error);
-    }
+    updateClient.mutate(
+      { id: editingClient.id, name: editClientName, hourlyRate: parseFloat(editClientRate) },
+      {
+        onSuccess: () => {
+          setIsEditDialogOpen(false);
+          setEditingClient(null);
+        },
+      },
+    );
   };
 
-  const handleDeleteClient = async () => {
-    if (!clientToDelete) return;
-
-    try {
-      await api.deleteClient(clientToDelete.id);
-      setClientToDelete(null);
-      await loadClients();
-      toast.success('Клієнта видалено', { duration: 2000 });
-    } catch (error) {
-      toast.error('Помилка видалення клієнта');
-      console.error(error);
-    }
-  };
-
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <p className="text-foreground text-lg">Завантаження...</p>
+        <p className="text-muted-foreground text-lg animate-pulse">Завантаження...</p>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Fixed top section */}
       <div className="fixed top-0 left-0 right-0 z-40 app-bar">
         <div className="container mx-auto px-4 py-4">
           <h1 className="num-display text-xl text-center text-foreground">Управління клієнтами</h1>
@@ -135,7 +85,6 @@ const ClientManagement = () => {
       </div>
 
       <main className="container mx-auto px-4 pt-20 pb-dock max-w-4xl space-y-3">
-        {/* Add Client Button */}
         <button
           onClick={() => setIsAddDialogOpen(true)}
           className="w-full bg-success text-success-foreground rounded-full p-4 font-bold shadow-md hover:shadow-lg hover:bg-success/90 transition-all active:scale-[0.98]"
@@ -146,7 +95,6 @@ const ClientManagement = () => {
           </div>
         </button>
 
-        {/* Clients List */}
         {clients.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20">
             <Users className="w-16 h-16 text-muted-foreground/30 mb-4" />
@@ -154,23 +102,17 @@ const ClientManagement = () => {
           </div>
         ) : (
           clients.map((client) => (
-            <div
-              key={client.id}
-              className="surface-card p-4"
-            >
+            <div key={client.id} className="surface-card p-4">
               <div className="flex items-center justify-between gap-3">
-                {/* Client Name */}
                 <div className="flex-1 min-w-0">
                   <h3 className="text-base font-bold text-foreground truncate">{client.name}</h3>
                 </div>
 
-                {/* Hourly Rate Badge */}
                 <div className="chip chip-money flex-shrink-0">
                   <Euro className="w-3.5 h-3.5" />
-                  <span>{client.hourlyRate || client.hourly_rate}€/год</span>
+                  <span>{client.hourlyRate}€/год</span>
                 </div>
 
-                {/* Action Buttons */}
                 <div className="flex gap-1 flex-shrink-0">
                   <button
                     onClick={() => handleEditClick(client)}
@@ -200,26 +142,16 @@ const ClientManagement = () => {
           <div className="space-y-3 pt-2">
             <div className="space-y-1.5">
               <Label className="text-sm font-semibold text-foreground">Назва клієнта</Label>
-              <Input
-                value={newClientName}
-                onChange={(e) => setNewClientName(e.target.value)}
-                placeholder="Введіть назву"
-                className="h-11 rounded-xl"
-              />
+              <Input value={newClientName} onChange={(e) => setNewClientName(e.target.value)} placeholder="Введіть назву" className="h-11 rounded-xl" />
             </div>
             <div className="space-y-1.5">
               <Label className="text-sm font-semibold text-foreground">Ставка за годину (€)</Label>
-              <Input
-                type="number"
-                value={newClientRate}
-                onChange={(e) => setNewClientRate(e.target.value)}
-                placeholder="Введіть ставку"
-                className="h-11 rounded-xl"
-              />
+              <Input type="number" value={newClientRate} onChange={(e) => setNewClientRate(e.target.value)} placeholder="Введіть ставку" className="h-11 rounded-xl" />
             </div>
             <button
               onClick={handleAddClient}
-              className="w-full bg-success text-success-foreground rounded-full h-11 font-bold shadow-sm hover:bg-success/90 transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+              disabled={addClient.isPending}
+              className="w-full bg-success text-success-foreground rounded-full h-11 font-bold shadow-sm hover:bg-success/90 transition-all active:scale-[0.98] flex items-center justify-center gap-2 disabled:opacity-60"
             >
               <Plus className="w-4 h-4" />
               <span>Додати</span>
@@ -237,26 +169,16 @@ const ClientManagement = () => {
           <div className="space-y-3 pt-2">
             <div className="space-y-1.5">
               <Label className="text-sm font-semibold text-foreground">Назва клієнта</Label>
-              <Input
-                value={editClientName}
-                onChange={(e) => setEditClientName(e.target.value)}
-                placeholder="Введіть назву"
-                className="h-11 rounded-xl"
-              />
+              <Input value={editClientName} onChange={(e) => setEditClientName(e.target.value)} placeholder="Введіть назву" className="h-11 rounded-xl" />
             </div>
             <div className="space-y-1.5">
               <Label className="text-sm font-semibold text-foreground">Ставка за годину (€)</Label>
-              <Input
-                type="number"
-                value={editClientRate}
-                onChange={(e) => setEditClientRate(e.target.value)}
-                placeholder="Введіть ставку"
-                className="h-11 rounded-xl"
-              />
+              <Input type="number" value={editClientRate} onChange={(e) => setEditClientRate(e.target.value)} placeholder="Введіть ставку" className="h-11 rounded-xl" />
             </div>
             <button
               onClick={handleUpdateClient}
-              className="w-full bg-primary text-primary-foreground rounded-full h-11 font-bold shadow-sm hover:bg-primary/90 transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+              disabled={updateClient.isPending}
+              className="w-full bg-primary text-primary-foreground rounded-full h-11 font-bold shadow-sm hover:bg-primary/90 transition-all active:scale-[0.98] flex items-center justify-center gap-2 disabled:opacity-60"
             >
               <Pencil className="w-4 h-4" />
               <span>Зберегти</span>
@@ -271,13 +193,13 @@ const ClientManagement = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>Видалити клієнта «{clientToDelete?.name}»?</AlertDialogTitle>
             <AlertDialogDescription>
-              Це також видалить всі пов'язані звіти. Цю дію неможливо скасувати.
+              Це також видалить всі пов'язані записи. Цю дію неможливо скасувати.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Скасувати</AlertDialogCancel>
             <AlertDialogAction
-              onClick={handleDeleteClient}
+              onClick={() => clientToDelete && deleteClient.mutate(clientToDelete.id, { onSuccess: () => setClientToDelete(null) })}
               className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
             >
               Видалити
@@ -286,7 +208,6 @@ const ClientManagement = () => {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Bottom Navigation */}
       <BottomNavigation />
     </div>
   );

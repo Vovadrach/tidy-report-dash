@@ -1,36 +1,37 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { api } from "@/lib/api";
-import { Client, Report, WorkDay, PaymentStatus, Worker, WorkDayAssignment } from "@/types/report";
 import { CalendarBlank as Calendar, Plus, CurrencyEur as Euro, UsersThree as Users, Note as FileText, Trash as Trash2, FloppyDisk as Save } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import { HomeDock } from "@/components/HomeDock";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { TimePickerWheel } from "@/components/TimePickerWheel";
-import { useWorker } from "@/contexts/WorkerContext";
-import { hoursToDecimal } from "@/domain/time";
 import { WorkerAssignmentDialog } from "@/components/WorkerAssignmentDialog";
-
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  useClients, useCreateWorkEntry, useDeleteReport, useReplaceAssignments,
+  useUpdateWorkDayFields, useWorkDays, useWorkers,
+} from "@/data/queries";
+import { todayLocal } from "@/domain/dates";
+import { validateSplit } from "@/domain/money";
+import type { NewAssignment, PaymentStatus } from "@/domain/types";
 
 const CreateReport = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { workers, addWorker } = useWorker();
-  const [clients, setClients] = useState<Client[]>([]);
+  const { data: clients = [] } = useClients();
+  const { data: workers = [] } = useWorkers();
+  const { data: workDays = [] } = useWorkDays();
+  const createEntry = useCreateWorkEntry();
+  const updateFields = useUpdateWorkDayFields();
+  const replaceAssignments = useReplaceAssignments();
+  const deleteReport = useDeleteReport();
+
   const [selectedClientId, setSelectedClientId] = useState("");
-  const [reportDate, setReportDate] = useState(new Date().toISOString().split("T")[0]);
+  const [reportDate, setReportDate] = useState(todayLocal());
   const [hours, setHours] = useState(0);
   const [minutes, setMinutes] = useState(0);
   const [workPaymentStatus, setWorkPaymentStatus] = useState<PaymentStatus>("unpaid");
@@ -40,663 +41,253 @@ const CreateReport = () => {
   const [amountManuallyEntered, setAmountManuallyEntered] = useState(false);
   const [isAmountFocused, setIsAmountFocused] = useState(false);
 
-  // Worker assignments state
   const [selectedWorkers, setSelectedWorkers] = useState<string[]>([]);
   const [workerAmounts, setWorkerAmounts] = useState<Record<string, string>>({});
   const [workerDialogOpen, setWorkerDialogOpen] = useState(false);
 
-  // Planned work state
-  const [isPlanned, setIsPlanned] = useState(false);
   const [workNote, setWorkNote] = useState("");
-
-  // Editing planned work day
-  const [editingWorkDayId, setEditingWorkDayId] = useState<string | null>(null);
-  const [editingReportId, setEditingReportId] = useState<string | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
-  const addWorkerRef = useRef<HTMLDivElement>(null);
-  
+  // Редагування запланованого запису
+  const editingWorkDayId = searchParams.get("workDayId");
+  const editingReportId = searchParams.get("reportId");
+  const editingDay = useMemo(
+    () => (editingWorkDayId ? workDays.find((d) => d.id === editingWorkDayId) : undefined),
+    [workDays, editingWorkDayId],
+  );
+
   const hoursRef = useRef<HTMLDivElement>(null);
   const minutesRef = useRef<HTMLDivElement>(null);
-  const hoursScrollTimeout = useRef<NodeJS.Timeout | null>(null);
-  const minutesScrollTimeout = useRef<NodeJS.Timeout | null>(null);
-  const isScrolling = useRef({ hours: false, minutes: false });
+  const hoursScrollTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const minutesScrollTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    loadClients();
-  }, []);
-
-  // Set client from URL parameter
-  useEffect(() => {
-    const clientIdFromUrl = searchParams.get('clientId');
-    if (clientIdFromUrl) {
-      setSelectedClientId(clientIdFromUrl);
-    }
+    const clientIdFromUrl = searchParams.get("clientId");
+    if (clientIdFromUrl) setSelectedClientId(clientIdFromUrl);
+    const date = searchParams.get("date");
+    if (date) setReportDate(date);
   }, [searchParams]);
 
-  // Load planned work day data from URL parameters
   useEffect(() => {
-    const workDayId = searchParams.get('workDayId');
-    const reportId = searchParams.get('reportId');
-    const date = searchParams.get('date');
-
-    if (workDayId && reportId) {
-      setEditingWorkDayId(workDayId);
-      setEditingReportId(reportId);
-
-      // Load work day data
-      api.getWorkDay(reportId, workDayId).then((workDay) => {
-        if (workDay) {
-          setWorkNote(workDay.note || "");
-          setReportDate(workDay.date);
-        }
-      }).catch((error) => {
-        console.error("Error loading planned work day:", error);
-        toast.error("Помилка завантаження запланованої роботи");
-      });
-    } else if (date) {
-      // Just set date if provided
-      setReportDate(date);
+    if (editingDay) {
+      setWorkNote(editingDay.note ?? "");
+      setReportDate(editingDay.date);
     }
-  }, [searchParams]);
+  }, [editingDay]);
 
-  // Автоматично встановлюємо дефолтну ставку при виборі клієнта
+  const selectedClient = clients.find((c) => c.id === selectedClientId);
+
+  // Дефолтна ставка при виборі клієнта
   useEffect(() => {
-    if (selectedClientId && clients.length > 0) {
-      const defaultRate = getDefaultHourlyRate();
-      setCustomHourlyRate(defaultRate.toString());
-    } else if (!selectedClientId) {
-      setCustomHourlyRate("");
-    }
-  }, [selectedClientId, clients]);
+    if (selectedClient) setCustomHourlyRate(selectedClient.hourlyRate.toString());
+    else setCustomHourlyRate("");
+  }, [selectedClient]);
 
-  const loadClients = async () => {
-    try {
-      const data = await api.getClients();
-      setClients(data);
-    } catch (error) {
-      toast.error('Помилка завантаження клієнтів');
-    }
-  };
+  const getRate = useCallback(
+    () => (customHourlyRate ? parseFloat(customHourlyRate) : selectedClient?.hourlyRate ?? 0),
+    [customHourlyRate, selectedClient],
+  );
 
-  const getClientHourlyRate = () => {
-    // Якщо є кастомна ставка, використовуємо її
-    if (customHourlyRate) {
-      return parseFloat(customHourlyRate);
-    }
-    const client = clients.find((c) => c.id === selectedClientId);
-    return client ? (client.hourlyRate || client.hourly_rate || 0) : 0;
-  };
+  const hoursArray = useMemo(() => Array.from({ length: 24 }, (_, i) => i), []);
+  const minutesArray = useMemo(() => [0, 10, 20, 30, 40, 50], []);
 
-  const getDefaultHourlyRate = () => {
-    const client = clients.find((c) => c.id === selectedClientId);
-    return client ? (client.hourlyRate || client.hourly_rate || 0) : 0;
-  };
-
-  const hoursArray = Array.from({ length: 24 }, (_, i) => i);
-  const minutesArray = [0, 10, 20, 30, 40, 50];
-
-  const calculateEarnings = () => {
+  const calculateEarnings = useCallback(() => {
     if (!selectedClientId) return 0;
-    const totalHours = hours + (minutes / 60);
-    const rate = getClientHourlyRate();
-    return Math.round(totalHours * rate);
-  };
+    return Math.round((hours + minutes / 60) * getRate());
+  }, [selectedClientId, hours, minutes, getRate]);
 
-  const toggleWorker = (workerId: string) => {
-    setSelectedWorkers(prev => {
-      if (prev.includes(workerId)) {
-        const updated = prev.filter(id => id !== workerId);
-        const newAmounts = { ...workerAmounts };
-        delete newAmounts[workerId];
-        setWorkerAmounts(newAmounts);
-        return updated;
-      } else {
-        // Save to localStorage for sorting
-        const recentWorkers = JSON.parse(localStorage.getItem('recentWorkers') || '[]');
-        const updatedRecent = [workerId, ...recentWorkers.filter((id: string) => id !== workerId)].slice(0, 10);
-        localStorage.setItem('recentWorkers', JSON.stringify(updatedRecent));
-        
-        return [...prev, workerId];
-      }
-    });
-  };
-
-  // Sort workers by recent usage
-  const getSortedWorkers = () => {
-    const recentWorkers = JSON.parse(localStorage.getItem('recentWorkers') || '[]');
-    
-    return [...workers].sort((a, b) => {
-      const aIndex = recentWorkers.indexOf(a.id);
-      const bIndex = recentWorkers.indexOf(b.id);
-      
-      // If both are in recent, sort by recency
-      if (aIndex !== -1 && bIndex !== -1) {
-        return aIndex - bIndex;
-      }
-      // If only a is recent, a comes first
-      if (aIndex !== -1) return -1;
-      // If only b is recent, b comes first
-      if (bIndex !== -1) return 1;
-      // Otherwise maintain original order (primary first)
-      return 0;
-    });
-  };
-
-  const handleAddWorkerInDialog = async (name: string) => {
-    try {
-      const colors = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'];
-      const randomColor = colors[Math.floor(Math.random() * colors.length)];
-      
-      await addWorker({
-        name: name,
-        color: randomColor,
-        is_primary: false
-      });
-      
-      toast.success('Працівника додано');
-    } catch (error) {
-      toast.error('Помилка додавання працівника');
-      console.error(error);
-    }
-  };
-
-  const handleWorkersChange = (newSelectedWorkers: string[], newWorkerAmounts: Record<string, string>) => {
-    setSelectedWorkers(newSelectedWorkers);
-    setWorkerAmounts(newWorkerAmounts);
-    
-    // Update recent workers in localStorage
-    if (newSelectedWorkers.length > 0) {
-      const recentWorkers = JSON.parse(localStorage.getItem('recentWorkers') || '[]');
-      const updatedRecent = [
-        ...newSelectedWorkers.filter(id => !recentWorkers.includes(id)),
-        ...recentWorkers.filter((id: string) => !newSelectedWorkers.includes(id))
-      ].slice(0, 10);
-      localStorage.setItem('recentWorkers', JSON.stringify(updatedRecent));
-    }
-  };
-
-  const updateWorkerAmount = (workerId: string, amount: string) => {
-    const newAmount = parseFloat(amount) || 0;
-    const totalAmount = calculateEarnings();
-    
-    // Calculate already assigned amount (excluding this worker)
-    const otherAssigned = selectedWorkers.reduce((sum, id) => {
-      if (id === workerId) return sum;
-      return sum + (parseFloat(workerAmounts[id] || '0'));
-    }, 0);
-    
-    // Remaining amount available for this worker
-    const available = totalAmount - otherAssigned;
-    
-    // If trying to assign more than available, auto-assign the remaining
-    const finalAmount = newAmount > available ? available : newAmount;
-    
-    setWorkerAmounts(prev => ({
-      ...prev,
-      [workerId]: finalAmount > 0 ? finalAmount.toString() : amount
-    }));
-  };
-
-  const getTotalAssignedAmount = () => {
-    return selectedWorkers.reduce((sum, workerId) => {
-      const amount = parseFloat(workerAmounts[workerId] || '0');
-      return sum + amount;
-    }, 0);
-  };
-
-  const getRemainingAmount = () => {
-    const totalAmount = calculateEarnings();
-    const assigned = getTotalAssignedAmount();
-    return Math.max(0, totalAmount - assigned);
-  };
-
-  const isWorkerAssignmentValid = () => {
-    if (selectedWorkers.length === 0) return true; // No workers selected is valid
-    
-    const totalAmount = calculateEarnings();
-    const assignedAmount = getTotalAssignedAmount();
-    
-    // Check if total is fully distributed
-    if (assignedAmount !== totalAmount) return false;
-    
-    // Check if all workers have amounts assigned
-    for (const workerId of selectedWorkers) {
-      const amount = parseFloat(workerAmounts[workerId] || '0');
-      if (amount === 0) return false;
-    }
-    
-    return true;
-  };
-
-  const handleDeletePlannedWork = async () => {
-    if (!editingWorkDayId) return;
-
-    try {
-      await api.deleteWorkDay(editingWorkDayId);
-      toast.success("Запис видалено");
-      navigate("/");
-    } catch (error) {
-      toast.error("Помилка видалення запису");
-      console.error(error);
-    }
-  };
-
-  const handleSaveNote = async () => {
-    if (!editingWorkDayId) return;
-
-    try {
-      await api.updateWorkDay(editingWorkDayId, {
-        note: workNote ? workNote : null
-      });
-      toast.success("Нотатку збережено", { duration: 2000 });
-    } catch (error) {
-      toast.error("Помилка збереження нотатки");
-      console.error("Error saving note:", error);
-    }
-  };
-
-  const handlePlanWork = async () => {
-    if (!selectedClientId) {
-      toast.error("Оберіть клієнта");
-      return;
-    }
-
-    const client = clients.find((c) => c.id === selectedClientId);
-    if (!client) return;
-
-    // Create a planned work day with minimal data
-    const workDays: WorkDay[] = [{
-      id: `new-${Date.now()}`,
-      date: reportDate,
-      hours: 0,
-      amount: 0,
-      payment_status: "unpaid",
-      paymentStatus: "unpaid",
-      day_paid_amount: 0,
-      is_planned: true,
-      note: workNote || undefined
-    }];
-
-    try {
-      await api.addReport({
-        clientId: selectedClientId,
-        clientName: client.name,
-        date: reportDate,
-        status: "in_progress",
-        paymentStatus: "unpaid",
-        totalHours: 0,
-        totalEarned: 0,
-        paidAmount: 0,
-        remainingAmount: 0,
-        workDays,
-      });
-
-      toast.success("Роботу заплановано");
-      navigate("/");
-    } catch (error) {
-      toast.error("Помилка планування роботи");
-      console.error(error);
-    }
-  };
-
-  const handleCreateReport = async () => {
-    if (!selectedClientId) {
-      toast.error("Оберіть клієнта");
-      return;
-    }
-
-    const client = clients.find((c) => c.id === selectedClientId);
-    if (!client) return;
-
-    // If editing an existing planned work day, update it instead of creating new
-    if (editingWorkDayId && editingReportId) {
-      try {
-        let finalHours: number;
-
-        if (amountInput && amountManuallyEntered) {
-          const amount = parseFloat(amountInput);
-          const rate = getClientHourlyRate();
-          if (!isNaN(amount) && rate > 0) {
-            finalHours = amount / rate;
-          } else {
-            finalHours = hours + (minutes / 60);
-          }
-        } else {
-          finalHours = hours + (minutes / 60);
-        }
-
-        const hourlyRate = getClientHourlyRate();
-        const amount = finalHours * hourlyRate;
-
-        // Update the work day to convert from planned to normal
-        await api.updateWorkDay(editingWorkDayId, {
-          hours: finalHours,
-          amount,
-          payment_status: workPaymentStatus,
-          day_paid_amount: workPaymentStatus === "partial" ? parseFloat(partialAmount) || 0 :
-                           workPaymentStatus === "paid" ? amount : 0,
-          is_planned: false,
-          note: workNote || undefined
-        });
-
-        // Delete old assignments
-        await api.deleteWorkDayAssignmentsByWorkDay(editingWorkDayId);
-
-        // Create worker assignments
-        if (selectedWorkers.length > 0) {
-          // User manually selected workers - use their assignments
-          for (const workerId of selectedWorkers) {
-            const assignedAmount = parseFloat(workerAmounts[workerId] || '0');
-            const assignedHours = assignedAmount / getClientHourlyRate();
-
-            await api.addWorkDayAssignment({
-              work_day_id: editingWorkDayId,
-              worker_id: workerId,
-              amount: assignedAmount,
-              hours: assignedHours
-            });
-          }
-        } else {
-          // No workers selected - assign to primary worker automatically
-          const primaryWorker = workers.find(w => w.is_primary || w.isPrimary);
-          if (primaryWorker) {
-            await api.addWorkDayAssignment({
-              work_day_id: editingWorkDayId,
-              worker_id: primaryWorker.id,
-              amount: amount,
-              hours: finalHours
-            });
-          }
-        }
-
-        toast.success("Запис оновлено", { duration: 2000 });
-        navigate("/");
-        return;
-      } catch (error) {
-        toast.error('Помилка оновлення запису');
-        console.error(error);
-        return;
-      }
-    }
-
-    // Validate partial payment amount
-    if (workPaymentStatus === "partial" && partialAmount) {
-      const calculatedEarnings = calculateEarnings();
-      const partialAmountValue = parseFloat(partialAmount);
-
-      if (partialAmountValue > calculatedEarnings) {
-        toast.error(`Сума не може бути більшою за ${calculatedEarnings}€`);
-        return;
-      }
-    }
-
-    // Validate worker assignments
+  const buildAssignments = (totalAmount: number, totalHours: number): NewAssignment[] => {
     if (selectedWorkers.length > 0) {
-      const totalAmount = calculateEarnings();
-      const assignedAmount = getTotalAssignedAmount();
-      
-      if (assignedAmount > totalAmount) {
-        toast.error(`Сума розподілу (${assignedAmount}€) перевищує загальну суму (${totalAmount}€)`);
+      const rate = getRate();
+      return selectedWorkers.map((workerId) => {
+        const amount = parseFloat(workerAmounts[workerId] || "0");
+        return { workerId, amount, hours: rate > 0 ? amount / rate : 0 };
+      });
+    }
+    const primary = workers.find((w) => w.isPrimary) ?? workers[0];
+    if (!primary) return [];
+    return [{ workerId: primary.id, amount: totalAmount, hours: totalHours }];
+  };
+
+  const handleDelete = () => {
+    if (!editingReportId) return;
+    deleteReport.mutate(editingReportId, { onSuccess: () => navigate("/") });
+  };
+
+  const handleSaveNote = () => {
+    if (!editingWorkDayId) return;
+    updateFields.mutate(
+      { dayId: editingWorkDayId, patch: { note: workNote || null } },
+      { onSuccess: () => toast.success("Нотатку збережено", { duration: 2000 }) },
+    );
+  };
+
+  const handlePlanWork = () => {
+    if (!selectedClient) {
+      toast.error("Оберіть клієнта");
+      return;
+    }
+    createEntry.mutate(
+      {
+        clientId: selectedClient.id,
+        clientName: selectedClient.name,
+        date: reportDate,
+        hours: 0,
+        amount: 0,
+        status: "unpaid",
+        paidAmount: 0,
+        isPlanned: true,
+        note: workNote || undefined,
+        assignments: [],
+      },
+      {
+        onSuccess: () => {
+          toast.success("Роботу заплановано");
+          navigate("/");
+        },
+      },
+    );
+  };
+
+  const resolveFinalHours = (): number => {
+    if (amountInput && amountManuallyEntered) {
+      const amount = parseFloat(amountInput);
+      const rate = getRate();
+      if (!isNaN(amount) && rate > 0) return amount / rate;
+    }
+    return hours + minutes / 60;
+  };
+
+  const handleCreateOrSave = () => {
+    if (!selectedClient) {
+      toast.error("Оберіть клієнта");
+      return;
+    }
+
+    const finalHours = resolveFinalHours();
+    const rate = getRate();
+    const amount = finalHours * rate;
+
+    if (workPaymentStatus === "partial" && partialAmount && parseFloat(partialAmount) > amount) {
+      toast.error(`Сума не може бути більшою за ${Math.round(amount)}€`);
+      return;
+    }
+
+    if (selectedWorkers.length > 0) {
+      const split = validateSplit(
+        calculateEarnings(),
+        selectedWorkers.map((id) => ({ workerId: id, amount: parseFloat(workerAmounts[id] || "0") })),
+      );
+      if (!split.valid) {
+        toast.error(
+          split.emptyWorkerIds.length > 0
+            ? "Введіть суму для кожної працівниці"
+            : `Розподіліть всю суму. Залишок: ${Math.round(split.remainder)}€`,
+        );
         return;
-      }
-      
-      // Check if all amounts are assigned
-      if (assignedAmount !== totalAmount) {
-        toast.error(`Розподіліть всю суму (${totalAmount}€). Залишок: ${totalAmount - assignedAmount}€`);
-        return;
-      }
-      
-      // Check if all selected workers have amounts
-      for (const workerId of selectedWorkers) {
-        const amount = parseFloat(workerAmounts[workerId] || '0');
-        if (amount === 0) {
-          const worker = workers.find(w => w.id === workerId);
-          toast.error(`Введіть суму для ${worker?.name || 'працівника'}`);
-          return;
-        }
       }
     }
 
-    const workDays: WorkDay[] = [];
+    const paidAmount =
+      workPaymentStatus === "paid" ? amount :
+      workPaymentStatus === "partial" ? parseFloat(partialAmount) || 0 : 0;
 
-    if (hours > 0 || minutes > 0) {
-      let finalHours: number;
-      
-      if (amountInput && amountManuallyEntered) {
-        const amount = parseFloat(amountInput);
-        const rate = getClientHourlyRate();
-        if (!isNaN(amount) && rate > 0) {
-          finalHours = amount / rate;
-        } else {
-          finalHours = hours + (minutes / 60);
-        }
-      } else {
-        finalHours = hours + (minutes / 60);
-      }
-      
-      const hourlyRate = getClientHourlyRate();
-      const amount = finalHours * hourlyRate;
-      
-      workDays.push({
-        id: `new-${Date.now()}`,
+    if (editingWorkDayId) {
+      // Перетворення запланованого запису на робочий
+      updateFields.mutate(
+        {
+          dayId: editingWorkDayId,
+          patch: { date: reportDate, hours: finalHours, amount, isPlanned: false, note: workNote || null },
+        },
+        {
+          onSuccess: () => {
+            replaceAssignments.mutate(
+              { dayId: editingWorkDayId, assignments: buildAssignments(amount, finalHours) },
+              {
+                onSuccess: () => {
+                  toast.success("Запис оновлено", { duration: 2000 });
+                  navigate("/");
+                },
+              },
+            );
+          },
+        },
+      );
+      return;
+    }
+
+    createEntry.mutate(
+      {
+        clientId: selectedClient.id,
+        clientName: selectedClient.name,
         date: reportDate,
         hours: finalHours,
         amount,
-        payment_status: workPaymentStatus,
-        paymentStatus: workPaymentStatus,
-        day_paid_amount: workPaymentStatus === "partial" ? parseFloat(partialAmount) || 0 :
-                         workPaymentStatus === "paid" ? amount : 0,
-        is_planned: isPlanned,
-        note: workNote || undefined
-      });
-    }
-
-    const totalHours = workDays.reduce((sum, day) => sum + day.hours, 0);
-    const totalEarned = workDays.reduce((sum, day) => sum + day.amount, 0);
-    const paidDays = workDays.filter((d) => d.paymentStatus === "paid");
-    const paidAmount = paidDays.reduce((sum, day) => sum + day.amount, 0);
-    
-    // Add partial payments
-    const partialDays = workDays.filter((d) => d.paymentStatus === "partial");
-    const partialAmountTotal = partialDays.reduce((sum, day) => sum + (day.day_paid_amount || 0), 0);
-    
-    const totalPaidAmount = paidAmount + partialAmountTotal;
-
-    let reportPaymentStatus: PaymentStatus = "unpaid";
-    if (totalPaidAmount === totalEarned && totalEarned > 0) {
-      reportPaymentStatus = "paid";
-    } else if (totalPaidAmount > 0) {
-      reportPaymentStatus = "partial";
-    }
-
-    try {
-      const newReport = await api.addReport({
-        clientId: client.id,
-        clientName: client.name,
-        date: reportDate,
-        status: "in_progress",
-        paymentStatus: reportPaymentStatus,
-        totalHours,
-        totalEarned,
-        paidAmount: totalPaidAmount,
-        remainingAmount: totalEarned - totalPaidAmount,
-        workDays,
-      } as Omit<Report, 'id'>);
-
-      // Create worker assignments
-      // If no workers selected, assign to primary worker (Лідія)
-      if (newReport.workDays && newReport.workDays.length > 0) {
-        const workDayId = newReport.workDays[0].id; // Use real ID from API response
-
-        if (selectedWorkers.length > 0) {
-          // User manually selected workers - use their assignments
-          for (const workerId of selectedWorkers) {
-            const assignedAmount = parseFloat(workerAmounts[workerId] || '0');
-            const assignedHours = assignedAmount / getClientHourlyRate();
-
-            await api.addWorkDayAssignment({
-              work_day_id: workDayId,
-              worker_id: workerId,
-              amount: assignedAmount,
-              hours: assignedHours
-            });
-          }
-        } else {
-          // No workers selected - assign to primary worker automatically
-          const primaryWorker = workers.find(w => w.is_primary || w.isPrimary);
-          if (primaryWorker) {
-            const totalAmount = calculateEarnings();
-            const totalHoursDecimal = hours + (minutes / 60);
-
-            await api.addWorkDayAssignment({
-              work_day_id: workDayId,
-              worker_id: primaryWorker.id,
-              amount: totalAmount,
-              hours: totalHoursDecimal
-            });
-          }
-        }
-      }
-
-      toast.success("Звіт створено", { duration: 2000 });
-      navigate(`/`);
-    } catch (error) {
-      toast.error('Помилка створення звіту');
-      console.error(error);
-    }
+        status: workPaymentStatus,
+        paidAmount,
+        isPlanned: false,
+        note: workNote || undefined,
+        assignments: buildAssignments(amount, finalHours),
+      },
+      {
+        onSuccess: () => {
+          toast.success("Запис створено", { duration: 2000 });
+          navigate("/");
+        },
+      },
+    );
   };
 
-  // Update amount when time changes (only if user is not editing the amount field)
+  // Сума ← час
   useEffect(() => {
-    const rate = getClientHourlyRate();
+    const rate = getRate();
     if (rate > 0 && !isAmountFocused) {
-      const totalHours = hours + (minutes / 60);
-      const calculatedAmount = Math.round(totalHours * rate);
-      setAmountInput(calculatedAmount.toString());
+      setAmountInput(Math.round((hours + minutes / 60) * rate).toString());
     }
-  }, [hours, minutes, customHourlyRate, selectedClientId, isAmountFocused]);
-
-  // Initialize scroll positions when hours/minutes change (from amount input)
-  useEffect(() => {
-    if (hoursRef.current && minutesRef.current && amountManuallyEntered) {
-      const itemHeight = 40;
-      const hoursIndex = hoursArray.indexOf(hours);
-      const minutesIndex = minutesArray.indexOf(minutes);
-
-      if (hoursIndex !== -1 && minutesIndex !== -1) {
-        hoursRef.current.scrollTop = hoursIndex * itemHeight;
-        minutesRef.current.scrollTop = minutesIndex * itemHeight;
-      }
-    }
-  }, [hours, minutes, amountManuallyEntered]);
-
-  // Cleanup timeouts on unmount
-  useEffect(() => {
-    return () => {
-      if (hoursScrollTimeout.current) {
-        clearTimeout(hoursScrollTimeout.current);
-      }
-      if (minutesScrollTimeout.current) {
-        clearTimeout(minutesScrollTimeout.current);
-      }
-    };
-  }, []);
+  }, [hours, minutes, getRate, isAmountFocused]);
 
   const handleScroll = useCallback((
-    ref: React.RefObject<HTMLDivElement>,
+    ref: React.RefObject<HTMLDivElement | null>,
     items: number[],
     setter: (value: number) => void,
-    timeoutRef: React.MutableRefObject<NodeJS.Timeout | null>,
-    scrollingFlag: 'hours' | 'minutes'
+    timeoutRef: React.MutableRefObject<ReturnType<typeof setTimeout> | null>,
   ) => {
     if (!ref.current) return;
-
-    const container = ref.current;
     const itemHeight = 40;
-    const scrollTop = container.scrollTop;
-    const centerIndex = Math.round(scrollTop / itemHeight);
+    const centerIndex = Math.round(ref.current.scrollTop / itemHeight);
     const clampedIndex = Math.max(0, Math.min(centerIndex, items.length - 1));
 
-    // Clear previous timeout
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-    }
-
-    // Set flag that we're scrolling
-    isScrolling.current[scrollingFlag] = true;
-
-    // Debounce the value update and snap
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
     timeoutRef.current = setTimeout(() => {
       if (!ref.current) return;
-
-      // Update value
       setter(items[clampedIndex]);
       setAmountManuallyEntered(false);
-
       const targetScroll = clampedIndex * itemHeight;
-      const currentScroll = ref.current.scrollTop;
-
-      // Snap to center if needed
-      if (Math.abs(currentScroll - targetScroll) > 2) {
-        ref.current.scrollTo({
-          top: targetScroll,
-          behavior: 'smooth'
-        });
+      if (Math.abs(ref.current.scrollTop - targetScroll) > 2) {
+        ref.current.scrollTo({ top: targetScroll, behavior: "smooth" });
       }
-
-      // Reset scrolling flag after animation
-      setTimeout(() => {
-        isScrolling.current[scrollingFlag] = false;
-      }, 150);
     }, 150);
   }, []);
 
   const handleAmountChange = (newAmount: string) => {
     setAmountInput(newAmount);
     setAmountManuallyEntered(true);
-    
-    // Calculate and update time when amount is entered
     if (newAmount && !isNaN(parseFloat(newAmount))) {
-      const amount = parseFloat(newAmount);
-      const rate = getClientHourlyRate();
-      
+      const rate = getRate();
       if (rate > 0) {
-        const totalHours = amount / rate;
+        const totalHours = parseFloat(newAmount) / rate;
         const h = Math.floor(totalHours);
-        const m = Math.round((totalHours - h) * 60);
-        
-        // Round minutes to nearest 10
-        const roundedMinutes = Math.round(m / 10) * 10;
-        const adjustedHours = roundedMinutes >= 60 ? h + 1 : h;
-        const adjustedMinutes = roundedMinutes >= 60 ? 0 : roundedMinutes;
-        
-        setHours(Math.min(adjustedHours, 23));
-        setMinutes(adjustedMinutes);
+        const m = Math.round(((totalHours - h) * 60) / 10) * 10;
+        setHours(Math.min(m >= 60 ? h + 1 : h, 23));
+        setMinutes(m >= 60 ? 0 : m);
       }
     }
   };
 
-  const handleAmountFocus = () => {
-    setIsAmountFocused(true);
-    setAmountInput("");
-  };
-
-  const handleAmountBlur = () => {
-    setIsAmountFocused(false);
-    const rate = getClientHourlyRate();
-    if (!amountInput && rate > 0) {
-      const totalHours = hours + (minutes / 60);
-      const calculatedAmount = Math.round(totalHours * rate);
-      setAmountInput(calculatedAmount.toString());
-    }
-  };
-
-  const selectedClient = clients.find(c => c.id === selectedClientId);
+  const isPending = createEntry.isPending || updateFields.isPending;
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Fixed top section with client info - Compact */}
       <div className="fixed top-0 left-0 right-0 z-40 app-bar">
         <div className="container mx-auto px-4 py-2.5">
           <h1 className="num-display text-xl text-foreground text-center">
@@ -707,7 +298,7 @@ const CreateReport = () => {
 
       <main className="container mx-auto px-4 pt-20 pb-dock-sm max-w-md">
         <div className="space-y-3">
-          {/* Date Card - Compact */}
+          {/* Date Card */}
           <div className="surface-card p-3">
             <div className="flex items-center gap-2">
               <div className="icon-badge icon-badge-ok w-8 h-8 rounded-full">
@@ -722,24 +313,18 @@ const CreateReport = () => {
             </div>
           </div>
 
-          {/* Main Time & Rate Card - Redesigned for Mobile */}
+          {/* Time & Rate Card */}
           <div className="surface-card overflow-hidden">
-            {/* Time Picker Wheels - Full Width */}
             <div className="p-3 border-b border-border/50">
               <div className="flex items-center justify-between px-2">
-                {/* Hours Wheel */}
                 <div className="relative flex-1">
                   <div className="relative h-[120px] w-full">
                     <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-[40px] border-y-2 border-primary/30 bg-primary/5 pointer-events-none z-10 rounded-md" />
                     <div
                       ref={hoursRef}
                       className="h-full overflow-y-auto scrollbar-hide"
-                      onScroll={() => handleScroll(hoursRef, hoursArray, setHours, hoursScrollTimeout, 'hours')}
-                      style={{
-                        paddingTop: '40px',
-                        paddingBottom: '40px',
-                        scrollBehavior: 'auto'
-                      }}
+                      onScroll={() => handleScroll(hoursRef, hoursArray, setHours, hoursScrollTimeout)}
+                      style={{ paddingTop: "40px", paddingBottom: "40px", scrollBehavior: "auto" }}
                     >
                       {hoursArray.map((hour) => (
                         <div
@@ -747,7 +332,7 @@ const CreateReport = () => {
                           className="h-[40px] flex items-center justify-center text-lg font-bold transition-all duration-150"
                           style={{
                             opacity: hour === hours ? 1 : 0.25,
-                            transform: hour === hours ? 'scale(1.05)' : 'scale(0.85)',
+                            transform: hour === hours ? "scale(1.05)" : "scale(0.85)",
                           }}
                         >
                           {hour}
@@ -759,19 +344,14 @@ const CreateReport = () => {
 
                 <div className="text-2xl font-bold text-primary px-3">:</div>
 
-                {/* Minutes Wheel */}
                 <div className="relative flex-1">
                   <div className="relative h-[120px] w-full">
                     <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-[40px] border-y-2 border-primary/30 bg-primary/5 pointer-events-none z-10 rounded-md" />
                     <div
                       ref={minutesRef}
                       className="h-full overflow-y-auto scrollbar-hide"
-                      onScroll={() => handleScroll(minutesRef, minutesArray, setMinutes, minutesScrollTimeout, 'minutes')}
-                      style={{
-                        paddingTop: '40px',
-                        paddingBottom: '40px',
-                        scrollBehavior: 'auto'
-                      }}
+                      onScroll={() => handleScroll(minutesRef, minutesArray, setMinutes, minutesScrollTimeout)}
+                      style={{ paddingTop: "40px", paddingBottom: "40px", scrollBehavior: "auto" }}
                     >
                       {minutesArray.map((minute) => (
                         <div
@@ -779,10 +359,10 @@ const CreateReport = () => {
                           className="h-[40px] flex items-center justify-center text-lg font-bold transition-all duration-150"
                           style={{
                             opacity: minute === minutes ? 1 : 0.25,
-                            transform: minute === minutes ? 'scale(1.05)' : 'scale(0.85)',
+                            transform: minute === minutes ? "scale(1.05)" : "scale(0.85)",
                           }}
                         >
-                          {minute.toString().padStart(2, '0')}
+                          {minute.toString().padStart(2, "0")}
                         </div>
                       ))}
                     </div>
@@ -791,11 +371,9 @@ const CreateReport = () => {
               </div>
             </div>
 
-            {/* Amount & Rate - One Line Below */}
             <div className="p-3">
               <div className="flex gap-3">
-                {/* Amount Input - Left (2/3 width) */}
-                {selectedClientId && getClientHourlyRate() > 0 && (
+                {selectedClientId && getRate() > 0 && (
                   <div className="flex-[2] flex flex-col">
                     <div className="text-[10px] font-bold text-muted-foreground mb-1.5 uppercase tracking-wide text-center">
                       Сума
@@ -805,9 +383,13 @@ const CreateReport = () => {
                         type="number"
                         value={amountInput}
                         onChange={(e) => handleAmountChange(e.target.value)}
-                        onFocus={handleAmountFocus}
-                        onBlur={handleAmountBlur}
-                        placeholder=""
+                        onFocus={() => { setIsAmountFocused(true); setAmountInput(""); }}
+                        onBlur={() => {
+                          setIsAmountFocused(false);
+                          if (!amountInput && getRate() > 0) {
+                            setAmountInput(Math.round((hours + minutes / 60) * getRate()).toString());
+                          }
+                        }}
                         className="h-10 text-center text-base font-bold rounded-md pr-7"
                       />
                       <div className="absolute right-1.5 top-1/2 -translate-y-1/2">
@@ -817,7 +399,6 @@ const CreateReport = () => {
                   </div>
                 )}
 
-                {/* Rate Input - Right (1/3 width) */}
                 <div className="flex-1 flex flex-col">
                   <div className="text-[10px] font-bold text-muted-foreground mb-1.5 uppercase tracking-wide text-center">
                     Ставка
@@ -849,15 +430,15 @@ const CreateReport = () => {
               <div className="flex items-center gap-2">
                 <Users className="w-5 h-5 text-accent" />
                 <span className="text-sm font-bold">
-                  {selectedWorkers.length > 0 
-                    ? `Працівники (${selectedWorkers.length})` 
-                    : 'Додати працівників'}
+                  {selectedWorkers.length > 0
+                    ? `Працівниці (${selectedWorkers.length})`
+                    : "Додати працівниць"}
                 </span>
               </div>
               {selectedWorkers.length > 0 && (
                 <div className="flex -space-x-2">
-                  {selectedWorkers.slice(0, 3).map(workerId => {
-                    const worker = workers.find(w => w.id === workerId);
+                  {selectedWorkers.slice(0, 3).map((workerId) => {
+                    const worker = workers.find((w) => w.id === workerId);
                     if (!worker) return null;
                     return (
                       <div
@@ -867,17 +448,11 @@ const CreateReport = () => {
                       />
                     );
                   })}
-                  {selectedWorkers.length > 3 && (
-                    <div className="w-6 h-6 rounded-full bg-muted border-2 border-card flex items-center justify-center text-xs font-bold">
-                      +{selectedWorkers.length - 3}
-                    </div>
-                  )}
                 </div>
               )}
             </button>
           )}
 
-          {/* Worker Assignment Dialog */}
           <WorkerAssignmentDialog
             open={workerDialogOpen}
             onOpenChange={setWorkerDialogOpen}
@@ -885,11 +460,10 @@ const CreateReport = () => {
             selectedWorkers={selectedWorkers}
             workerAmounts={workerAmounts}
             totalAmount={calculateEarnings()}
-            onWorkersChange={handleWorkersChange}
-            onAddWorker={handleAddWorkerInDialog}
+            onWorkersChange={(w, a) => { setSelectedWorkers(w); setWorkerAmounts(a); }}
           />
 
-          {/* Payment Status Selection - Compact */}
+          {/* Payment Status */}
           {(hours > 0 || minutes > 0) && selectedClientId && (
             <div className="surface-card p-3">
               <div className="grid grid-cols-3 gap-1.5">
@@ -955,11 +529,7 @@ const CreateReport = () => {
                   </label>
                 </div>
                 {editingWorkDayId && (
-                  <Button
-                    onClick={handleSaveNote}
-                    size="sm"
-                    className="h-7 px-2 text-xs gap-1"
-                  >
+                  <Button onClick={handleSaveNote} size="sm" className="h-7 px-2 text-xs gap-1">
                     <Save className="w-3 h-3" />
                     Зберегти
                   </Button>
@@ -974,10 +544,9 @@ const CreateReport = () => {
             </div>
           )}
 
-          {/* Показуємо або "Запланувати роботу" або "Створити запис" або "Видалити" */}
+          {/* Дії */}
           {hours === 0 && minutes === 0 && (!amountInput || amountInput === "0") ? (
             editingWorkDayId ? (
-              // Delete Button - коли редагуємо заплановану роботу без годин
               <Button
                 variant="ghost"
                 size="lg"
@@ -988,20 +557,16 @@ const CreateReport = () => {
                 Видалити запис
               </Button>
             ) : (
-              // Plan Work Button - коли створюємо нову без годин/сум
-              <Button
-                variant="outline"
-                size="lg"
+              <button
                 onClick={handlePlanWork}
-                className="w-full h-12 text-sm font-bold rounded-full border-2 border-dashed border-warning/50 bg-warning/8 hover:bg-warning/12 text-warning transition-all active:scale-[0.98] shadow-xs"
-                disabled={!selectedClientId}
+                disabled={!selectedClientId || createEntry.isPending}
+                className="w-full h-12 text-sm font-bold rounded-full border-2 border-dashed border-warning/50 bg-warning/8 hover:bg-warning/12 text-warning transition-all active:scale-[0.98] shadow-xs flex items-center justify-center gap-2 disabled:opacity-50"
               >
-                <Calendar className="w-4 h-4 mr-2" />
+                <Calendar className="w-4 h-4" />
                 Запланувати роботу
-              </Button>
+              </button>
             )
           ) : (
-            // Create Button - коли є години/сума
             <div className="flex gap-2">
               {editingWorkDayId && (
                 <Button
@@ -1016,14 +581,14 @@ const CreateReport = () => {
               <Button
                 variant="default"
                 size="lg"
-                onClick={handleCreateReport}
-                className={`h-12 text-sm font-bold rounded-lg gradient-primary hover:opacity-95 shadow-md hover:shadow-lg ${editingWorkDayId ? 'flex-1' : 'w-full'}`}
+                onClick={handleCreateOrSave}
+                className={`h-12 text-sm font-bold gradient-primary hover:opacity-95 shadow-md hover:shadow-lg ${editingWorkDayId ? "flex-1" : "w-full"}`}
                 disabled={
+                  isPending ||
                   !selectedClientId ||
                   (hours === 0 && minutes === 0) ||
                   (workPaymentStatus === "partial" && !partialAmount) ||
-                  (workPaymentStatus === "partial" && partialAmount && parseFloat(partialAmount) > calculateEarnings()) ||
-                  !isWorkerAssignmentValid()
+                  (workPaymentStatus === "partial" && !!partialAmount && parseFloat(partialAmount) > calculateEarnings())
                 }
               >
                 <Plus className="w-4 h-4 mr-2" />
@@ -1045,7 +610,7 @@ const CreateReport = () => {
           <AlertDialogFooter>
             <AlertDialogCancel>Скасувати</AlertDialogCancel>
             <AlertDialogAction
-              onClick={handleDeletePlannedWork}
+              onClick={handleDelete}
               className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
             >
               Видалити
@@ -1055,7 +620,6 @@ const CreateReport = () => {
       </AlertDialog>
 
       <HomeDock />
-
     </div>
   );
 };

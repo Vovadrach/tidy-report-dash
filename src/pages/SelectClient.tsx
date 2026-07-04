@@ -1,40 +1,17 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { api } from "@/lib/api";
-import { Client } from "@/types/report";
 import { User, UserPlus, SignOut as LogOut, CaretRight as ChevronRight, MagnifyingGlass as Search } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { Input } from "@/components/ui/input";
 import { HomeDock } from "@/components/HomeDock";
+import { useClients } from "@/data/queries";
 
 const SelectClient = () => {
   const navigate = useNavigate();
   const { signOut } = useAuth();
-  const [clients, setClients] = useState<Client[]>([]);
+  const { data: clients = [], isLoading } = useClients();
   const [searchQuery, setSearchQuery] = useState("");
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    loadClients();
-  }, []);
-
-  const loadClients = async () => {
-    try {
-      setLoading(true);
-      const data = await api.getClients();
-      setClients(data);
-    } catch (error) {
-      toast.error('Помилка завантаження клієнтів');
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSelectClient = (clientId: string) => {
-    navigate(`/create-report?clientId=${clientId}`);
-  };
 
   const handleSignOut = async () => {
     try {
@@ -47,25 +24,23 @@ const SelectClient = () => {
     }
   };
 
-  // Filter clients based on search query
-  const filteredClients = clients.filter(client =>
-    client.name.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredClients = clients.filter((client) =>
+    client.name.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <p className="text-foreground text-lg">Завантаження...</p>
+        <p className="text-muted-foreground text-lg animate-pulse">Завантаження...</p>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Fixed top section */}
       <div className="fixed top-0 left-0 right-0 z-40 app-bar">
         <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5">
               <div className="icon-badge icon-badge-time rounded-full">
                 <User className="w-5 h-5" />
@@ -77,14 +52,13 @@ const SelectClient = () => {
               className="h-10 w-10 rounded-full bg-primary/10 hover:bg-primary/15 transition-all active:scale-95 flex items-center justify-center"
               aria-label="Керування клієнтами"
             >
-              <UserPlus className="w-5 h-5 text-primary stroke-[2.5]" />
+              <UserPlus className="w-5 h-5 text-primary" />
             </button>
           </div>
         </div>
       </div>
 
       <main className="container mx-auto px-4 pt-24 pb-dock-sm max-w-md space-y-3">
-        {/* Search Input */}
         <div className="surface-card p-3">
           <div className="flex items-center gap-3">
             <div className="icon-badge icon-badge-time rounded-full">
@@ -100,7 +74,6 @@ const SelectClient = () => {
           </div>
         </div>
 
-        {/* Clients List */}
         {filteredClients.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center">
             {searchQuery ? (
@@ -109,7 +82,7 @@ const SelectClient = () => {
                 <p className="text-xl font-semibold text-foreground mb-2">Нічого не знайдено</p>
                 <p className="text-muted-foreground text-sm">Спробуйте інший запит</p>
               </>
-            ) : clients.length === 0 ? (
+            ) : (
               <>
                 <User className="w-16 h-16 text-muted-foreground mb-4" />
                 <p className="text-xl font-semibold text-foreground mb-2">Немає клієнтів</p>
@@ -122,13 +95,13 @@ const SelectClient = () => {
                   Додати клієнта
                 </button>
               </>
-            ) : null}
+            )}
           </div>
         ) : (
           filteredClients.map((client) => (
             <div
               key={client.id}
-              onClick={() => handleSelectClient(client.id)}
+              onClick={() => navigate(`/create-report?clientId=${client.id}`)}
               className="surface-card surface-card-hover p-4 cursor-pointer group"
             >
               <div className="flex items-center justify-between gap-3">
@@ -142,7 +115,7 @@ const SelectClient = () => {
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
                   <div className="chip chip-money">
-                    <span>{client.hourlyRate || client.hourly_rate || 0}€</span>
+                    <span>{client.hourlyRate}€</span>
                     <span className="font-medium opacity-70">/год</span>
                   </div>
                   <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
@@ -152,7 +125,6 @@ const SelectClient = () => {
           ))
         )}
 
-        {/* Logout button */}
         <button
           onClick={handleSignOut}
           className="w-full flex items-center justify-center gap-2 text-muted-foreground hover:text-foreground transition-colors py-3 mt-8"
