@@ -134,10 +134,10 @@ export const WorkerAssignmentDialog = ({
       <DialogContent className="sm:max-w-md w-[95vw] max-h-[90vh] p-0 gap-0 rounded-3xl">
         {/* Header */}
         <div className="p-4 border-b">
-          <h2 className="num-display text-xl text-center mb-3">Розподіл між працівницями</h2>
+          <h2 className="display text-xl text-center mb-3">Розподіл між працівницями</h2>
           <div className="stat-tile stat-tile-ok justify-center rounded-2xl p-3 text-center flex-col gap-1">
-            <div className="micro-label">Загальна сума</div>
-            <div className="num-display text-2xl text-success">{totalAmount}€</div>
+            <div className="caption-label">Загальна сума</div>
+            <div className="display text-2xl text-success">{totalAmount}€</div>
             {selectedWorkers.length > 0 && (
               <div className="text-xs mt-1 text-muted-foreground">
                 Залишок: <span className={`font-bold ${Math.abs(split.remainder) < 0.01 ? 'text-success' : 'text-warning'}`}>{Math.round(split.remainder)}€</span>

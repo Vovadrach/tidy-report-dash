@@ -131,7 +131,7 @@ const WorkDayDetails = () => {
       <div className="fixed top-0 left-0 right-0 z-40 app-bar">
         <div className="container mx-auto px-4 py-3">
           <div className="text-center mb-3">
-            <h1 className="num-display text-xl text-foreground">{client?.name ?? workDay.clientName}</h1>
+            <h1 className="display text-xl text-foreground">{client?.name ?? workDay.clientName}</h1>
           </div>
 
           <div className="grid grid-cols-2 gap-2">
@@ -143,9 +143,9 @@ const WorkDayDetails = () => {
                 <Clock className="w-4 h-4" />
               </div>
               <div className="min-w-0 flex-1 overflow-hidden">
-                <p className="micro-label mb-0.5 truncate">Години</p>
+                <p className="caption-label mb-0.5 truncate">Години</p>
                 <div className="flex items-baseline gap-1">
-                  <p className="num-display text-xl text-foreground leading-none truncate">{decimalToHours(currentHours)}</p>
+                  <p className="display text-xl text-foreground leading-none truncate">{decimalToHours(currentHours)}</p>
                   <p className="text-xs font-bold text-muted-foreground/70 flex-shrink-0">год</p>
                 </div>
               </div>
@@ -156,9 +156,9 @@ const WorkDayDetails = () => {
                 <Euro className="w-4 h-4" />
               </div>
               <div className="min-w-0 flex-1 overflow-hidden">
-                <p className="micro-label mb-0.5 truncate">Сума</p>
+                <p className="caption-label mb-0.5 truncate">Сума</p>
                 <div className="flex items-baseline gap-1">
-                  <p className="num-display text-xl text-foreground leading-none truncate">{Math.round(currentAmount)}</p>
+                  <p className="display text-xl text-foreground leading-none truncate">{Math.round(currentAmount)}</p>
                   <p className="text-xs font-bold text-muted-foreground/70 flex-shrink-0">€</p>
                 </div>
               </div>

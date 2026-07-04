@@ -183,7 +183,7 @@ const Index = () => {
                 onClick={handleOpenDatePicker}
                 className="px-5 py-1.5 rounded-full hover:bg-primary/10 transition-all active:scale-95 cursor-pointer"
               >
-                <span className="num-display text-[1.45rem] text-foreground">
+                <span className="display text-[1.45rem] text-foreground">
                   {customRange
                     ? `${fromISODate(customRange.from).toLocaleDateString("uk-UA", { day: "numeric", month: "short" })} – ${fromISODate(customRange.to).toLocaleDateString("uk-UA", { day: "numeric", month: "short", year: "numeric" })}`
                     : formatMonthYear(currentMonth)}
@@ -220,8 +220,8 @@ const Index = () => {
                 <Clock className="w-5 h-5" />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="micro-label">Годин</p>
-                <p className="num-display text-[1.4rem] text-foreground leading-tight">{decimalToHours(stats.hours)}</p>
+                <p className="caption-label">Годин</p>
+                <p className="display text-[1.4rem] text-foreground leading-tight">{decimalToHours(stats.hours)}</p>
               </div>
             </div>
             <div className="stat-tile stat-tile-money">
@@ -229,8 +229,8 @@ const Index = () => {
                 <Euro className="w-5 h-5" />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="micro-label">Заробіток</p>
-                <p className="num-display text-[1.4rem] text-foreground leading-tight">{Math.round(stats.earned)}€</p>
+                <p className="caption-label">Заробіток</p>
+                <p className="display text-[1.4rem] text-foreground leading-tight">{Math.round(stats.earned)}€</p>
               </div>
             </div>
           </div>

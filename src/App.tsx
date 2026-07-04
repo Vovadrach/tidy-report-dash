@@ -25,7 +25,7 @@ const queryClient = new QueryClient({
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <IconContext.Provider value={{ weight: "duotone" }}>
+    <IconContext.Provider value={{ weight: "regular" }}>
     <AuthProvider>
       <WorkerProvider>
         <>

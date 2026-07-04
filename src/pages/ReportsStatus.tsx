@@ -56,9 +56,9 @@ const ReportsStatus = () => {
                 <Clock className="w-5 h-5" />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="micro-label mb-1">Години</p>
+                <p className="caption-label mb-1">Години</p>
                 <div className="flex items-baseline gap-1">
-                  <p className="num-display text-[1.4rem] text-foreground">{decimalToHours(totals.hours)}</p>
+                  <p className="display text-[1.4rem] text-foreground">{decimalToHours(totals.hours)}</p>
                   <p className="text-sm font-bold text-muted-foreground/70">год</p>
                 </div>
               </div>
@@ -69,9 +69,9 @@ const ReportsStatus = () => {
                 <Euro className="w-5 h-5" />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="micro-label mb-1">Сума</p>
+                <p className="caption-label mb-1">Сума</p>
                 <div className="flex items-baseline gap-1">
-                  <p className="num-display text-[1.4rem] text-foreground">{Math.round(totals.due)}</p>
+                  <p className="display text-[1.4rem] text-foreground">{Math.round(totals.due)}</p>
                   <p className="text-sm font-bold text-muted-foreground/70">€</p>
                 </div>
               </div>
@@ -79,7 +79,7 @@ const ReportsStatus = () => {
           </div>
 
           <div className="text-center">
-            <h1 className="micro-label !text-foreground/70">Очікую оплату</h1>
+            <h1 className="caption-label !text-foreground/70">Очікую оплату</h1>
           </div>
         </div>
       </div>

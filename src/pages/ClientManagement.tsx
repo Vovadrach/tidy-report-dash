@@ -80,7 +80,7 @@ const ClientManagement = () => {
     <div className="min-h-screen bg-background">
       <div className="fixed top-0 left-0 right-0 z-40 app-bar">
         <div className="container mx-auto px-4 py-4">
-          <h1 className="num-display text-xl text-center text-foreground">Управління клієнтами</h1>
+          <h1 className="display text-xl text-center text-foreground">Управління клієнтами</h1>
         </div>
       </div>
 

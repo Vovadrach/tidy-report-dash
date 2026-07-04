@@ -14,8 +14,6 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@fontsource-variable/manrope": "^5.2.8",
-    "@fontsource-variable/playfair-display": "^5.2.8",
     "@phosphor-icons/react": "^2.1.10",
     "@radix-ui/react-alert-dialog": "^1.1.14",
     "@radix-ui/react-dialog": "^1.1.14",

@@ -45,7 +45,7 @@ const SelectClient = () => {
               <div className="icon-badge icon-badge-time rounded-full">
                 <User className="w-5 h-5" />
               </div>
-              <h1 className="num-display text-xl text-foreground">Оберіть клієнта</h1>
+              <h1 className="display text-xl text-foreground">Оберіть клієнта</h1>
             </div>
             <button
               onClick={() => navigate('/client-management?returnTo=/select-client')}

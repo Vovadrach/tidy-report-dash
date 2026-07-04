@@ -206,7 +206,7 @@ const Dashboard = () => {
       <main className="container mx-auto px-4 pt-24 pb-dock space-y-5">
         {selectedClientId !== "all" && (
           <div className="surface-card p-6 shadow-sm text-center">
-            <h1 className="num-display text-2xl text-foreground">{getClientLabel(selectedClientId)}</h1>
+            <h1 className="display text-2xl text-foreground">{getClientLabel(selectedClientId)}</h1>
           </div>
         )}
 
@@ -217,9 +217,9 @@ const Dashboard = () => {
                 <TrendingUp className="w-5 h-5" />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="micro-label mb-1">Зароблено</p>
+                <p className="caption-label mb-1">Зароблено</p>
                 <div className="flex items-baseline gap-1">
-                  <p className="num-display text-[1.4rem] text-foreground">{Math.round(stats.earned)}</p>
+                  <p className="display text-[1.4rem] text-foreground">{Math.round(stats.earned)}</p>
                   <p className="text-sm font-bold text-muted-foreground/70">€</p>
                 </div>
               </div>
@@ -230,9 +230,9 @@ const Dashboard = () => {
                 <Clock className="w-5 h-5" />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="micro-label mb-1">Години</p>
+                <p className="caption-label mb-1">Години</p>
                 <div className="flex items-baseline gap-1">
-                  <p className="num-display text-[1.4rem] text-foreground">{decimalToHours(stats.hours)}</p>
+                  <p className="display text-[1.4rem] text-foreground">{decimalToHours(stats.hours)}</p>
                   <p className="text-sm font-bold text-muted-foreground/70">год</p>
                 </div>
               </div>
@@ -243,9 +243,9 @@ const Dashboard = () => {
                 <DollarSign className="w-5 h-5" />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="micro-label mb-1">Сплачено</p>
+                <p className="caption-label mb-1">Сплачено</p>
                 <div className="flex items-baseline gap-1">
-                  <p className={`num-display text-[1.4rem] ${stats.due < 0.005 && stats.earned > 0 ? "text-success" : "text-foreground"}`}>{Math.round(stats.paid)}</p>
+                  <p className={`display text-[1.4rem] ${stats.due < 0.005 && stats.earned > 0 ? "text-success" : "text-foreground"}`}>{Math.round(stats.paid)}</p>
                   <p className="text-sm font-bold text-muted-foreground/70">€</p>
                 </div>
               </div>
@@ -256,9 +256,9 @@ const Dashboard = () => {
                 <DollarSign className="w-5 h-5" />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="micro-label mb-1">Залишок</p>
+                <p className="caption-label mb-1">Залишок</p>
                 <div className="flex items-baseline gap-1">
-                  <p className="num-display text-[1.4rem] text-foreground">{Math.round(stats.due)}</p>
+                  <p className="display text-[1.4rem] text-foreground">{Math.round(stats.due)}</p>
                   <p className="text-sm font-bold text-muted-foreground/70">€</p>
                 </div>
               </div>
@@ -272,7 +272,7 @@ const Dashboard = () => {
               <div className="icon-badge icon-badge-due">
                 <AlertCircle className="w-5 h-5" />
               </div>
-              <h2 className="num-display text-xl text-foreground">Борги по клієнтах</h2>
+              <h2 className="display text-xl text-foreground">Борги по клієнтах</h2>
             </div>
             <div className="space-y-2.5">
               {debtsBreakdown.map((debt) => (
@@ -291,7 +291,7 @@ const Dashboard = () => {
               <div className="icon-badge icon-badge-time">
                 <Users className="w-5 h-5" />
               </div>
-              <h2 className="num-display text-xl text-foreground">Топ клієнтів</h2>
+              <h2 className="display text-xl text-foreground">Топ клієнтів</h2>
             </div>
             <div className="space-y-2.5">
               {leaderboard.slice(0, 5).map((client, index) => (

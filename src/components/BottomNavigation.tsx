@@ -83,7 +83,7 @@ export const BottomNavigation = () => {
                 label="Звіт"
                 active={isDashboard}
                 onClick={() => navigate("/dashboard")}
-                icon={<ChartPieSlice size={24} weight={isDashboard ? "fill" : "duotone"} />}
+                icon={<ChartPieSlice size={24} weight={isDashboard ? "fill" : "regular"} />}
               />
               <button
                 onClick={() => navigate("/select-client")}
@@ -96,7 +96,7 @@ export const BottomNavigation = () => {
                 label="Очікую"
                 active={isReportsStatus}
                 onClick={() => navigate("/reports-status")}
-                icon={<HourglassMedium size={24} weight={isReportsStatus ? "fill" : "duotone"} />}
+                icon={<HourglassMedium size={24} weight={isReportsStatus ? "fill" : "regular"} />}
               />
             </div>
           </div>
