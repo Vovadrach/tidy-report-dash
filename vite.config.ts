@@ -1,11 +1,15 @@
 import { defineConfig } from "vite";
+import pkg from "./package.json";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import tailwindcss from "@tailwindcss/vite";
 import { VitePWA } from 'vite-plugin-pwa';
 
 // https://vitejs.dev/config/
-export default defineConfig(({ mode }) => ({
+export default defineConfig(() => ({
+  define: {
+    __APP_VERSION__: JSON.stringify(pkg.version),
+  },
   server: {
     host: "::",
     port: 8080,
@@ -17,11 +21,11 @@ export default defineConfig(({ mode }) => ({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'icon-192.png', 'icon-512.png'],
       manifest: {
-        name: 'Cleaning Reports - Облік прибирання',
-        short_name: 'Cleaning Reports',
+        name: 'Aria — облік прибирання',
+        short_name: 'Aria',
         description: 'Застосунок для обліку звітів по прибиранню апартаментів',
-        theme_color: '#ffffff',
-        background_color: '#ffffff',
+        theme_color: '#f4f9f9',
+        background_color: '#f4f9f9',
         display: 'standalone',
         orientation: 'portrait',
         icons: [
@@ -43,7 +47,7 @@ export default defineConfig(({ mode }) => ({
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
         runtimeCaching: [
           {
-            urlPattern: /^https:\/\/mtvhfmvlfgespkiorxvg\.supabase\.co\/.*/i,
+            urlPattern: /^https:\/\/[a-z0-9-]+\.supabase\.co\/.*/i,
             handler: 'NetworkFirst',
             options: {
               cacheName: 'supabase-cache',
@@ -63,6 +67,17 @@ export default defineConfig(({ mode }) => ({
     },
   },
   build: {
-    chunkSizeWarningLimit: 1000,
+    chunkSizeWarningLimit: 600,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          react: ["react", "react-dom", "react-router-dom"],
+          supabase: ["@supabase/supabase-js"],
+          query: ["@tanstack/react-query", "@tanstack/react-query-persist-client"],
+          icons: ["@phosphor-icons/react"],
+          motion: ["motion"],
+        },
+      },
+    },
   },
 }));

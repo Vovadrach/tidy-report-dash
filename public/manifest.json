@@ -1,11 +1,11 @@
 {
-  "name": "Cleaning Reports - Облік прибирання",
-  "short_name": "Cleaning Reports",
+  "name": "Aria — облік прибирання",
+  "short_name": "Aria",
   "description": "Застосунок для обліку звітів по прибиранню апартаментів",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#ffffff",
+  "background_color": "#f4f9f9",
+  "theme_color": "#f4f9f9",
   "orientation": "portrait",
   "icons": [
     {

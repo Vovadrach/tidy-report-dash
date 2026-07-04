@@ -28,3 +28,20 @@ jobs:
           VITE_SUPABASE_ANON_KEY: ci-placeholder
       - name: Bundle size report
         run: du -sh dist/assets/*.js | sort -h
+
+  smoke:
+    runs-on: ubuntu-latest
+    needs: verify
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Start demo dev server
+        run: |
+          VITE_DEMO=1 VITE_SUPABASE_URL=https://example.supabase.co VITE_SUPABASE_ANON_KEY=ci npm run dev &
+          npx wait-on -t 60000 http://localhost:8080
+      - name: UI smoke
+        run: CHROME_PATH="$(which google-chrome)" node scripts/ui-smoke.mjs
