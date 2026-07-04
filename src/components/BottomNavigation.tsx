@@ -1,5 +1,4 @@
 import { useNavigate, useLocation } from "react-router-dom";
-import { Button } from "@/components/ui/button";
 import {
   ChartBar,
   PlusCircle,
@@ -8,138 +7,108 @@ import {
 } from "@phosphor-icons/react";
 import { WorkerSelector } from "./WorkerSelector";
 
+interface DockItemProps {
+  label: string;
+  icon: React.ReactNode;
+  active?: boolean;
+  onClick: () => void;
+}
+
+const DockItem = ({ label, icon, active, onClick }: DockItemProps) => (
+  <button
+    onClick={onClick}
+    className={`flex-1 flex flex-col items-center justify-center gap-0.5 h-14 rounded-full transition-all duration-150 active:scale-95 ${
+      active ? "bg-primary/10 text-primary" : "text-muted-foreground active:bg-foreground/5"
+    }`}
+  >
+    {icon}
+    <span className="text-[10.5px] font-semibold tracking-tight">{label}</span>
+  </button>
+);
+
+/**
+ * Floating bottom dock.
+ *
+ * ВАЖЛИВО: обгортка повністю pointer-events-none — клікабельні лише самі
+ * кнопки/панелі (pointer-events-auto). Інакше невидима смуга внизу екрана
+ * перехоплює тапи по контенту сторінки (кнопки "Видалити" тощо).
+ */
 export const BottomNavigation = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Визначаємо поточну сторінку
   const isHomePage = location.pathname === "/";
   const isDashboard = location.pathname === "/dashboard";
   const isReportsStatus = location.pathname === "/reports-status";
   const isSelectClient = location.pathname === "/select-client";
   const isCreateReport = location.pathname.startsWith("/create-report");
-
-  // Показувати кнопку головна тільки не на головній
-  const showHomeButton = !isHomePage;
-
-  // Функція для переходу на головну
-  const handleHomeClick = () => {
-    navigate("/"); // Завжди йдемо на головну
-  };
+  const isCreateFlow = isSelectClient || isCreateReport;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 pointer-events-none" data-no-swipe>
-      {/* Градієнтний ефект розмиття (дим) */}
-      <div className="absolute inset-0 pointer-events-none" style={{ height: '200px' }}>
-        {/* Розмиття backdrop */}
+    <div
+      className="fixed bottom-0 left-0 right-0 z-50 pointer-events-none"
+      data-no-swipe
+    >
+      {/* Димка: розмиття + градієнт до фону, суто декоративна */}
+      <div className="absolute inset-x-0 bottom-0 h-40 pointer-events-none">
         <div
-          className="absolute inset-0 backdrop-blur-xl"
+          className="absolute inset-0 backdrop-blur-lg"
           style={{
-            maskImage: 'linear-gradient(to top, black 0%, black 30%, transparent 100%)',
-            WebkitMaskImage: 'linear-gradient(to top, black 0%, black 30%, transparent 100%)'
+            maskImage: "linear-gradient(to top, black 0%, black 35%, transparent 100%)",
+            WebkitMaskImage: "linear-gradient(to top, black 0%, black 35%, transparent 100%)",
           }}
-        ></div>
-
-        {/* Градієнтний фон */}
-        <div
-          className="absolute inset-0 bg-gradient-to-t from-background via-background/90 via-30% to-transparent"
-        ></div>
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 via-35% to-transparent" />
       </div>
 
-      <div className="px-6 pb-6 relative pointer-events-auto">
-        {/* WorkerSelector над панеллю (на головній) */}
+      <div
+        className="relative px-6"
+        style={{ paddingBottom: "calc(1.25rem + env(safe-area-inset-bottom, 0px))" }}
+      >
+        {/* WorkerSelector над панеллю (лише на головній) */}
         {isHomePage && (
           <div className="flex justify-center mb-2">
-            <div className="w-full" style={{ maxWidth: '360px' }}>
+            <div className="w-full max-w-[360px] pointer-events-auto">
               <WorkerSelector />
             </div>
           </div>
         )}
 
-        {/* Маленька кнопка Головна над панеллю */}
-        {showHomeButton && (
+        {/* Пігулка "Головна" над панеллю (на інших сторінках) */}
+        {!isHomePage && (
           <div className="flex justify-center mb-2">
             <button
-              onClick={handleHomeClick}
-              className="flex flex-col items-center justify-center gap-[2px] h-[56px] rounded-full transition-all duration-150 active:scale-95 px-8 bg-white/5 dark:bg-gray-900/5 backdrop-blur-xl border border-white/10 shadow-[0_4px_16px_0_rgba(31,38,135,0.15),0_8px_24px_0_rgba(0,0,0,0.1)]"
-              style={{ backgroundColor: 'rgba(0, 0, 0, 0.045)' }}
+              onClick={() => navigate("/")}
+              className="pointer-events-auto glass-dock flex flex-col items-center justify-center gap-0.5 h-14 rounded-full px-8 transition-all duration-150 active:scale-95 text-primary"
             >
-              <House
-                size={27}
-                weight="fill"
-                color="#007AFF"
-              />
-              <span
-                className="text-[10.5px] font-medium tracking-[-0.01em]"
-                style={{ color: '#007AFF' }}
-              >
-                Головна
-              </span>
+              <House size={26} weight="fill" />
+              <span className="text-[10.5px] font-semibold tracking-tight">Головна</span>
             </button>
           </div>
         )}
 
-        {/* Telegram-style панель з glass-morphism */}
-        <div className="relative mx-auto" style={{ maxWidth: '360px' }}>
-          {/* Головна панель */}
-          <div className="bg-white/5 dark:bg-gray-900/5 backdrop-blur-xl border border-white/10 shadow-[0_8px_32px_0_rgba(31,38,135,0.2),0_4px_16px_0_rgba(0,0,0,0.15)] rounded-[2.25rem] overflow-hidden relative">
-            <div className="flex items-center h-[70px] px-2 gap-1 relative">
-              {/* Ліва кнопка - Звіт */}
-              <button
+        {/* Головна панель */}
+        <div className="relative mx-auto max-w-[360px] pointer-events-auto">
+          <div className="glass-dock rounded-[2.25rem] overflow-hidden">
+            <div className="flex items-center h-[70px] px-2 gap-1">
+              <DockItem
+                label="Звіт"
+                active={isDashboard}
                 onClick={() => navigate("/dashboard")}
-                className="flex-1 flex flex-col items-center justify-center gap-[2px] h-[56px] rounded-full transition-colors duration-150 active:bg-black/[0.08]"
-                style={{ backgroundColor: isDashboard ? 'rgba(0, 0, 0, 0.045)' : 'transparent' }}
-              >
-                <ChartBar
-                  size={27}
-                  weight="fill"
-                  color={isDashboard ? "#007AFF" : "#3C3C43"}
-                />
-                <span
-                  className="text-[10.5px] font-medium tracking-[-0.01em]"
-                  style={{ color: isDashboard ? '#007AFF' : '#3C3C43' }}
-                >
-                  Звіт
-                </span>
-              </button>
-
-              {/* Центральна кнопка - Створити запис (завжди) */}
-              <button
+                icon={<ChartBar size={26} weight={isDashboard ? "fill" : "regular"} />}
+              />
+              <DockItem
+                label="Створити"
+                active={isCreateFlow}
                 onClick={() => navigate("/select-client")}
-                className="flex-1 flex flex-col items-center justify-center gap-[2px] h-[56px] rounded-full transition-colors duration-150 active:bg-black/[0.08]"
-                style={{ backgroundColor: (isSelectClient || isCreateReport) ? 'rgba(0, 0, 0, 0.045)' : 'transparent' }}
-              >
-                <PlusCircle
-                  size={27}
-                  weight="fill"
-                  color={(isSelectClient || isCreateReport) ? "#007AFF" : "#3C3C43"}
-                />
-                <span
-                  className="text-[10.5px] font-medium tracking-[-0.01em]"
-                  style={{ color: (isSelectClient || isCreateReport) ? '#007AFF' : '#3C3C43' }}
-                >
-                  Створити
-                </span>
-              </button>
-
-              {/* Права кнопка - Очікую */}
-              <button
+                icon={<PlusCircle size={26} weight={isCreateFlow ? "fill" : "regular"} />}
+              />
+              <DockItem
+                label="Очікую"
+                active={isReportsStatus}
                 onClick={() => navigate("/reports-status")}
-                className="flex-1 flex flex-col items-center justify-center gap-[2px] h-[56px] rounded-full transition-colors duration-150 active:bg-black/[0.08]"
-                style={{ backgroundColor: isReportsStatus ? 'rgba(0, 0, 0, 0.045)' : 'transparent' }}
-              >
-                <ClockIcon
-                  size={27}
-                  weight="fill"
-                  color={isReportsStatus ? "#007AFF" : "#3C3C43"}
-                />
-                <span
-                  className="text-[10.5px] font-medium tracking-[-0.01em]"
-                  style={{ color: isReportsStatus ? '#007AFF' : '#3C3C43' }}
-                >
-                  Очікую
-                </span>
-              </button>
+                icon={<ClockIcon size={26} weight={isReportsStatus ? "fill" : "regular"} />}
+              />
             </div>
           </div>
         </div>
