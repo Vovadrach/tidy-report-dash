@@ -17,6 +17,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useWorker } from "@/contexts/WorkerContext";
+import { decimalToHours } from "@/domain/time";
 
 // Helper functions for month calculation
 // Format date as YYYY-MM-DD using local time (not UTC)
@@ -48,14 +49,6 @@ const formatMonthYear = (date: Date) => {
   return `${month} ${year}`;
 };
 
-// Helper function to convert decimal hours to hours:minutes format
-const decimalToHours = (decimal: number): string => {
-  if (!decimal) return "0";
-  const totalMinutes = Math.round(decimal * 60);
-  const hours = Math.floor(totalMinutes / 60);
-  const minutes = totalMinutes % 60;
-  return minutes === 0 ? `${hours}` : `${hours}:${minutes.toString().padStart(2, '0')}`;
-};
 
 const Index = () => {
   const navigate = useNavigate();

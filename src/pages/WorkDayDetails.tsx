@@ -20,21 +20,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { TimePickerWheel } from "@/components/TimePickerWheel";
-import { decimalToHours } from "@/utils/timeFormat";
+import { decimalToHours, hoursToDecimal } from "@/domain/time";
 
-// Helper function to convert hours:minutes format to decimal
-const hoursToDecimal = (hoursStr: string): number => {
-  if (!hoursStr) return 0;
-
-  // If it contains ':', parse as hours:minutes
-  if (hoursStr.includes(':')) {
-    const [hours, minutes] = hoursStr.split(':').map(s => parseInt(s) || 0);
-    return hours + (minutes / 60);
-  }
-
-  // Otherwise parse as decimal
-  return parseFloat(hoursStr) || 0;
-};
 
 const WorkDayDetails = () => {
   const { reportId, dayId } = useParams();

@@ -20,27 +20,9 @@ import {
 } from "@/components/ui/alert-dialog";
 import { TimePickerWheel } from "@/components/TimePickerWheel";
 import { useWorker } from "@/contexts/WorkerContext";
+import { hoursToDecimal } from "@/domain/time";
 import { WorkerAssignmentDialog } from "@/components/WorkerAssignmentDialog";
 
-// Helper functions to convert between hours:minutes format and decimal
-const hoursToDecimal = (hoursStr: string): number => {
-  if (!hoursStr) return 0;
-
-  if (hoursStr.includes(':')) {
-    const [hours, minutes] = hoursStr.split(':').map(s => parseInt(s) || 0);
-    return Math.round((hours * 60 + minutes) * 100) / 6000;
-  }
-
-  return parseFloat(hoursStr) || 0;
-};
-
-const decimalToHours = (decimal: number): string => {
-  if (!decimal) return "";
-  const totalMinutes = Math.round(decimal * 60);
-  const hours = Math.floor(totalMinutes / 60);
-  const minutes = totalMinutes % 60;
-  return minutes === 0 ? `${hours}` : `${hours}:${minutes.toString().padStart(2, '0')}`;
-};
 
 const CreateReport = () => {
   const navigate = useNavigate();
