@@ -15,7 +15,7 @@ import { Label } from "@/components/ui/label";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useSetPayment, useWorkDays } from "@/data/queries";
+import { useDeleteReport, useSetPayment, useWorkDays } from "@/data/queries";
 import { useWorkerFilter } from "@/contexts/WorkerContext";
 import { decimalToHours } from "@/domain/time";
 import {
@@ -28,12 +28,19 @@ import { periodStats } from "@/domain/stats";
 import type { PaymentStatus, WorkDay } from "@/domain/types";
 import { ScreenSkeleton } from "@/ui/Skeleton";
 import { EmptyState } from "@/ui/EmptyState";
+import { MonthProgress } from "@/ui/MonthProgress";
+import { SwipeableRow } from "@/ui/SwipeableRow";
+import { ConfirmSheet } from "@/ui/ConfirmSheet";
+import { usePullToRefresh } from "@/ui/usePullToRefresh";
 
 const Index = () => {
   const navigate = useNavigate();
   const { selectedWorkerId } = useWorkerFilter();
   const { data: workDays = [], isLoading, isError, refetch } = useWorkDays();
   const setPayment = useSetPayment();
+  const deleteReport = useDeleteReport();
+  const [dayToDelete, setDayToDelete] = useState<WorkDay | null>(null);
+  const { pulling, refreshing } = usePullToRefresh(() => refetch());
 
   // Навігація місяцями
   const [currentMonth, setCurrentMonth] = useState<Date>(
@@ -232,10 +239,25 @@ const Index = () => {
               </div>
             </div>
           </div>
+
+          {/* Прогрес оплат періоду (FR-1.1) */}
+          <MonthProgress earned={stats.earned} paid={stats.paid} />
         </div>
       </div>
 
-      <main className="container mx-auto px-4 pt-[152px] pb-dock space-y-5">
+      {/* Індикатор pull-to-refresh */}
+      {(pulling > 0 || refreshing) && (
+        <div
+          className="fixed left-1/2 -translate-x-1/2 z-50 transition-all"
+          style={{ top: `${Math.min(pulling, 1) * 60 + 130}px`, opacity: Math.min(pulling, 1) }}
+        >
+          <div className={`w-9 h-9 rounded-full dock flex items-center justify-center ${refreshing ? "animate-spin" : ""}`}>
+            <Redo2 className="w-4 h-4 text-primary" />
+          </div>
+        </div>
+      )}
+
+      <main className="container mx-auto px-4 pt-[192px] pb-dock space-y-5">
         {!isCurrentMonth && !customRange && (
           <div className="flex justify-center mb-4">
             <button
@@ -272,9 +294,12 @@ const Index = () => {
                 {/* Маркер дати — липкий */}
                 <div
                   className="sticky flex flex-col items-center gap-1.5 py-1.5"
-                  style={{ top: "152px", zIndex: 30 }}
+                  style={{ top: "186px", zIndex: 30 }}
                 >
-                  <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full shadow-sm backdrop-blur-xl border ${
+                  <button
+                    onClick={() => navigate(`/select-client?date=${date}`, { viewTransition: true })}
+                    aria-label={`Створити запис на ${date}`}
+                    className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full shadow-sm backdrop-blur-xl border transition-transform active:scale-95 ${
                     isToday
                       ? "bg-primary/10 border-primary/30"
                       : "bg-card/95 border-border"
@@ -293,7 +318,7 @@ const Index = () => {
                       {dayOfWeekName(date)}
                       {isToday && " (Сьогодні)"}
                     </span>
-                  </div>
+                  </button>
 
                   {isToday && days.length === 0 && (
                     <span className="text-xs text-muted-foreground">Записів ще немає</span>
@@ -306,13 +331,20 @@ const Index = () => {
                       const v = workerView(day, selectedWorkerId);
                       return (
                         <div key={day.id}>
+                          <SwipeableRow
+                            disabled={day.isPlanned}
+                            onSwipeRight={() =>
+                              setPayment.mutate({ dayId: day.id, status: "paid", paidAmount: day.amount })
+                            }
+                            onSwipeLeft={() => setDayToDelete(day)}
+                          >
                           <div className="flex gap-2">
                             <div
                               onClick={() => {
                                 if (day.isPlanned) {
                                   navigate(`/create-report?clientId=${day.clientId}&date=${day.date}&workDayId=${day.id}&reportId=${day.reportId}`);
                                 } else {
-                                  navigate(`/report/${day.reportId}/day/${day.id}`);
+                                  navigate(`/day/${day.id}`, { viewTransition: true });
                                 }
                               }}
                               className={`flex-1 rounded-xl p-2 sm:p-2.5 cursor-pointer ${
@@ -326,7 +358,7 @@ const Index = () => {
                                   {!day.isPlanned && (
                                     <DropdownMenu>
                                       <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                                        <button className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center flex-shrink-0 transition-all hover:scale-110 ${
+                                        <button onPointerDown={(e) => e.stopPropagation()} className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center flex-shrink-0 transition-all hover:scale-110 ${
                                           day.status === "paid" ? "bg-success/20 hover:bg-success/30" :
                                           day.status === "partial" ? "bg-warning/20 hover:bg-warning/30" : "bg-destructive/20 hover:bg-destructive/30"
                                         }`}>
@@ -421,6 +453,7 @@ const Index = () => {
                               )}
                             </div>
                           </div>
+                          </SwipeableRow>
 
                           {partialPaymentDayId === day.id && (
                             <div className="mt-2 surface-card p-3 border-warning/40" onClick={(e) => e.stopPropagation()}>
@@ -465,6 +498,17 @@ const Index = () => {
           })
         )}
       </main>
+
+      <ConfirmSheet
+        open={!!dayToDelete}
+        onOpenChange={(open) => !open && setDayToDelete(null)}
+        title="Видалити запис?"
+        description={dayToDelete ? `${dayToDelete.clientName}, ${dayToDelete.date} — запис буде видалено назавжди.` : ""}
+        onConfirm={() => {
+          if (dayToDelete) deleteReport.mutate(dayToDelete.reportId);
+          setDayToDelete(null);
+        }}
+      />
 
       <BottomNavigation />
 

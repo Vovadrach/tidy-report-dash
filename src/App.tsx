@@ -1,7 +1,7 @@
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { IconContext } from "@phosphor-icons/react";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useParams } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { WorkerProvider } from "@/contexts/WorkerContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
@@ -16,6 +16,11 @@ import ClientReports from "./pages/ClientReports";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import NotFound from "./pages/NotFound";
+
+const LegacyDayRedirect = () => {
+  const { dayId } = useParams();
+  return <Navigate to={`/day/${dayId}`} replace />;
+};
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -38,8 +43,9 @@ const App = () => (
               <Route path="/reports-status" element={<ProtectedRoute><ReportsStatus /></ProtectedRoute>} />
               <Route path="/select-client" element={<ProtectedRoute><SelectClient /></ProtectedRoute>} />
               <Route path="/create-report" element={<ProtectedRoute><CreateReport /></ProtectedRoute>} />
-              <Route path="/report/:reportId/day/:dayId" element={<ProtectedRoute><WorkDayDetails /></ProtectedRoute>} />
-              {/* Спадковий маршрут звіту: окремий екран скасовано у 3.0 */}
+              <Route path="/day/:dayId" element={<ProtectedRoute><WorkDayDetails /></ProtectedRoute>} />
+              {/* Спадкові маршрути 2.x */}
+              <Route path="/report/:reportId/day/:dayId" element={<LegacyDayRedirect />} />
               <Route path="/report/:id" element={<Navigate to="/" replace />} />
               <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
               <Route path="/client-management" element={<ProtectedRoute><ClientManagement /></ProtectedRoute>} />

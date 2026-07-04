@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { User, UserPlus, SignOut as LogOut, CaretRight as ChevronRight, MagnifyingGlass as Search } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
@@ -10,6 +10,8 @@ import { ScreenSkeleton } from "@/ui/Skeleton";
 
 const SelectClient = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const presetDate = searchParams.get("date");
   const { signOut } = useAuth();
   const { data: clients = [], isLoading } = useClients();
   const [searchQuery, setSearchQuery] = useState("");
@@ -98,7 +100,7 @@ const SelectClient = () => {
           filteredClients.map((client) => (
             <div
               key={client.id}
-              onClick={() => navigate(`/create-report?clientId=${client.id}`)}
+              onClick={() => navigate(`/create-report?clientId=${client.id}${presetDate ? `&date=${presetDate}` : ''}`, { viewTransition: true })}
               className="surface-card surface-card-hover p-4 cursor-pointer group"
             >
               <div className="flex items-center justify-between gap-3">

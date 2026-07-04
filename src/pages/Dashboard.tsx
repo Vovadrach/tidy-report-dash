@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Wallet as DollarSign, Clock, TrendUp as TrendingUp, UsersThree as Users, CaretDown as ChevronDown, WarningCircle as AlertCircle } from "@phosphor-icons/react";
+import { Wallet as DollarSign, Clock, TrendUp as TrendingUp, UsersThree as Users, CaretDown as ChevronDown, WarningCircle as AlertCircle, ChartBar } from "@phosphor-icons/react";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -8,7 +8,10 @@ import { useClients, useWorkDays } from "@/data/queries";
 import { useWorkerFilter } from "@/contexts/WorkerContext";
 import { decimalToHours } from "@/domain/time";
 import { clientBalances, debtors, periodStats } from "@/domain/stats";
-import { monthName, monthRange, yearRange } from "@/domain/dates";
+import { addMonths, monthRange, yearRange } from "@/domain/dates";
+import { monthlySummary } from "@/domain/stats";
+import { EarningsChart } from "@/ui/EarningsChart";
+import { PeriodChips, type PeriodMode } from "@/ui/PeriodChips";
 import type { DateRange } from "@/domain/dates";
 import { ScreenSkeleton } from "@/ui/Skeleton";
 
@@ -20,15 +23,17 @@ const Dashboard = () => {
   const { data: clients = [] } = useClients();
 
   const now = new Date();
-  const [selectedMonth, setSelectedMonth] = useState<number | null>(now.getMonth());
-  const [selectedYear, setSelectedYear] = useState<number | null>(now.getFullYear());
+  const [periodMode, setPeriodMode] = useState<PeriodMode>("month");
+  const [monthAnchor, setMonthAnchor] = useState<Date>(
+    () => new Date(now.getFullYear(), now.getMonth(), 1),
+  );
   const [selectedClientId, setSelectedClientId] = useState<string>("all");
 
   const range: DateRange = useMemo(() => {
-    if (selectedYear === null) return ALL_TIME;
-    if (selectedMonth === null) return yearRange(selectedYear);
-    return monthRange(new Date(selectedYear, selectedMonth, 1));
-  }, [selectedMonth, selectedYear]);
+    if (periodMode === "all") return ALL_TIME;
+    if (periodMode === "year") return yearRange(monthAnchor.getFullYear());
+    return monthRange(monthAnchor);
+  }, [periodMode, monthAnchor]);
 
   const daysInScope = useMemo(
     () => (selectedClientId === "all" ? workDays : workDays.filter((d) => d.clientId === selectedClientId)),
@@ -50,21 +55,19 @@ const Dashboard = () => {
     [daysInRange, selectedWorkerId],
   );
 
+  const chartMonths = useMemo(
+    () => monthlySummary(daysInScope, 6, now, selectedWorkerId),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [daysInScope, selectedWorkerId],
+  );
+
   const leaderboard = useMemo(
     () => clientBalances(daysInRange, selectedWorkerId).sort((a, b) => b.totalEarned - a.totalEarned),
     [daysInRange, selectedWorkerId],
   );
 
-  const getPeriodLabel = () => {
-    if (selectedYear === null) return "За весь період";
-    if (selectedMonth === null) return `${selectedYear}`;
-    return `${monthName(selectedMonth)} ${selectedYear}`;
-  };
-
   const getClientLabel = (clientId: string) =>
     clientId === "all" ? "Всі клієнти" : clients.find((c) => c.id === clientId)?.name ?? "Всі клієнти";
-
-  const isDefaultPeriod = selectedYear === now.getFullYear() && selectedMonth === now.getMonth();
 
   if (isLoading) {
     return <ScreenSkeleton />;
@@ -87,97 +90,31 @@ const Dashboard = () => {
     <div className="min-h-screen bg-background">
       <div className="fixed top-0 left-0 right-0 z-40 app-bar">
         <div className="container mx-auto px-4 py-4">
-          <div className="flex gap-3 justify-center max-w-[600px] mx-auto">
+          <PeriodChips
+            mode={periodMode}
+            monthAnchor={monthAnchor}
+            onModeChange={setPeriodMode}
+            onMonthShift={(d) => setMonthAnchor((m) => addMonths(m, d))}
+          />
+
+          <div className="flex justify-center mt-2.5">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className={`group relative overflow-hidden px-5 py-3.5 rounded-full border shadow-xs hover:shadow-sm transition-all active:scale-[0.98] flex-1 min-w-0 ${
-                  !isDefaultPeriod ? "bg-primary/10 border-primary/40" : "bg-card border-border"
+                <button className={`px-5 h-9 rounded-full border shadow-xs transition-all active:scale-[0.98] max-w-[280px] ${
+                  selectedClientId !== "all" ? "bg-primary/10 border-primary/40" : "bg-card border-border"
                 }`}>
-                  <div className="relative flex items-center justify-between gap-2">
-                    <span className={`font-bold text-sm truncate ${!isDefaultPeriod ? "text-primary" : "text-foreground"}`}>{getPeriodLabel()}</span>
-                    <ChevronDown className="w-5 h-5 text-primary flex-shrink-0" />
+                  <div className="flex items-center justify-between gap-2">
+                    <span className={`font-bold text-sm truncate ${selectedClientId !== "all" ? "text-primary" : "text-foreground"}`}>{getClientLabel(selectedClientId)}</span>
+                    <ChevronDown className="w-4 h-4 text-primary flex-shrink-0" />
                   </div>
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent className="max-h-[85vh] overflow-y-auto rounded-2xl z-[100] p-2 mt-2 w-[var(--radix-dropdown-menu-trigger-width)] shadow-lg">
-                <div className="space-y-1.5">
-                  <DropdownMenuItem
-                    onClick={() => { setSelectedYear(null); setSelectedMonth(null); }}
-                    className={`cursor-pointer rounded-lg px-3 py-2 text-sm font-semibold transition-all ${
-                      selectedYear === null ? "bg-primary/15 text-primary" : "text-foreground hover:bg-primary/8"
-                    }`}
-                  >
-                    За весь період
-                  </DropdownMenuItem>
-
-                  <div className="h-px bg-border my-1"></div>
-
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <button className="w-full bg-primary/10 px-3 py-2 rounded-lg font-bold text-sm text-foreground hover:bg-primary/15 transition-all flex items-center justify-between">
-                        <span>Рік: {selectedYear ?? "Всі"}</span>
-                        <ChevronDown className="w-4 h-4" />
-                      </button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent className="rounded-xl z-[110] p-1.5 min-w-[140px] shadow-lg">
-                      <div className="space-y-0.5">
-                        {[2024, 2025, 2026, 2027, 2028].map((year) => (
-                          <DropdownMenuItem
-                            key={year}
-                            onClick={() => {
-                              if (selectedYear === year) { setSelectedYear(null); setSelectedMonth(null); }
-                              else { setSelectedYear(year); setSelectedMonth(null); }
-                            }}
-                            className={`cursor-pointer rounded-md px-3 py-1.5 text-sm font-semibold ${
-                              selectedYear === year ? "bg-primary/15 text-primary" : "text-foreground hover:bg-primary/8"
-                            }`}
-                          >
-                            {year}
-                          </DropdownMenuItem>
-                        ))}
-                      </div>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-
-                  <div className="h-px bg-border my-1"></div>
-
-                  <div className="space-y-0.5">
-                    {Array.from({ length: 12 }, (_, i) => (
-                      <DropdownMenuItem
-                        key={i}
-                        onClick={() => {
-                          setSelectedMonth(i);
-                          if (selectedYear === null) setSelectedYear(now.getFullYear());
-                        }}
-                        className={`cursor-pointer rounded-lg px-3 py-2 text-sm font-semibold ${
-                          selectedMonth === i ? "bg-primary/15 text-primary" : "text-foreground hover:bg-primary/8"
-                        }`}
-                      >
-                        {monthName(i)}
-                      </DropdownMenuItem>
-                    ))}
-                  </div>
-                </div>
-              </DropdownMenuContent>
-            </DropdownMenu>
-
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className={`group relative overflow-hidden px-5 py-3.5 rounded-full border shadow-xs hover:shadow-sm transition-all active:scale-[0.98] flex-1 min-w-0 ${
-                  selectedClientId !== "all" ? "bg-accent/12 border-accent/40" : "bg-card border-border"
-                }`}>
-                  <div className="relative flex items-center justify-between gap-2">
-                    <span className={`font-bold text-sm truncate ${selectedClientId !== "all" ? "text-accent" : "text-foreground"}`}>{getClientLabel(selectedClientId)}</span>
-                    <ChevronDown className="w-5 h-5 text-accent flex-shrink-0" />
-                  </div>
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="rounded-2xl z-[100] p-2 mt-2 max-h-[85vh] overflow-y-auto w-[var(--radix-dropdown-menu-trigger-width)] shadow-lg">
+              <DropdownMenuContent className="rounded-2xl z-[100] p-2 mt-2 max-h-[70vh] overflow-y-auto min-w-[220px] shadow-lg">
                 <div className="space-y-0.5">
                   <DropdownMenuItem
                     onClick={() => setSelectedClientId("all")}
                     className={`cursor-pointer rounded-lg px-3 py-2 text-sm font-semibold ${
-                      selectedClientId === "all" ? "bg-accent/15 text-accent" : "text-foreground hover:bg-accent/8"
+                      selectedClientId === "all" ? "bg-primary/15 text-primary" : "text-foreground hover:bg-primary/8"
                     }`}
                   >
                     Всі клієнти
@@ -187,7 +124,7 @@ const Dashboard = () => {
                       key={client.id}
                       onClick={() => setSelectedClientId(client.id)}
                       className={`cursor-pointer rounded-lg px-3 py-2 text-sm font-semibold ${
-                        selectedClientId === client.id ? "bg-accent/15 text-accent" : "text-foreground hover:bg-accent/8"
+                        selectedClientId === client.id ? "bg-primary/15 text-primary" : "text-foreground hover:bg-primary/8"
                       }`}
                     >
                       {client.name}
@@ -200,7 +137,7 @@ const Dashboard = () => {
         </div>
       </div>
 
-      <main className="container mx-auto px-4 pt-24 pb-dock space-y-5">
+      <main className="container mx-auto px-4 pt-[168px] pb-dock space-y-5">
         {selectedClientId !== "all" && (
           <div className="surface-card p-6 shadow-sm text-center">
             <h1 className="display text-2xl text-foreground">{getClientLabel(selectedClientId)}</h1>
@@ -261,6 +198,17 @@ const Dashboard = () => {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Графік заробітку за 6 місяців (FR-4.3) */}
+        <div className="surface-card p-5 shadow-sm">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="icon-badge icon-badge-time">
+              <ChartBar className="w-5 h-5" />
+            </div>
+            <h2 className="display text-xl text-foreground">Останні 6 місяців</h2>
+          </div>
+          <EarningsChart months={chartMonths} />
         </div>
 
         {selectedClientId === "all" && debtsBreakdown.length > 0 && (

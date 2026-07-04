@@ -123,7 +123,7 @@ const ClientReports = () => {
             return (
               <div key={day.id}>
                 <div
-                  onClick={() => navigate(`/report/${day.reportId}/day/${day.id}`)}
+                  onClick={() => navigate(`/day/${day.id}`, { viewTransition: true })}
                   className="surface-card surface-card-hover p-3 sm:p-4 cursor-pointer"
                 >
                   <div className="flex items-start justify-between gap-2 sm:gap-3">

@@ -16,6 +16,7 @@ import { applyPartialPayment } from "@/domain/money";
 import { formatFullDate } from "@/domain/dates";
 import type { PaymentStatus } from "@/domain/types";
 import { ScreenSkeleton } from "@/ui/Skeleton";
+import { SaveIndicator } from "@/ui/SaveIndicator";
 
 const WorkDayDetails = () => {
   const { dayId } = useParams();
@@ -127,8 +128,11 @@ const WorkDayDetails = () => {
     <div className="min-h-screen bg-background">
       <div className="fixed top-0 left-0 right-0 z-40 app-bar">
         <div className="container mx-auto px-4 py-3">
-          <div className="text-center mb-3">
+          <div className="relative text-center mb-3">
             <h1 className="display text-xl text-foreground">{client?.name ?? workDay.clientName}</h1>
+            <div className="absolute right-0 top-1/2 -translate-y-1/2">
+              <SaveIndicator saving={updateFields.isPending} savedAtLeastOnce={updateFields.isSuccess} />
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-2">
