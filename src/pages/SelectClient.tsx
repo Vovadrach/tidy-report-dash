@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Input } from "@/components/ui/input";
 import { HomeDock } from "@/components/HomeDock";
 import { useClients } from "@/data/queries";
+import { ScreenSkeleton } from "@/ui/Skeleton";
 
 const SelectClient = () => {
   const navigate = useNavigate();
@@ -29,11 +30,7 @@ const SelectClient = () => {
   );
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <p className="text-muted-foreground text-lg animate-pulse">Завантаження...</p>
-      </div>
-    );
+    return <ScreenSkeleton />;
   }
 
   return (

@@ -6,6 +6,8 @@ import { useWorkDays } from "@/data/queries";
 import { debtors } from "@/domain/stats";
 import { decimalToHours } from "@/domain/time";
 import { useWorkerFilter } from "@/contexts/WorkerContext";
+import { ScreenSkeleton } from "@/ui/Skeleton";
+import { EmptyState } from "@/ui/EmptyState";
 
 const ReportsStatus = () => {
   const { selectedWorkerId } = useWorkerFilter();
@@ -26,11 +28,7 @@ const ReportsStatus = () => {
   );
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <p className="text-muted-foreground text-lg animate-pulse">Завантаження...</p>
-      </div>
-    );
+    return <ScreenSkeleton />;
   }
 
   if (isError) {
@@ -86,10 +84,11 @@ const ReportsStatus = () => {
 
       <main className="container mx-auto px-4 pt-40 pb-dock space-y-4">
         {balances.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-center">
-            <p className="text-xl font-semibold text-foreground mb-2">Немає неоплачених записів</p>
-            <p className="text-muted-foreground text-sm">Все оплачено 🎉</p>
-          </div>
+          <EmptyState
+            icon={<Euro />}
+            title="Немає боргів"
+            subtitle="Все оплачено 🎉"
+          />
         ) : (
           <div className="space-y-3">
             {balances.map((b) => (

@@ -10,6 +10,7 @@ import { decimalToHours } from "@/domain/time";
 import { clientBalances, debtors, periodStats } from "@/domain/stats";
 import { monthName, monthRange, yearRange } from "@/domain/dates";
 import type { DateRange } from "@/domain/dates";
+import { ScreenSkeleton } from "@/ui/Skeleton";
 
 const ALL_TIME: DateRange = { from: "0000-01-01", to: "9999-12-31" };
 
@@ -66,11 +67,7 @@ const Dashboard = () => {
   const isDefaultPeriod = selectedYear === now.getFullYear() && selectedMonth === now.getMonth();
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <p className="text-muted-foreground text-lg animate-pulse">Завантаження...</p>
-      </div>
-    );
+    return <ScreenSkeleton />;
   }
 
   if (isError) {

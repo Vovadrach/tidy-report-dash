@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Clock, CheckCircle as CheckCircle2, XCircle, WarningCircle as AlertCircle,
-  CalendarBlank as Calendar, CircleNotch as Loader2, CurrencyEur as Euro,
+  CalendarBlank as Calendar, CurrencyEur as Euro,
   CaretLeft as ChevronLeft, CaretRight as ChevronRight, X,
   ArrowCounterClockwise as Undo2, ArrowClockwise as Redo2, CaretDown as ChevronDown,
 } from "@phosphor-icons/react";
@@ -26,6 +26,8 @@ import type { DateRange } from "@/domain/dates";
 import { applyPartialPayment, involvesWorker, workerView } from "@/domain/money";
 import { periodStats } from "@/domain/stats";
 import type { PaymentStatus, WorkDay } from "@/domain/types";
+import { ScreenSkeleton } from "@/ui/Skeleton";
+import { EmptyState } from "@/ui/EmptyState";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -142,11 +144,7 @@ const Index = () => {
   };
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="w-8 h-8 text-primary animate-spin" />
-      </div>
-    );
+    return <ScreenSkeleton />;
   }
 
   if (isError) {
@@ -260,13 +258,11 @@ const Index = () => {
         )}
 
         {groupedByDay.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-center">
-            <div className="icon-badge icon-badge-time w-16 h-16 rounded-2xl mb-4">
-              <Calendar className="w-8 h-8" />
-            </div>
-            <p className="text-xl font-semibold text-foreground mb-2">Немає записів</p>
-            <p className="text-muted-foreground text-sm">у цьому періоді</p>
-          </div>
+          <EmptyState
+            icon={<Calendar />}
+            title="Немає записів"
+            subtitle="у цьому періоді — торкнись «+», щоб додати перший"
+          />
         ) : (
           groupedByDay.map(({ date, days }) => {
             const isToday = todayLocal() === date;

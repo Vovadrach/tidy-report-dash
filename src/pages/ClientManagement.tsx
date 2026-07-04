@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import { BottomNavigation } from '@/components/BottomNavigation';
 import { useAddClient, useClients, useDeleteClient, useUpdateClient } from '@/data/queries';
 import type { Client } from '@/domain/types';
+import { ScreenSkeleton } from "@/ui/Skeleton";
 
 const ClientManagement = () => {
   const { data: clients = [], isLoading } = useClients();
@@ -69,11 +70,7 @@ const ClientManagement = () => {
   };
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <p className="text-muted-foreground text-lg animate-pulse">Завантаження...</p>
-      </div>
-    );
+    return <ScreenSkeleton />;
   }
 
   return (

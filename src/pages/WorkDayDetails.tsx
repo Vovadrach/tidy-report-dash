@@ -15,6 +15,7 @@ import { decimalToHours, hoursToDecimal } from "@/domain/time";
 import { applyPartialPayment } from "@/domain/money";
 import { formatFullDate } from "@/domain/dates";
 import type { PaymentStatus } from "@/domain/types";
+import { ScreenSkeleton } from "@/ui/Skeleton";
 
 const WorkDayDetails = () => {
   const { dayId } = useParams();
@@ -82,11 +83,7 @@ const WorkDayDetails = () => {
   }, [editDate, editHours, editNote]);
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <p className="text-muted-foreground animate-pulse">Завантаження...</p>
-      </div>
-    );
+    return <ScreenSkeleton />;
   }
 
   if (!workDay) {

@@ -13,6 +13,7 @@ import { decimalToHours } from "@/domain/time";
 import { applyPartialPayment, involvesWorker, workerView } from "@/domain/money";
 import { formatFullDate } from "@/domain/dates";
 import type { PaymentStatus, WorkDay } from "@/domain/types";
+import { ScreenSkeleton } from "@/ui/Skeleton";
 
 const ClientReports = () => {
   const { clientId } = useParams();
@@ -76,11 +77,7 @@ const ClientReports = () => {
   };
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <p className="text-muted-foreground text-lg animate-pulse">Завантаження...</p>
-      </div>
-    );
+    return <ScreenSkeleton />;
   }
 
   return (
