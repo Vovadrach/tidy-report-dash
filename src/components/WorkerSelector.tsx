@@ -89,7 +89,7 @@ export const WorkerSelector = () => {
       <button
         ref={buttonRef}
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full dock rounded-full px-5 py-2.5 transition-all duration-150 active:scale-95 relative"
+        className="w-full dock-light rounded-full px-5 py-2.5 transition-all duration-150 active:scale-95 relative"
         style={
           selectedWorker
             ? { background: `linear-gradient(135deg, ${selectedWorker.color}26, ${selectedWorker.color}4d)` }
@@ -112,7 +112,7 @@ export const WorkerSelector = () => {
           isOpen ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'
         }`}
       >
-        <div className="dock rounded-3xl overflow-hidden shadow-xl">
+        <div className="dock-light rounded-3xl overflow-hidden shadow-xl">
           <div className="p-4 space-y-2 max-h-[50vh] overflow-y-auto">
             {isAddingWorker ? (
               <div className="p-3 rounded-xl bg-success/10 border border-success/25">

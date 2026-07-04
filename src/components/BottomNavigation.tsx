@@ -1,5 +1,5 @@
 import { useNavigate, useLocation } from "react-router-dom";
-import { ChartPieSlice, Plus, HourglassMedium, HouseSimple } from "@phosphor-icons/react";
+import { ChartDonut, Plus, Coins, Broom } from "@phosphor-icons/react";
 import { WorkerSelector } from "./WorkerSelector";
 
 interface DockItemProps {
@@ -13,21 +13,18 @@ const DockItem = ({ label, icon, active, onClick }: DockItemProps) => (
   <button
     onClick={onClick}
     className={`flex-1 flex flex-col items-center justify-center gap-1 h-14 rounded-2xl transition-all duration-150 active:scale-95 ${
-      active ? "text-primary" : "text-muted-foreground/70"
+      active ? "opacity-100" : "opacity-55"
     }`}
   >
     {icon}
     <span className={`text-[10px] tracking-wide ${active ? "font-extrabold" : "font-semibold"}`}>
       {label}
     </span>
-    <span
-      className={`h-1 w-1 rounded-full transition-all ${active ? "bg-primary" : "bg-transparent"}`}
-    />
   </button>
 );
 
 /**
- * Плаваючий нижній док.
+ * Чорнильний док Aria.
  *
  * ВАЖЛИВО: обгортка повністю pointer-events-none — клікабельні лише самі
  * кнопки/панелі (pointer-events-auto). Інакше невидима смуга внизу екрана
@@ -56,7 +53,7 @@ export const BottomNavigation = () => {
         {/* WorkerSelector над доком (лише на головній) */}
         {isHomePage && (
           <div className="flex justify-center mb-2.5">
-            <div className="w-full max-w-[340px] pointer-events-auto">
+            <div className="w-full max-w-[330px] pointer-events-auto">
               <WorkerSelector />
             </div>
           </div>
@@ -67,28 +64,28 @@ export const BottomNavigation = () => {
           <div className="flex justify-center mb-2.5">
             <button
               onClick={() => navigate("/")}
-              className="pointer-events-auto dock flex items-center gap-2 h-11 rounded-full px-5 transition-all duration-150 active:scale-95 text-primary"
+              className="pointer-events-auto dock flex items-center gap-2 h-11 rounded-full px-5 transition-all duration-150 active:scale-95"
             >
-              <HouseSimple size={19} />
+              <Broom size={19} weight="fill" />
               <span className="text-xs font-extrabold tracking-wide">Головна</span>
             </button>
           </div>
         )}
 
         {/* Док: Звіт · FAB Створити · Очікую */}
-        <div className="relative mx-auto max-w-[340px] pointer-events-auto">
-          <div className="dock rounded-[2rem] px-3">
-            <div className="flex items-center h-[74px] gap-1">
+        <div className="relative mx-auto max-w-[330px] pointer-events-auto">
+          <div className="dock rounded-[2.1rem] px-3">
+            <div className="flex items-center h-[72px] gap-1">
               <DockItem
                 label="Звіт"
                 active={isDashboard}
                 onClick={() => navigate("/dashboard")}
-                icon={<ChartPieSlice size={24} weight={isDashboard ? "fill" : "regular"} />}
+                icon={<ChartDonut size={24} weight={isDashboard ? "fill" : "regular"} />}
               />
               <button
                 onClick={() => navigate("/select-client")}
                 aria-label="Створити запис"
-                className="dock-fab -mt-8 h-[60px] w-[60px] rounded-full flex items-center justify-center flex-shrink-0 transition-transform duration-150 active:scale-90"
+                className="dock-fab -mt-9 h-[62px] w-[62px] rounded-full flex items-center justify-center flex-shrink-0 ring-4 ring-background transition-transform duration-150 active:scale-90"
               >
                 <Plus size={26} weight="bold" />
               </button>
@@ -96,7 +93,7 @@ export const BottomNavigation = () => {
                 label="Очікую"
                 active={isReportsStatus}
                 onClick={() => navigate("/reports-status")}
-                icon={<HourglassMedium size={24} weight={isReportsStatus ? "fill" : "regular"} />}
+                icon={<Coins size={24} weight={isReportsStatus ? "fill" : "regular"} />}
               />
             </div>
           </div>

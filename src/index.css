@@ -253,11 +253,56 @@
     border-bottom: 1px solid var(--color-border);
   }
 
-  /* Плаваючий док: суцільна поверхня, м'яке «летюче» світло */
+  /* Плаваючий док: ЧОРНИЛЬНИЙ — головний упізнаваний елемент Aria */
   .dock {
+    background: var(--color-foreground);
+    color: var(--color-background);
+    border: none;
+    box-shadow: var(--shadow-lg);
+  }
+  .dark .dock {
+    background: oklch(0.27 0.025 220);
+    color: var(--color-foreground);
+  }
+
+  /* Світла пігулка (селектор працівниці над доком) */
+  .dock-light {
     background: var(--color-card);
     border: 1px solid var(--color-border);
-    box-shadow: var(--shadow-lg);
+    box-shadow: var(--shadow-md);
+  }
+
+  /* Бульбашка дати в таймлайні */
+  .day-bubble {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 2.9rem;
+    height: 2.9rem;
+    border-radius: 999px;
+    background: var(--color-card);
+    border: 1px solid var(--color-border);
+    flex-shrink: 0;
+  }
+  .day-bubble-today {
+    background: var(--gradient-primary);
+    border-color: transparent;
+    color: var(--color-primary-foreground);
+  }
+  .day-bubble-empty {
+    background: transparent;
+    border-style: dashed;
+  }
+
+  /* Вертикальна рейка таймлайна */
+  .timeline-rail {
+    position: absolute;
+    left: 1.45rem;
+    top: 3.2rem;
+    bottom: -0.6rem;
+    width: 1px;
+    background: var(--color-border);
   }
 
   /* Кругла FAB «Створити» */

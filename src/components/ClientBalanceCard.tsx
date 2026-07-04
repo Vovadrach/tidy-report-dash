@@ -1,4 +1,4 @@
-import { Clock, CurrencyEur as Euro, PaperPlaneTilt } from "@phosphor-icons/react";
+import { PaperPlaneTilt } from "@phosphor-icons/react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { decimalToHours } from "@/domain/time";
@@ -30,26 +30,20 @@ export const ClientBalanceCard = ({ balance }: { balance: ClientBalance }) => {
       onClick={() => navigate(`/client-reports/${balance.clientId}`, { viewTransition: true })}
       className="surface-card surface-card-hover p-4 cursor-pointer"
     >
-      <div className="flex items-center justify-between gap-2 mb-3">
-        <p className="text-base font-bold text-foreground truncate flex-1 text-center pl-9">{balance.clientName}</p>
-        <button
-          onClick={handleRemind}
-          aria-label={`Нагадати про борг: ${balance.clientName}`}
-          className="w-9 h-9 rounded-full bg-primary/10 hover:bg-primary/15 text-primary flex items-center justify-center transition-all active:scale-90 flex-shrink-0"
-        >
-          <PaperPlaneTilt className="w-4 h-4" />
-        </button>
-      </div>
-
-      <div className="grid grid-cols-2 gap-2">
-        <div className="chip chip-time py-2 text-sm">
-          <Clock className="w-4 h-4" />
-          <span>{decimalToHours(balance.unpaidHours)}</span>
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <p className="text-base font-bold text-foreground truncate">{balance.clientName}</p>
+          <p className="caption-label mt-0.5">{decimalToHours(balance.unpaidHours)} год не оплачено</p>
         </div>
-
-        <div className="chip chip-due py-2 text-sm">
-          <Euro className="w-4 h-4" />
-          <span>{Math.round(balance.totalDue)}€</span>
+        <div className="flex items-center gap-2.5 flex-shrink-0">
+          <span className="display text-[1.45rem] text-foreground leading-none">{Math.round(balance.totalDue)} €</span>
+          <button
+            onClick={handleRemind}
+            aria-label={`Нагадати про борг: ${balance.clientName}`}
+            className="w-10 h-10 rounded-full dock flex items-center justify-center transition-all active:scale-90"
+          >
+            <PaperPlaneTilt className="w-4 h-4" />
+          </button>
         </div>
       </div>
     </div>

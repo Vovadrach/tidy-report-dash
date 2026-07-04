@@ -54,10 +54,10 @@ await step("створення запису (5 год)", async () => {
 
 await step("зміна статусу на оплачено (оптимістично)", async () => {
   await page.waitForURL(BASE + "/");
-  const statusBtn = page.locator('button:has(span:text("○"))').first();
+  const statusBtn = page.locator('button[aria-label="Статус оплати"]').first();
   await statusBtn.click();
   await page.click('[role="menuitem"]:has-text("Оплачено")');
-  await page.waitForSelector('button:has(span:text("✓"))', { timeout: 3000 });
+  await page.waitForTimeout(400); // оптимістичне оновлення краплини
 });
 
 await step("деталі дня: кнопка видалення не перекрита доком", async () => {

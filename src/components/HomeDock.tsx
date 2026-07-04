@@ -1,12 +1,9 @@
 import { useNavigate } from "react-router-dom";
-import { HouseSimple } from "@phosphor-icons/react";
+import { Broom } from "@phosphor-icons/react";
 
 /**
- * Плаваюча кнопка "Головна" для сторінок без повного дока
- * (вибір клієнта, створення запису).
- *
- * Обгортка pointer-events-none — клікабельна лише сама кнопка, щоб
- * невидима зона не блокувала кнопки контенту внизу сторінки.
+ * Плаваюча чорнильна пігулка "Головна" для сторінок без повного дока.
+ * Обгортка pointer-events-none — клікабельна лише сама кнопка.
  */
 export const HomeDock = () => {
   const navigate = useNavigate();
@@ -21,9 +18,9 @@ export const HomeDock = () => {
       >
         <button
           onClick={() => navigate("/")}
-          className="pointer-events-auto dock flex items-center gap-2 h-12 rounded-full px-6 transition-all duration-150 active:scale-95 text-primary"
+          className="pointer-events-auto dock flex items-center gap-2 h-12 rounded-full px-6 transition-all duration-150 active:scale-95"
         >
-          <HouseSimple size={20} />
+          <Broom size={20} weight="fill" />
           <span className="text-xs font-extrabold tracking-wide">Головна</span>
         </button>
       </div>

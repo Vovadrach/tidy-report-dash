@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Clock, CurrencyEur as Euro, CheckCircle as CheckCircle2, XCircle, WarningCircle as AlertCircle } from "@phosphor-icons/react";
+import { CheckCircle as CheckCircle2, XCircle, WarningCircle as AlertCircle } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import { BottomNavigation } from "@/components/BottomNavigation";
 import { Input } from "@/components/ui/input";
@@ -14,6 +14,7 @@ import { applyPartialPayment, involvesWorker, workerView } from "@/domain/money"
 import { formatFullDate } from "@/domain/dates";
 import type { PaymentStatus, WorkDay } from "@/domain/types";
 import { ScreenSkeleton } from "@/ui/Skeleton";
+import { StatusDrop } from "@/ui/StatusDrop";
 
 const ClientReports = () => {
   const { clientId } = useParams();
@@ -84,21 +85,21 @@ const ClientReports = () => {
     <div className="min-h-screen bg-background">
       <div className="fixed top-0 left-0 right-0 z-40 app-bar">
         <div className="container mx-auto px-4 py-4">
-          <h1 className="display text-xl text-center text-foreground">{clientName}</h1>
+          <h1 className="display text-[1.5rem] text-foreground">{clientName}</h1>
         </div>
       </div>
 
       <main className="container mx-auto px-4 pt-20 pb-dock max-w-4xl space-y-3">
         {unpaidDays.length > 0 && (
           <div className="surface-card p-4 shadow-sm space-y-3">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="chip chip-due p-3 text-lg rounded-xl">
-                <AlertCircle className="w-5 h-5" />
-                <span>{Math.round(totals.due)}€</span>
+            <div className="flex items-end justify-between px-1">
+              <div>
+                <p className="caption-label">борг</p>
+                <p className="display text-[1.7rem] leading-none text-foreground">{Math.round(totals.due)} €</p>
               </div>
-              <div className="chip chip-time p-3 text-lg rounded-xl">
-                <Clock className="w-5 h-5" />
-                <span>{decimalToHours(totals.hours)}</span>
+              <div className="text-right">
+                <p className="caption-label">годин</p>
+                <p className="display text-lg leading-none text-foreground">{decimalToHours(totals.hours)}</p>
               </div>
             </div>
 
@@ -130,16 +131,8 @@ const ClientReports = () => {
                     <div className="flex items-center gap-1.5 sm:gap-2 flex-1 min-w-0">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                          <button className={`w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center text-lg font-bold flex-shrink-0 transition-all ${
-                            day.status === 'paid' ? 'bg-success/20' :
-                            day.status === 'partial' ? 'bg-warning/20' : 'bg-destructive/20'
-                          }`}>
-                            <span className={`text-sm sm:text-base ${
-                              day.status === 'paid' ? 'text-success' :
-                              day.status === 'partial' ? 'text-warning' : 'text-destructive'
-                            }`}>
-                              {day.status === 'paid' ? '●' : day.status === 'partial' ? '◐' : '○'}
-                            </span>
+                          <button aria-label="Статус оплати" className="flex-shrink-0 transition-transform hover:scale-110 active:scale-95">
+                            <StatusDrop status={day.status} />
                           </button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent className="z-[100] rounded-xl p-1.5 min-w-[150px] shadow-lg">
@@ -169,19 +162,11 @@ const ClientReports = () => {
                     </div>
 
                     <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
-                      <div className="chip chip-time min-w-[58px]">
-                        <Clock className="w-3.5 h-3.5 flex-shrink-0" />
-                        <span>{decimalToHours(v.hours)}</span>
-                      </div>
-                      <div className="chip chip-money min-w-[58px]">
-                        <Euro className="w-3.5 h-3.5 flex-shrink-0" />
-                        <span>{Math.round(v.amount)}</span>
-                      </div>
+                      <span className="chip chip-time">{decimalToHours(v.hours)} год</span>
                       {v.due > 0.005 && (
-                        <div className={`chip min-w-[58px] ${day.status === 'partial' ? 'chip-due' : 'chip-alert'}`}>
-                          <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
-                          <span>{Math.round(v.due)}</span>
-                        </div>
+                        <span className={`chip ${day.status === 'partial' ? 'chip-due' : 'chip-alert'}`}>
+                          {Math.round(v.due)} €
+                        </span>
                       )}
                     </div>
                   </div>

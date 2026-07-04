@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Clock, CurrencyEur as Euro } from "@phosphor-icons/react";
+import { CurrencyEur as Euro } from "@phosphor-icons/react";
 import { BottomNavigation } from "@/components/BottomNavigation";
 import { ClientBalanceCard } from "@/components/ClientBalanceCard";
 import { useWorkDays } from "@/data/queries";
@@ -48,41 +48,21 @@ const ReportsStatus = () => {
     <div className="min-h-screen bg-background">
       <div className="fixed top-0 left-0 right-0 z-40 app-bar">
         <div className="container mx-auto px-4 py-4">
-          <div className="grid grid-cols-2 gap-3 mb-4">
-            <div className="stat-tile stat-tile-time p-4">
-              <div className="icon-badge icon-badge-time">
-                <Clock className="w-5 h-5" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="caption-label mb-1">Години</p>
-                <div className="flex items-baseline gap-1">
-                  <p className="display text-[1.4rem] text-foreground">{decimalToHours(totals.hours)}</p>
-                  <p className="text-sm font-bold text-muted-foreground/70">год</p>
-                </div>
-              </div>
+          <h1 className="display text-[1.6rem] text-foreground leading-tight">Очікую оплату</h1>
+          <div className="flex items-end justify-between mt-1">
+            <div className="flex items-baseline gap-1.5">
+              <span className="display text-[2.1rem] leading-none text-foreground">{Math.round(totals.due)}</span>
+              <span className="text-base font-bold text-muted-foreground">€</span>
             </div>
-
-            <div className="stat-tile stat-tile-due p-4">
-              <div className="icon-badge icon-badge-due">
-                <Euro className="w-5 h-5" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="caption-label mb-1">Сума</p>
-                <div className="flex items-baseline gap-1">
-                  <p className="display text-[1.4rem] text-foreground">{Math.round(totals.due)}</p>
-                  <p className="text-sm font-bold text-muted-foreground/70">€</p>
-                </div>
-              </div>
+            <div className="text-right">
+              <span className="display text-lg text-foreground">{decimalToHours(totals.hours)}</span>
+              <span className="text-xs font-semibold text-muted-foreground ml-1">год</span>
             </div>
-          </div>
-
-          <div className="text-center">
-            <h1 className="caption-label !text-foreground/70">Очікую оплату</h1>
           </div>
         </div>
       </div>
 
-      <main className="container mx-auto px-4 pt-40 pb-dock space-y-4">
+      <main className="container mx-auto px-5 pt-32 pb-dock space-y-4">
         {balances.length === 0 ? (
           <EmptyState
             icon={<Euro />}
