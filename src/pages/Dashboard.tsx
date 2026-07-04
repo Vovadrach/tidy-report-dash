@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { api } from "@/lib/api";
-import { Report, Client, WorkDay } from "@/types/report";
+import { Report, Client, WorkDay, PaymentStatus } from "@/types/report";
 import { Wallet as DollarSign, Clock, TrendUp as TrendingUp, UsersThree as Users, CaretDown as ChevronDown, WarningCircle as AlertCircle } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import {
@@ -115,7 +115,7 @@ const Dashboard = () => {
         const totalHours = totalMinutes / 60;
         const remainingAmount = totalEarned - paidAmount;
         
-        let paymentStatus = 'unpaid';
+        let paymentStatus: PaymentStatus = 'unpaid';
         if (paidAmount === totalEarned && totalEarned > 0) {
           paymentStatus = 'paid';
         } else if (paidAmount > 0) {

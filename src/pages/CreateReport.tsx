@@ -329,6 +329,7 @@ const CreateReport = () => {
       date: reportDate,
       hours: 0,
       amount: 0,
+      payment_status: "unpaid",
       paymentStatus: "unpaid",
       day_paid_amount: 0,
       is_planned: true,
@@ -500,6 +501,7 @@ const CreateReport = () => {
         date: reportDate,
         hours: finalHours,
         amount,
+        payment_status: workPaymentStatus,
         paymentStatus: workPaymentStatus,
         day_paid_amount: workPaymentStatus === "partial" ? parseFloat(partialAmount) || 0 :
                          workPaymentStatus === "paid" ? amount : 0,

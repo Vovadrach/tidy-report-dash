@@ -59,6 +59,7 @@ const ClientManagement = () => {
     try {
       await api.addClient({
         name: newClientName,
+        hourly_rate: parseFloat(newClientRate),
         hourlyRate: parseFloat(newClientRate),
       });
       

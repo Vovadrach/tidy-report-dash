@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ReportCard } from "@/components/ReportCard";
 import { api } from "@/lib/api";
-import { Report, Client } from "@/types/report";
+import { Report, Client, PaymentStatus } from "@/types/report";
 import { Clock, CurrencyEur as Euro } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import { BottomNavigation } from "@/components/BottomNavigation";
@@ -98,7 +98,7 @@ const ReportsStatus = () => {
 
         const remainingAmount = totalEarned - paidAmount;
 
-        let paymentStatus = 'unpaid';
+        let paymentStatus: PaymentStatus = 'unpaid';
         if (paidAmount === totalEarned && totalEarned > 0) {
           paymentStatus = 'paid';
         } else if (paidAmount > 0) {

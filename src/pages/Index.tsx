@@ -431,7 +431,7 @@ const Index = () => {
 
   // Group work days by date (latest at top, earliest at bottom)
   const groupedByDay = useMemo(() => {
-    const daysMap = new Map<string, Array<WorkDay & { reportId: string; clientName: string; paymentStatus: string }>>();
+    const daysMap = new Map<string, Array<WorkDay & { reportId: string; clientId: string; clientName: string; paymentStatus: string; workerAmount?: number; workerHours?: number }>>();
 
     // Add all work days to the map
     monthWorkDays.forEach(day => {
