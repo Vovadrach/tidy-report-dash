@@ -1,201 +1,119 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { api } from "@/lib/api";
 import { Client } from "@/types/report";
-import { User, UserPlus, LogOut, ArrowLeft, ChevronRight, Search, House } from "lucide-react";
+import { UserPlus, ArrowLeft, ChevronRight, Search, Users, LogOut } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
-import { Input } from "@/components/ui/input";
-import { BottomNavigation } from "@/components/BottomNavigation";
 
-const SelectClient = () => {
+export default function SelectClient() {
   const navigate = useNavigate();
+  const [params] = useSearchParams();
+  const dateParam = params.get("date");
   const { signOut } = useAuth();
   const [clients, setClients] = useState<Client[]>([]);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [q, setQ] = useState("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadClients();
+    (async () => {
+      try {
+        setLoading(true);
+        setClients(await api.getClients());
+      } catch (e) {
+        toast.error("Помилка завантаження клієнтів");
+        console.error(e);
+      } finally {
+        setLoading(false);
+      }
+    })();
   }, []);
 
-  const loadClients = async () => {
-    try {
-      setLoading(true);
-      const data = await api.getClients();
-      setClients(data);
-    } catch (error) {
-      toast.error('Помилка завантаження клієнтів');
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const pick = (id: string) =>
+    navigate(`/create-report?clientId=${id}${dateParam ? `&date=${dateParam}` : ""}`, { viewTransition: true });
 
-  const handleSelectClient = (clientId: string) => {
-    navigate(`/create-report?clientId=${clientId}`);
-  };
-
-  const handleSignOut = async () => {
-    try {
-      await signOut();
-      toast.success("Вихід успішний");
-      navigate("/login");
-    } catch (error) {
-      toast.error("Помилка виходу");
-      console.error(error);
-    }
-  };
-
-  // Filter clients based on search query
-  const filteredClients = clients.filter(client =>
-    client.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <p className="text-foreground text-lg">Завантаження...</p>
-      </div>
-    );
-  }
+  const filtered = clients.filter((c) => c.name.toLowerCase().includes(q.toLowerCase()));
 
   return (
-    <div className="min-h-screen bg-background pb-32 pt-4">
-      {/* Fixed top section */}
-      <div className="fixed top-0 left-0 right-0 z-40 bg-white/5 dark:bg-gray-900/5 backdrop-blur-xl border-b border-white/10 shadow-[0_2px_16px_0_rgba(31,38,135,0.1)]">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                <User className="w-5 h-5 text-primary" />
-              </div>
-              <h1 className="text-lg font-bold text-foreground">Оберіть клієнта</h1>
-            </div>
-            <button
-              onClick={() => navigate('/client-management?returnTo=/select-client')}
-              className="h-10 w-10 rounded-md bg-primary/10 hover:bg-primary/20 transition-all shadow-sm hover:shadow flex items-center justify-center"
-            >
-              <UserPlus className="w-5 h-5 text-primary stroke-[2.5]" />
-            </button>
-          </div>
-        </div>
-      </div>
+    <div className="min-h-dvh bg-background">
+      <header className="mx-auto flex max-w-md items-center gap-3 px-4 pt-3">
+        <button
+          type="button"
+          aria-label="Назад"
+          onClick={() => navigate("/", { viewTransition: true })}
+          className="press flex h-10 w-10 items-center justify-center rounded-full border border-border bg-card"
+        >
+          <ArrowLeft size={20} strokeWidth={2.3} />
+        </button>
+        <h1 className="flex-1 text-lg font-bold text-foreground">Оберіть клієнта</h1>
+        <button
+          type="button"
+          aria-label="Додати клієнта"
+          onClick={() => navigate("/client-management", { viewTransition: true })}
+          className="press flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground"
+        >
+          <UserPlus size={18} strokeWidth={2.3} />
+        </button>
+      </header>
 
-      <main className="container mx-auto px-4 pt-24 max-w-md space-y-3">
-        {/* Search Input */}
-        <div className="bg-card rounded-xl p-4 shadow-sm border border-border">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950 dark:to-purple-900 flex items-center justify-center flex-shrink-0 border border-purple-200/60 dark:border-purple-700/60">
-              <Search className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-            </div>
-            <Input
-              type="text"
-              placeholder="Пошук клієнта..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="flex-1 border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 text-base placeholder:text-muted-foreground"
-            />
-          </div>
+      <main className="mx-auto max-w-md space-y-3 px-4 pb-10 pt-4">
+        <div className="relative">
+          <Search size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Пошук клієнта…"
+            className="w-full rounded-2xl border border-border bg-card py-3 pl-11 pr-4 text-base outline-none focus:border-primary"
+          />
         </div>
 
-        {/* Clients List */}
-        {filteredClients.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-center">
-            {searchQuery ? (
-              <>
-                <Search className="w-16 h-16 text-muted-foreground mb-4" />
-                <p className="text-xl font-semibold text-foreground mb-2">Нічого не знайдено</p>
-                <p className="text-muted-foreground text-sm">Спробуйте інший запит</p>
-              </>
-            ) : clients.length === 0 ? (
-              <>
-                <User className="w-16 h-16 text-muted-foreground mb-4" />
-                <p className="text-xl font-semibold text-foreground mb-2">Немає клієнтів</p>
-                <p className="text-muted-foreground text-sm mb-4">Додайте першого клієнта</p>
-                <button
-                  onClick={() => navigate('/client-management?returnTo=/select-client')}
-                  className="bg-gradient-to-br from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 dark:from-blue-950 dark:to-blue-900 text-blue-700 dark:text-blue-300 px-6 py-3 rounded-xl shadow-md hover:shadow-lg transition-all backdrop-blur-sm border border-blue-200/60 dark:border-blue-700/60 flex items-center gap-2 font-semibold"
-                >
-                  <UserPlus className="w-5 h-5" />
-                  Додати клієнта
-                </button>
-              </>
-            ) : null}
+        {loading ? (
+          <div className="space-y-2.5">
+            {[0, 1, 2].map((i) => <div key={i} className="skeleton h-16 rounded-2xl" />)}
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <span className="ibadge tint-indigo mb-4 h-16 w-16"><Users size={28} strokeWidth={2} /></span>
+            <p className="text-lg font-semibold">{q ? "Нічого не знайдено" : "Немає клієнтів"}</p>
+            {!q && (
+              <button
+                onClick={() => navigate("/client-management", { viewTransition: true })}
+                className="press mt-4 rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground"
+              >
+                Додати клієнта
+              </button>
+            )}
           </div>
         ) : (
-          filteredClients.map((client) => (
-            <div
-              key={client.id}
-              onClick={() => handleSelectClient(client.id)}
-              className="bg-card rounded-xl p-4 shadow-sm border border-border hover:shadow-md transition-all cursor-pointer group"
-            >
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3 flex-1 min-w-0">
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 flex items-center justify-center flex-shrink-0 border border-blue-200/60 dark:border-blue-700/60">
-                    <User className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-                  </div>
-                  <h3 className="text-base font-bold text-foreground truncate">
-                    {client.name}
-                  </h3>
-                </div>
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  <div className="flex items-center gap-1">
-                    <span className="text-sm font-semibold text-blue-600 dark:text-blue-400">
-                      {client.hourlyRate || client.hourly_rate || 0}€
-                    </span>
-                    <span className="text-xs text-muted-foreground">/год</span>
-                  </div>
-                  <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
-                </div>
-              </div>
-            </div>
-          ))
+          <div className="card-flat divide-y divide-border overflow-hidden rounded-2xl">
+            {filtered.map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => pick(c.id)}
+                className="press flex w-full items-center gap-3 p-3.5 text-left"
+              >
+                <span className="ibadge tint-indigo h-11 w-11 font-display text-base font-semibold">
+                  {c.name.charAt(0).toUpperCase()}
+                </span>
+                <span className="flex-1 truncate font-semibold text-foreground">{c.name}</span>
+                <span className="text-sm font-semibold text-primary">{c.hourlyRate || c.hourly_rate || 0}€/год</span>
+                <ChevronRight size={18} className="text-muted-foreground" />
+              </button>
+            ))}
+          </div>
         )}
 
-        {/* Logout button */}
         <button
-          onClick={handleSignOut}
-          className="w-full flex items-center justify-center gap-2 text-muted-foreground hover:text-foreground transition-colors py-3 mt-8"
+          onClick={async () => {
+            await signOut();
+            navigate("/login");
+          }}
+          className="press mx-auto mt-6 flex items-center gap-1.5 py-2 text-sm font-medium text-muted-foreground"
         >
-          <LogOut className="w-4 h-4" />
-          <span className="text-sm font-medium">Вийти</span>
+          <LogOut size={15} /> Вийти
         </button>
       </main>
-
-      {/* Home Button - floating at bottom */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 pointer-events-none">
-        <div className="absolute inset-0 pointer-events-none" style={{ height: '200px' }}>
-          <div
-            className="absolute inset-0 backdrop-blur-xl"
-            style={{
-              maskImage: 'linear-gradient(to top, black 0%, black 30%, transparent 100%)',
-              WebkitMaskImage: 'linear-gradient(to top, black 0%, black 30%, transparent 100%)'
-            }}
-          ></div>
-          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/90 via-30% to-transparent"></div>
-        </div>
-
-        <div className="px-6 pb-6 relative pointer-events-auto">
-          <div className="flex justify-center">
-            <button
-              onClick={() => navigate('/')}
-              className="flex flex-col items-center justify-center gap-[2px] h-[56px] rounded-full transition-all duration-150 active:scale-95 px-8 bg-white/5 dark:bg-gray-900/5 backdrop-blur-xl border border-white/10 shadow-[0_4px_16px_0_rgba(31,38,135,0.15),0_8px_24px_0_rgba(0,0,0,0.1)]"
-              style={{ backgroundColor: 'rgba(0, 0, 0, 0.045)' }}
-            >
-              <House className="w-[27px] h-[27px]" style={{ color: '#007AFF' }} strokeWidth={2.5} fill="currentColor" />
-              <span
-                className="text-[10.5px] font-medium tracking-[-0.01em]"
-                style={{ color: '#007AFF' }}
-              >
-                Головна
-              </span>
-            </button>
-          </div>
-        </div>
-      </div>
     </div>
   );
-};
-
-export default SelectClient;
+}
