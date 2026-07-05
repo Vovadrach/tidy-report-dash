@@ -1,320 +1,177 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
 
 /* ============================================================
-   Дизайн-мова «Ясно» 4.0 (PRD §4)
-   Світло · чисті лінії · колір = стан
-   Біле полотно · 1px hairline · БЕЗ тіней · БЕЗ фіолету
-   Шрифт Inter підключається у main.tsx (@fontsource-variable/inter)
+   Дизайн-система «Чистий Світанок» (оригінал, відтворено на Tailwind 4)
+   Біле полотно · синій primary #3B82F6 · зелений акцент #10B981
+   glass-картки з тінню · зошитова сітка · lucide
    ============================================================ */
 
 :root {
-  /* Полотно і чорнило */
-  --bg:            oklch(0.99  0.003 240);
-  --surface:       oklch(1     0     0);
-  --surface-inset: oklch(0.972 0.004 240);
-  --ink:           oklch(0.25  0.02  250);
-  --ink-2:         oklch(0.52  0.015 250);
-  --ink-3:         oklch(0.68  0.012 250);
-  --line:          oklch(0.915 0.005 250);
-  --line-strong:   oklch(0.86  0.006 250);
+  --background: 0 0% 100%;
+  --foreground: 216 32% 17%;
 
-  /* Бренд (дія) — яскравий синій, не фіолет */
-  --accent:        oklch(0.58  0.17  245);
-  --accent-strong: oklch(0.52  0.18  245);
-  --accent-ink:    oklch(0.99  0.01  245);
-  --accent-tint:   oklch(0.95  0.04  245);
+  --card: 0 0% 100%;
+  --card-foreground: 216 32% 17%;
 
-  /* Статуси — яскраві, колоритні */
-  --ok:     oklch(0.63 0.15 155);
-  --warn:   oklch(0.74 0.14 78);
-  --danger: oklch(0.62 0.20 25);
-  --info:   oklch(0.66 0.12 230);
+  --popover: 0 0% 100%;
+  --popover-foreground: 216 32% 17%;
 
-  /* Радіуси */
-  --r-card:  0.875rem;
-  --r-field: 0.75rem;
-  --r-sheet: 1.25rem;
-  --r-pill:  999px;
+  --primary: 217 91% 60%;          /* #3B82F6 */
+  --primary-foreground: 0 0% 100%;
 
-  /* Рух */
-  --ease: cubic-bezier(0.2, 0, 0, 1);
-  --dur:  180ms;
+  --secondary: 210 14% 95%;        /* #F3F4F6 */
+  --secondary-foreground: 216 32% 17%;
+
+  --accent: 160 85% 39%;           /* #10B981 */
+  --accent-foreground: 0 0% 100%;
+
+  --muted: 210 12% 91%;            /* #E5E7EB */
+  --muted-foreground: 215 9% 45%;  /* #6B7280 */
+
+  --success: 160 92% 31%;          /* #059669 */
+  --success-foreground: 0 0% 100%;
+
+  --warning: 38 90% 50%;           /* #F59E0B */
+  --warning-foreground: 0 0% 100%;
+
+  --destructive: 0 84% 60%;        /* #EF4444 */
+  --destructive-foreground: 0 0% 100%;
+
+  --border: 212 12% 84%;           /* #D1D5DB */
+  --input: 212 12% 84%;
+  --ring: 217 91% 60%;
+
+  --radius: 0.75rem;
+
+  --gradient-primary: linear-gradient(135deg, hsl(217 91% 60%), hsl(160 85% 39%));
+  --gradient-secondary: linear-gradient(180deg, hsl(0 0% 100%), hsl(210 14% 95%));
+  --gradient-success: linear-gradient(135deg, hsl(160 92% 31%), hsl(160 85% 39%));
+
+  --shadow-sm: 0 1px 3px 0 hsla(0 0% 0% / 0.1);
+  --shadow-md: 0 4px 6px -1px hsla(0 0% 0% / 0.1);
+  --shadow-lg: 0 10px 15px -3px hsla(0 0% 0% / 0.1);
+  --shadow-xl: 0 20px 25px -5px hsla(0 0% 0% / 0.1);
+
+  --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dark {
+  --background: 216 32% 10%;
+  --foreground: 0 0% 90%;
+  --card: 216 32% 15%;
+  --card-foreground: 0 0% 90%;
+  --popover: 216 32% 15%;
+  --popover-foreground: 0 0% 90%;
+  --primary: 217 91% 60%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 216 32% 20%;
+  --secondary-foreground: 0 0% 90%;
+  --muted: 216 32% 30%;
+  --muted-foreground: 216 32% 70%;
+  --accent: 160 85% 39%;
+  --accent-foreground: 0 0% 100%;
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 100%;
+  --success: 160 92% 31%;
+  --success-foreground: 0 0% 100%;
+  --warning: 38 90% 50%;
+  --warning-foreground: 0 0% 100%;
+  --border: 216 32% 25%;
+  --input: 216 32% 25%;
+  --ring: 217 91% 60%;
 }
 
 @theme inline {
-  --color-bg: var(--bg);
-  --color-surface: var(--surface);
-  --color-surface-inset: var(--surface-inset);
-  --color-ink: var(--ink);
-  --color-ink-2: var(--ink-2);
-  --color-ink-3: var(--ink-3);
-  --color-line: var(--line);
-  --color-line-strong: var(--line-strong);
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-success: hsl(var(--success));
+  --color-success-foreground: hsl(var(--success-foreground));
+  --color-warning: hsl(var(--warning));
+  --color-warning-foreground: hsl(var(--warning-foreground));
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
 
-  --color-accent: var(--accent);
-  --color-accent-strong: var(--accent-strong);
-  --color-accent-ink: var(--accent-ink);
-  --color-accent-tint: var(--accent-tint);
-
-  --color-ok: var(--ok);
-  --color-warn: var(--warn);
-  --color-danger: var(--danger);
-  --color-info: var(--info);
-
-  /* shadcn/radix сумісність (нейтралізовано під «Ясно») */
-  --color-background: var(--bg);
-  --color-foreground: var(--ink);
-  --color-card: var(--surface);
-  --color-card-foreground: var(--ink);
-  --color-popover: var(--surface);
-  --color-popover-foreground: var(--ink);
-  --color-primary: var(--accent);
-  --color-primary-foreground: var(--accent-ink);
-  --color-secondary: var(--surface-inset);
-  --color-secondary-foreground: var(--ink);
-  --color-muted: var(--surface-inset);
-  --color-muted-foreground: var(--ink-2);
-  --color-accent-foreground: var(--accent-ink);
-  --color-destructive: var(--danger);
-  --color-destructive-foreground: oklch(0.99 0.01 25);
-  --color-border: var(--line);
-  --color-input: var(--line);
-  --color-ring: var(--accent);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
 
   --font-sans: "Inter Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
 
-  --radius-sm: var(--r-field);
-  --radius-md: var(--r-card);
-  --radius-lg: var(--r-card);
-  --radius-xl: var(--r-sheet);
-  --radius-2xl: var(--r-sheet);
-
-  --animate-sheet-in: sheet-in 0.24s var(--ease);
-
-  @keyframes sheet-in {
-    from { transform: translateY(8px); opacity: 0; }
-    to   { transform: translateY(0);   opacity: 1; }
+@layer base {
+  * {
+    border-color: hsl(var(--border));
   }
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-family: var(--font-sans);
+    font-feature-settings: "cv11", "ss01";
+    -webkit-font-smoothing: antialiased;
+  }
+  button { touch-action: manipulation; }
 }
 
-/* Центрована колонка контенту (мобільна ширина) */
-@utility container {
-  width: 100%;
-  margin-inline: auto;
-  max-width: 32rem;
+/* Зошитова сітка */
+@utility notebook-bg {
+  background-color: #ffffff;
+  background-image:
+    linear-gradient(#e0e0e0 1px, transparent 1px),
+    linear-gradient(90deg, #e0e0e0 1px, transparent 1px);
+  background-size: 20px 20px;
 }
 
-/* Відступ під плаваючий док + FAB (+ iOS safe area) */
-@utility pb-dock {
-  padding-bottom: calc(9.5rem + env(safe-area-inset-bottom, 0px));
+@utility glass-effect {
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  box-shadow: var(--shadow-md);
+  &:hover { box-shadow: var(--shadow-lg); transition: var(--transition-smooth); }
 }
-@utility pb-dock-sm {
-  padding-bottom: calc(6rem + env(safe-area-inset-bottom, 0px));
+@utility glass-card {
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  box-shadow: var(--shadow-md);
+  &:hover { box-shadow: var(--shadow-lg); transition: var(--transition-smooth); }
 }
+@utility gradient-primary { background: var(--gradient-primary); }
+@utility gradient-secondary { background: var(--gradient-secondary); }
+@utility gradient-success { background: var(--gradient-success); }
+@utility shadow-glow { box-shadow: var(--shadow-xl); }
+@utility shadow-glow-hover { &:hover { box-shadow: var(--shadow-xl); } }
+@utility transition-smooth { transition: var(--transition-smooth); }
+@utility shadow-sm-soft { box-shadow: var(--shadow-sm); }
+@utility shadow-md-soft { box-shadow: var(--shadow-md); }
+@utility shadow-lg-soft { box-shadow: var(--shadow-lg); }
 
 @utility scrollbar-hide {
   -ms-overflow-style: none;
   scrollbar-width: none;
-  -webkit-overflow-scrolling: touch;
   &::-webkit-scrollbar { display: none; }
 }
 
-@utility tnum {
-  font-variant-numeric: tabular-nums;
-  letter-spacing: -0.01em;
-}
-
-@layer base {
-  * { border-color: var(--color-line); }
-
-  html { -webkit-tap-highlight-color: transparent; }
-
-  body {
-    background-color: var(--color-bg);
-    color: var(--color-ink);
-    font-family: var(--font-sans);
-    text-rendering: optimizeLegibility;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-  }
-
-  button { touch-action: manipulation; }
-
-  ::selection { background: var(--accent-tint); }
-
-  @media (prefers-reduced-motion: reduce) {
-    *, *::before, *::after {
-      animation-duration: 0.01ms !important;
-      transition-duration: 0.01ms !important;
-    }
-  }
-}
-
-@layer components {
-  /* Верхня панель: майже суцільна, hairline знизу */
-  .app-bar {
-    background: color-mix(in oklab, var(--color-bg) 88%, transparent);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border-bottom: 1px solid var(--color-line);
-  }
-
-  /* Плаваючий док — світлий, hairline-верх, БЕЗ тіні */
-  .dock {
-    background: color-mix(in oklab, var(--color-surface) 92%, transparent);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
-    border-top: 1px solid var(--color-line);
-  }
-
-  /* Кругла FAB «+» — плаский акцент, БЕЗ тіні */
-  .dock-fab {
-    background: var(--accent);
-    color: var(--accent-ink);
-    transition: transform var(--dur) var(--ease), background var(--dur) var(--ease);
-  }
-  .dock-fab:active { transform: scale(0.92); background: var(--accent-strong); }
-
-  /* Універсальний рядок списку */
-  .row {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    width: 100%;
-    padding: 0.85rem 0.25rem;
-    background: var(--color-surface);
-    transition: background var(--dur) var(--ease);
-  }
-  .row:active { background: var(--color-surface-inset); }
-
-  /* Картка-поверхня: папір на полотні, hairline, БЕЗ тіні */
-  .surface-card {
-    background: var(--color-surface);
-    border: 1px solid var(--color-line);
-    border-radius: var(--r-card);
-  }
-
-  /* Нижній лист (vaul) */
-  .sheet {
-    background: var(--color-surface);
-    border-top-left-radius: var(--r-sheet);
-    border-top-right-radius: var(--r-sheet);
-    border-top: 1px solid var(--color-line);
-  }
-  .sheet-grabber {
-    width: 2.25rem;
-    height: 0.25rem;
-    border-radius: var(--r-pill);
-    background: var(--color-line-strong);
-    margin: 0.6rem auto 0.25rem;
-  }
-
-  /* Поле вводу */
-  .field {
-    width: 100%;
-    background: var(--color-surface-inset);
-    border: 1px solid var(--color-line);
-    border-radius: var(--r-field);
-    padding: 0.7rem 0.85rem;
-    color: var(--color-ink);
-    font-size: 1rem;
-    transition: border-color var(--dur) var(--ease);
-  }
-  .field:focus-visible {
-    outline: none;
-    border-color: var(--accent);
-    box-shadow: 0 0 0 3px var(--accent-tint);
-  }
-  .field::placeholder { color: var(--color-ink-3); }
-
-  /* Кнопки */
-  .btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    border-radius: var(--r-field);
-    padding: 0.7rem 1rem;
-    font-weight: 600;
-    font-size: 0.95rem;
-    border: 1px solid transparent;
-    transition: transform var(--dur) var(--ease), background var(--dur) var(--ease), border-color var(--dur) var(--ease);
-    user-select: none;
-  }
-  .btn:active { transform: scale(0.98); }
-  .btn-accent { background: var(--accent); color: var(--accent-ink); }
-  .btn-accent:active { background: var(--accent-strong); }
-  .btn-ghost { background: var(--color-surface); border-color: var(--color-line); color: var(--color-ink); }
-  .btn-ghost:active { background: var(--color-surface-inset); }
-  .btn-danger { background: color-mix(in oklab, var(--danger) 12%, var(--color-surface)); color: var(--danger); }
-  .btn:disabled { opacity: 0.45; pointer-events: none; }
-
-  /* Пігулка статусу/чипа */
-  .pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.3rem;
-    border-radius: var(--r-pill);
-    padding: 0.22rem 0.6rem;
-    font-size: 0.78rem;
-    font-weight: 600;
-    line-height: 1;
-    white-space: nowrap;
-  }
-  .pill-ok     { background: color-mix(in oklab, var(--ok) 12%, transparent);     color: var(--ok); }
-  .pill-warn   { background: color-mix(in oklab, var(--warn) 16%, transparent);   color: color-mix(in oklab, var(--warn) 82%, black); }
-  .pill-danger { background: color-mix(in oklab, var(--danger) 12%, transparent); color: var(--danger); }
-  .pill-info   { background: color-mix(in oklab, var(--info) 13%, transparent);   color: var(--info); }
-  .pill-neutral{ background: var(--color-surface-inset); color: var(--color-ink-2); }
-
-  /* Значення з іконкою: години */
-  .badge-hours {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.28rem;
-    color: var(--color-ink-2);
-    font-variant-numeric: tabular-nums;
-    font-size: 0.86rem;
-  }
-
-  /* Дисплейні числа/заголовки */
-  .display {
-    font-weight: 600;
-    letter-spacing: -0.02em;
-    font-variant-numeric: tabular-nums;
-  }
-
-  /* Тихий підпис */
-  .caption {
-    font-size: 0.78rem;
-    font-weight: 500;
-    letter-spacing: 0.01em;
-    color: var(--color-ink-3);
-  }
-
-  /* Тонка прогрес-лінія */
-  .line-progress {
-    position: relative;
-    height: 3px;
-    border-radius: var(--r-pill);
-    background: var(--color-line);
-    overflow: hidden;
-  }
-  .line-progress > span {
-    position: absolute;
-    inset: 0 auto 0 0;
-    border-radius: var(--r-pill);
-    background: var(--ok);
-    transition: width 0.4s var(--ease);
-  }
-  .line-progress.neutral > span { background: var(--accent); }
-
-  /* Вертикальна рейка таймлайну */
-  .rail {
-    position: absolute;
-    top: 1.4rem;
-    bottom: -0.4rem;
-    width: 1px;
-    background: var(--color-line);
-  }
+/* Відступ під нижній док */
+@utility pb-dock {
+  padding-bottom: calc(6rem + env(safe-area-inset-bottom, 0px));
 }

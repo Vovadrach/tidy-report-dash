@@ -1,77 +1,51 @@
 import { Toaster as Sonner } from "@/components/ui/sonner";
-import { QueryClient } from "@tanstack/react-query";
-import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
-import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persister";
-import { BrowserRouter, Routes, Route, Outlet } from "react-router-dom";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { WorkerProvider } from "@/contexts/WorkerContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
-import { ErrorBoundary } from "@/ui/ErrorBoundary";
-import { OfflineBanner } from "@/ui/OfflineBanner";
-import { AppSheetsProvider } from "@/ui/AppSheets";
-import { lazy, Suspense } from "react";
-import { ScreenSkeleton } from "@/ui/Skeleton";
-import Feed from "./pages/Feed";
+import Index from "./pages/Index";
+import ReportsStatus from "./pages/ReportsStatus";
+import SelectClient from "./pages/SelectClient";
+import CreateReport from "./pages/CreateReport";
+import ReportDetails from "./pages/ReportDetails";
+import WorkDayDetails from "./pages/WorkDayDetails";
+import Dashboard from "./pages/Dashboard";
+import ClientManagement from "./pages/ClientManagement";
+import ClientReports from "./pages/ClientReports";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
+import NotFound from "./pages/NotFound";
 
-const Clients = lazy(() => import("./pages/Clients"));
-const ClientCard = lazy(() => import("./pages/ClientCard"));
-const Money = lazy(() => import("./pages/Money"));
-const Profile = lazy(() => import("./pages/Profile"));
-const Login = lazy(() => import("./pages/Login"));
-const Register = lazy(() => import("./pages/Register"));
-const NotFound = lazy(() => import("./pages/NotFound"));
-
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      retry: 1,
-      staleTime: 60_000,
-      gcTime: 7 * 24 * 60 * 60 * 1000,
-    },
-  },
-});
-
-const persister = createSyncStoragePersister({
-  storage: window.localStorage,
-  key: "yasno-query-cache",
-});
-
-/** Авторизована зона: захист + глобальні листи, спільні для всіх вкладок. */
-const ProtectedLayout = () => (
-  <ProtectedRoute>
-    <AppSheetsProvider>
-      <Outlet />
-    </AppSheetsProvider>
-  </ProtectedRoute>
-);
+const queryClient = new QueryClient();
 
 const App = () => (
-  <PersistQueryClientProvider
-    client={queryClient}
-    persistOptions={{ persister, buster: __APP_VERSION__, maxAge: 7 * 24 * 60 * 60 * 1000 }}
-  >
+  <QueryClientProvider client={queryClient}>
     <AuthProvider>
-      <ErrorBoundary>
-        <Sonner />
-        <OfflineBanner />
-        <BrowserRouter>
-          <Suspense fallback={<ScreenSkeleton />}>
+      <WorkerProvider>
+        <TooltipProvider>
+          <Sonner />
+          <BrowserRouter>
             <Routes>
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
-              <Route element={<ProtectedLayout />}>
-                <Route path="/" element={<Feed />} />
-                <Route path="/clients" element={<Clients />} />
-                <Route path="/client/:id" element={<ClientCard />} />
-                <Route path="/money" element={<Money />} />
-                <Route path="/profile" element={<Profile />} />
-              </Route>
+              <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+              <Route path="/reports-status" element={<ProtectedRoute><ReportsStatus /></ProtectedRoute>} />
+              <Route path="/select-client" element={<ProtectedRoute><SelectClient /></ProtectedRoute>} />
+              <Route path="/create-report" element={<ProtectedRoute><CreateReport /></ProtectedRoute>} />
+              <Route path="/report/:id" element={<ProtectedRoute><ReportDetails /></ProtectedRoute>} />
+              <Route path="/report/:reportId/day/:dayId" element={<ProtectedRoute><WorkDayDetails /></ProtectedRoute>} />
+              <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+              <Route path="/client-management" element={<ProtectedRoute><ClientManagement /></ProtectedRoute>} />
+              <Route path="/client-reports/:clientId" element={<ProtectedRoute><ClientReports /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
-          </Suspense>
-        </BrowserRouter>
-      </ErrorBoundary>
+          </BrowserRouter>
+        </TooltipProvider>
+      </WorkerProvider>
     </AuthProvider>
-  </PersistQueryClientProvider>
+  </QueryClientProvider>
 );
 
 export default App;

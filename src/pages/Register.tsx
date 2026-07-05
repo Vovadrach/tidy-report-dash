@@ -1,101 +1,117 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
-import { toast } from "sonner";
-import { Button } from "@/ui/Button";
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { toast } from 'sonner';
 
-export default function Register() {
+const Register = () => {
   const navigate = useNavigate();
   const { signUp } = useAuth();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirm, setConfirm] = useState("");
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const submit = async (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password || !confirm) {
-      toast.error("Заповніть усі поля");
+    
+    if (!email || !password || !confirmPassword) {
+      toast.error('Заповніть всі поля');
       return;
     }
-    if (password !== confirm) {
-      toast.error("Паролі не співпадають");
+
+    if (password !== confirmPassword) {
+      toast.error('Паролі не співпадають');
       return;
     }
+
     if (password.length < 6) {
-      toast.error("Пароль має бути не менше 6 символів");
+      toast.error('Пароль має бути не менше 6 символів');
       return;
     }
+
     setLoading(true);
     const { error } = await signUp(email, password);
     setLoading(false);
-    if (error) toast.error(error.message);
-    else {
-      toast.success("Реєстрацію завершено! Перевір email для підтвердження.");
-      navigate("/login");
+
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success('Реєстрацію завершено! Перевірте email для підтвердження.');
+      navigate('/login');
     }
   };
 
   return (
-    <div className="flex min-h-dvh items-center justify-center bg-bg px-5">
-      <div className="w-full max-w-sm">
-        <div className="mb-8 text-center">
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-accent text-2xl font-bold text-accent-ink">
-            ●
-          </div>
-          <h1 className="display text-3xl">Реєстрація</h1>
-          <p className="caption mt-1">Ясно — легкий облік прибирання</p>
-        </div>
-        <form onSubmit={submit} className="space-y-3">
-          <div className="space-y-1.5">
-            <label className="caption">Email</label>
-            <input
-              className="field"
+    <div className="min-h-screen bg-background flex items-center justify-center px-4">
+      <div className="bg-card rounded-lg p-8 shadow-md max-w-md w-full border border-border">
+        <h1 className="text-3xl font-bold text-center text-foreground mb-8">Реєстрація</h1>
+        
+        <form onSubmit={handleRegister} className="space-y-6">
+          <div className="space-y-2">
+            <Label htmlFor="email">Email</Label>
+            <Input
+              id="email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="your@email.com"
               disabled={loading}
-              autoComplete="email"
+              className="rounded-md"
             />
           </div>
-          <div className="space-y-1.5">
-            <label className="caption">Пароль</label>
-            <input
-              className="field"
+
+          <div className="space-y-2">
+            <Label htmlFor="password">Пароль</Label>
+            <Input
+              id="password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
               disabled={loading}
-              autoComplete="new-password"
+              className="rounded-md"
             />
           </div>
-          <div className="space-y-1.5">
-            <label className="caption">Підтвердіть пароль</label>
-            <input
-              className="field"
+
+          <div className="space-y-2">
+            <Label htmlFor="confirmPassword">Підтвердіть пароль</Label>
+            <Input
+              id="confirmPassword"
               type="password"
-              value={confirm}
-              onChange={(e) => setConfirm(e.target.value)}
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
               placeholder="••••••••"
               disabled={loading}
-              autoComplete="new-password"
+              className="rounded-md"
             />
           </div>
-          <Button type="submit" block disabled={loading}>
-            {loading ? "Реєстрація…" : "Зареєструватися"}
-          </Button>
-          <button
-            type="button"
-            onClick={() => navigate("/login")}
-            className="w-full py-2 text-sm font-medium text-accent"
+
+          <Button 
+            type="submit" 
+            className="w-full rounded-md" 
+            size="lg"
             disabled={loading}
           >
-            Вже є акаунт? Увійти
-          </button>
+            {loading ? 'Реєстрація...' : 'Зареєструватися'}
+          </Button>
+
+          <div className="text-center">
+            <button
+              type="button"
+              onClick={() => navigate('/login')}
+              className="text-sm text-primary hover:underline"
+              disabled={loading}
+            >
+              Вже є акаунт? Увійти
+            </button>
+          </div>
         </form>
       </div>
     </div>
   );
-}
+};
+
+export default Register;

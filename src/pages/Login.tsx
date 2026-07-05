@@ -1,77 +1,93 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
-import { toast } from "sonner";
-import { Button } from "@/ui/Button";
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { toast } from 'sonner';
 
-export default function Login() {
+const Login = () => {
   const navigate = useNavigate();
   const { signIn } = useAuth();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const submit = async (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    
     if (!email || !password) {
-      toast.error("Заповніть усі поля");
+      toast.error('Заповніть всі поля');
       return;
     }
+
     setLoading(true);
     const { error } = await signIn(email, password);
     setLoading(false);
-    if (error) toast.error(error.message);
-    else navigate("/");
+
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success('Успішний вхід');
+      navigate('/');
+    }
   };
 
   return (
-    <div className="flex min-h-dvh items-center justify-center bg-bg px-5">
-      <div className="w-full max-w-sm">
-        <div className="mb-8 text-center">
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-accent text-2xl font-bold text-accent-ink">
-            ●
-          </div>
-          <h1 className="display text-3xl">Ясно</h1>
-          <p className="caption mt-1">Легкий облік прибирання</p>
-        </div>
-        <form onSubmit={submit} className="space-y-3">
-          <div className="space-y-1.5">
-            <label className="caption">Email</label>
-            <input
-              className="field"
+    <div className="min-h-screen bg-background flex items-center justify-center px-4">
+      <div className="bg-card rounded-lg p-8 shadow-md max-w-md w-full border border-border">
+        <h1 className="text-3xl font-bold text-center text-foreground mb-8">Вхід</h1>
+        
+        <form onSubmit={handleLogin} className="space-y-6">
+          <div className="space-y-2">
+            <Label htmlFor="email">Email</Label>
+            <Input
+              id="email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="your@email.com"
               disabled={loading}
-              autoComplete="email"
+              className="rounded-md"
             />
           </div>
-          <div className="space-y-1.5">
-            <label className="caption">Пароль</label>
-            <input
-              className="field"
+
+          <div className="space-y-2">
+            <Label htmlFor="password">Пароль</Label>
+            <Input
+              id="password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
               disabled={loading}
-              autoComplete="current-password"
+              className="rounded-md"
             />
           </div>
-          <Button type="submit" block disabled={loading}>
-            {loading ? "Вхід…" : "Увійти"}
-          </Button>
-          <button
-            type="button"
-            onClick={() => navigate("/register")}
-            className="w-full py-2 text-sm font-medium text-accent"
+
+          <Button 
+            type="submit" 
+            className="w-full rounded-md" 
+            size="lg"
             disabled={loading}
           >
-            Немає акаунту? Зареєструватися
-          </button>
+            {loading ? 'Вхід...' : 'Увійти'}
+          </Button>
+
+          <div className="text-center">
+            <button
+              type="button"
+              onClick={() => navigate('/register')}
+              className="text-sm text-primary hover:underline"
+              disabled={loading}
+            >
+              Немає акаунту? Зареєструватися
+            </button>
+          </div>
         </form>
       </div>
     </div>
   );
-}
+};
+
+export default Login;
