@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Clock, CalendarClock, Check, CircleCheck, CircleDashed, Circle } from "lucide-react";
 import NumberFlow from "@number-flow/react";
+import { motion } from "motion/react";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -79,8 +80,15 @@ export const DayCard = ({
       <div className="flex items-center gap-3 p-3.5">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className={`ibadge press h-9 w-9 ${st.tint}`} aria-label="Статус оплати">
-              <StatusIcon size={19} strokeWidth={2.4} />
+            <button className={`ibadge press h-9 w-9 transition-colors ${st.tint}`} aria-label="Статус оплати">
+              <motion.span
+                key={day.status}
+                initial={{ scale: 0.5, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ type: "spring", stiffness: 500, damping: 22 }}
+              >
+                <StatusIcon size={19} strokeWidth={2.4} />
+              </motion.span>
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="rounded-xl">

@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import NumberFlow from "@number-flow/react";
+import { motion } from "motion/react";
 import { TimePickerWheel } from "@/components/TimePickerWheel";
 import { decimalToHours } from "@/utils/timeFormat";
 
@@ -101,19 +102,25 @@ export default function WorkDayDetails() {
     }
   };
 
+  // Оптимістично й локально (без loadData) — щоб анімація статусу була плавною,
+  // без блимання скелетона.
   const setStatus = async (next: PaymentStatus) => {
     if (!workDay) return;
+    const paid = next === "paid" ? currentAmount : next === "unpaid" ? 0 : dayPaidAmount || 0;
+    setWorkDay({ ...workDay, payment_status: next, paymentStatus: next, day_paid_amount: paid });
+    setDayPaidAmount(paid);
+    if (next !== "partial") setPartialAmount("");
     try {
-      const patch =
+      await api.updateWorkDay(
+        workDay.id,
         next === "paid"
-          ? { payment_status: "paid" as PaymentStatus }
+          ? { payment_status: "paid" }
           : next === "unpaid"
-            ? { payment_status: "unpaid" as PaymentStatus, day_paid_amount: 0 }
-            : { payment_status: "partial" as PaymentStatus, day_paid_amount: dayPaidAmount || 0 };
-      await api.updateWorkDay(workDay.id, patch);
-      await loadData();
-      if (next !== "partial") setPartialAmount("");
+            ? { payment_status: "unpaid", day_paid_amount: 0 }
+            : { payment_status: "partial", day_paid_amount: paid },
+      );
     } catch (e) {
+      toast.error("Не вдалося оновити статус");
       console.error(e);
     }
   };
@@ -127,15 +134,15 @@ export default function WorkDayDetails() {
       toast.error("Сума перевищує вартість");
       return;
     }
+    const nextStatus: PaymentStatus = total >= currentAmount ? "paid" : "partial";
+    setDayPaidAmount(total);
+    setWorkDay({ ...workDay, payment_status: nextStatus, paymentStatus: nextStatus, day_paid_amount: total });
+    setPartialAmount("");
     try {
-      await api.updateWorkDay(workDay.id, {
-        payment_status: total >= currentAmount ? "paid" : "partial",
-        day_paid_amount: total,
-      });
-      await loadData();
-      setPartialAmount("");
+      await api.updateWorkDay(workDay.id, { payment_status: nextStatus, day_paid_amount: total });
       toast.success("Оплату додано");
     } catch (e) {
+      toast.error("Помилка додавання оплати");
       console.error(e);
     }
   };
@@ -189,7 +196,7 @@ export default function WorkDayDetails() {
         <button
           type="button"
           aria-label="Назад"
-          onClick={() => navigate(-1)}
+          onClick={() => navigate("/", { viewTransition: true })}
           className="press flex h-10 w-10 items-center justify-center rounded-full border border-border bg-card text-foreground"
         >
           <ArrowLeft size={20} strokeWidth={2.3} />
@@ -240,12 +247,30 @@ export default function WorkDayDetails() {
                   key={s.key}
                   type="button"
                   onClick={() => setStatus(s.key)}
-                  className={`press flex flex-col items-center gap-1.5 rounded-xl py-3 text-xs font-bold transition-all ${
-                    active ? `${s.tint} ring-2 ${s.ring}` : "bg-muted text-muted-foreground"
-                  }`}
+                  className="press relative flex flex-col items-center gap-1.5 rounded-xl bg-muted py-3 text-xs font-bold"
                 >
-                  <Icon size={20} strokeWidth={2.3} />
-                  {s.label}
+                  {active && (
+                    <motion.span
+                      layoutId="statusHL"
+                      transition={{ type: "spring", stiffness: 430, damping: 34 }}
+                      className={`absolute inset-0 rounded-xl ${s.tint} ring-2 ${s.ring}`}
+                    />
+                  )}
+                  <span
+                    className={`relative z-10 flex flex-col items-center gap-1.5 ${
+                      active ? "text-foreground" : "text-muted-foreground"
+                    }`}
+                  >
+                    <motion.span
+                      key={active ? "on" : "off"}
+                      initial={active ? { scale: 0.6, rotate: -12, opacity: 0 } : false}
+                      animate={{ scale: 1, rotate: 0, opacity: 1 }}
+                      transition={{ type: "spring", stiffness: 500, damping: 24 }}
+                    >
+                      <Icon size={20} strokeWidth={2.3} />
+                    </motion.span>
+                    {s.label}
+                  </span>
                 </button>
               );
             })}
