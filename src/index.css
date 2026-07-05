@@ -4,84 +4,91 @@
 @custom-variant dark (&:is(.dark *));
 
 /* ============================================================
-   Дизайн-система «Чистий Світанок» (оригінал, відтворено на Tailwind 4)
-   Біле полотно · синій primary #3B82F6 · зелений акцент #10B981
-   glass-картки з тінню · зошитова сітка · lucide
+   «Чистий Світанок» — еволюція (Evo)
+   Той самий дизайн, піднятий до сучасного преміального крафту:
+   багатошарові м'які тіні · вивірена типографіка · мікровідгук ·
+   spring-анімації (Motion) · анімовані числа (NumberFlow)
    ============================================================ */
 
 :root {
-  --background: 0 0% 100%;
-  --foreground: 216 32% 17%;
+  --background: 220 33% 99%;        /* ледь тепліше за чисто-біле — м'якше */
+  --foreground: 218 39% 15%;        /* глибший синьо-графіт для контрасту */
 
   --card: 0 0% 100%;
-  --card-foreground: 216 32% 17%;
+  --card-foreground: 218 39% 15%;
 
   --popover: 0 0% 100%;
-  --popover-foreground: 216 32% 17%;
+  --popover-foreground: 218 39% 15%;
 
-  --primary: 217 91% 60%;          /* #3B82F6 */
+  --primary: 217 91% 60%;           /* #3B82F6 */
   --primary-foreground: 0 0% 100%;
 
-  --secondary: 210 14% 95%;        /* #F3F4F6 */
-  --secondary-foreground: 216 32% 17%;
+  --secondary: 214 20% 96%;
+  --secondary-foreground: 218 39% 15%;
 
-  --accent: 160 85% 39%;           /* #10B981 */
+  --accent: 160 84% 39%;            /* #10B981 */
   --accent-foreground: 0 0% 100%;
 
-  --muted: 210 12% 91%;            /* #E5E7EB */
-  --muted-foreground: 215 9% 45%;  /* #6B7280 */
+  --muted: 214 18% 93%;
+  --muted-foreground: 216 12% 47%;
 
-  --success: 160 92% 31%;          /* #059669 */
+  --success: 160 84% 33%;
   --success-foreground: 0 0% 100%;
 
-  --warning: 38 90% 50%;           /* #F59E0B */
+  --warning: 33 95% 52%;
   --warning-foreground: 0 0% 100%;
 
-  --destructive: 0 84% 60%;        /* #EF4444 */
+  --destructive: 0 84% 60%;
   --destructive-foreground: 0 0% 100%;
 
-  --border: 212 12% 84%;           /* #D1D5DB */
-  --input: 212 12% 84%;
+  --border: 214 20% 90%;            /* м'якша hairline */
+  --input: 214 20% 90%;
   --ring: 217 91% 60%;
 
-  --radius: 0.75rem;
+  --radius: 0.875rem;               /* трохи округліше — сучасніше */
 
-  --gradient-primary: linear-gradient(135deg, hsl(217 91% 60%), hsl(160 85% 39%));
-  --gradient-secondary: linear-gradient(180deg, hsl(0 0% 100%), hsl(210 14% 95%));
-  --gradient-success: linear-gradient(135deg, hsl(160 92% 31%), hsl(160 85% 39%));
+  /* Градієнти (той самий синьо-зелений, чистіші стопи) */
+  --gradient-primary: linear-gradient(135deg, hsl(217 92% 62%), hsl(199 89% 52%) 45%, hsl(160 84% 42%));
+  --gradient-secondary: linear-gradient(180deg, hsl(0 0% 100%), hsl(214 20% 97%));
+  --gradient-success: linear-gradient(135deg, hsl(160 84% 36%), hsl(160 84% 44%));
+  --gradient-violet: linear-gradient(135deg, hsl(255 92% 76%), hsl(268 84% 66%));
 
-  --shadow-sm: 0 1px 3px 0 hsla(0 0% 0% / 0.1);
-  --shadow-md: 0 4px 6px -1px hsla(0 0% 0% / 0.1);
-  --shadow-lg: 0 10px 15px -3px hsla(0 0% 0% / 0.1);
-  --shadow-xl: 0 20px 25px -5px hsla(0 0% 0% / 0.1);
+  /* Багатошарові м'які тіні з синім підтоном (замість пласких чорних) */
+  --shadow-xs: 0 1px 2px hsl(218 40% 30% / 0.05);
+  --shadow-sm: 0 1px 2px hsl(218 40% 30% / 0.05), 0 2px 6px -1px hsl(218 40% 30% / 0.06);
+  --shadow-md: 0 2px 4px hsl(218 40% 30% / 0.05), 0 6px 16px -3px hsl(218 40% 30% / 0.09);
+  --shadow-lg: 0 4px 8px -2px hsl(218 40% 30% / 0.06), 0 14px 32px -8px hsl(218 40% 30% / 0.13);
+  --shadow-xl: 0 8px 20px -4px hsl(218 40% 30% / 0.09), 0 28px 56px -14px hsl(218 40% 30% / 0.18);
+  --shadow-primary: 0 6px 16px -4px hsl(217 91% 60% / 0.4), 0 2px 6px -2px hsl(217 91% 60% / 0.3);
 
   --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-spring: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .dark {
-  --background: 216 32% 10%;
-  --foreground: 0 0% 90%;
-  --card: 216 32% 15%;
-  --card-foreground: 0 0% 90%;
-  --popover: 216 32% 15%;
-  --popover-foreground: 0 0% 90%;
-  --primary: 217 91% 60%;
+  --background: 218 32% 9%;
+  --foreground: 0 0% 92%;
+  --card: 218 30% 13%;
+  --card-foreground: 0 0% 92%;
+  --popover: 218 30% 13%;
+  --popover-foreground: 0 0% 92%;
+  --primary: 217 91% 62%;
   --primary-foreground: 0 0% 100%;
-  --secondary: 216 32% 20%;
-  --secondary-foreground: 0 0% 90%;
-  --muted: 216 32% 30%;
-  --muted-foreground: 216 32% 70%;
-  --accent: 160 85% 39%;
+  --secondary: 218 26% 18%;
+  --secondary-foreground: 0 0% 92%;
+  --muted: 218 22% 24%;
+  --muted-foreground: 216 14% 68%;
+  --accent: 160 84% 42%;
   --accent-foreground: 0 0% 100%;
-  --destructive: 0 84% 60%;
+  --destructive: 0 84% 62%;
   --destructive-foreground: 0 0% 100%;
-  --success: 160 92% 31%;
+  --success: 160 84% 40%;
   --success-foreground: 0 0% 100%;
-  --warning: 38 90% 50%;
+  --warning: 33 95% 55%;
   --warning-foreground: 0 0% 100%;
-  --border: 216 32% 25%;
-  --input: 216 32% 25%;
-  --ring: 217 91% 60%;
+  --border: 218 22% 22%;
+  --input: 218 22% 22%;
+  --ring: 217 91% 62%;
 }
 
 @theme inline {
@@ -109,12 +116,35 @@
   --color-input: hsl(var(--input));
   --color-ring: hsl(var(--ring));
 
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 5px);
+  --radius-md: calc(var(--radius) - 3px);
   --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
+  --radius-xl: calc(var(--radius) + 5px);
+  --radius-2xl: calc(var(--radius) + 10px);
+
+  --shadow-xs: var(--shadow-xs);
+  --shadow-sm: var(--shadow-sm);
+  --shadow-md: var(--shadow-md);
+  --shadow-lg: var(--shadow-lg);
+  --shadow-xl: var(--shadow-xl);
 
   --font-sans: "Inter Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+  --animate-rise: rise 0.5s var(--ease-spring) both;
+  --animate-pop: pop 0.35s var(--ease-spring) both;
+
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes pop {
+    0%   { transform: scale(0.8); opacity: 0; }
+    60%  { transform: scale(1.06); }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  @keyframes shimmer {
+    100% { transform: translateX(100%); }
+  }
 }
 
 @layer base {
@@ -128,42 +158,95 @@
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
     font-family: var(--font-sans);
-    font-feature-settings: "cv11", "ss01";
+    font-feature-settings: "cv11", "ss01", "ss03";
     -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
   }
   button { touch-action: manipulation; }
+
+  /* Числа — табличні всюди, де важлива вертикаль */
+  .tabular, [data-tabular] { font-variant-numeric: tabular-nums; }
+
+  /* Дисплейні числа */
+  .num-display {
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+    font-weight: 700;
+  }
+
+  ::selection { background: hsl(var(--primary) / 0.18); }
+
+  /* Плавніший фокус */
+  :focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px hsl(var(--ring) / 0.35);
+    border-radius: calc(var(--radius) - 4px);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
 }
 
-/* Зошитова сітка */
+/* Зошитова сітка (тонша, м'якша) */
 @utility notebook-bg {
-  background-color: #ffffff;
+  background-color: hsl(var(--background));
   background-image:
-    linear-gradient(#e0e0e0 1px, transparent 1px),
-    linear-gradient(90deg, #e0e0e0 1px, transparent 1px);
-  background-size: 20px 20px;
+    linear-gradient(hsl(214 20% 92%) 1px, transparent 1px),
+    linear-gradient(90deg, hsl(214 20% 92%) 1px, transparent 1px);
+  background-size: 22px 22px;
 }
 
 @utility glass-effect {
   background: hsl(var(--card));
-  border: 1px solid hsl(var(--border));
+  border: 1px solid hsl(var(--border) / 0.8);
   box-shadow: var(--shadow-md);
-  &:hover { box-shadow: var(--shadow-lg); transition: var(--transition-smooth); }
 }
 @utility glass-card {
   background: hsl(var(--card));
-  border: 1px solid hsl(var(--border));
+  border: 1px solid hsl(var(--border) / 0.8);
   box-shadow: var(--shadow-md);
-  &:hover { box-shadow: var(--shadow-lg); transition: var(--transition-smooth); }
+  transition: box-shadow 0.28s var(--ease-spring), transform 0.28s var(--ease-spring), border-color 0.28s var(--ease-spring);
+  &:hover {
+    box-shadow: var(--shadow-lg);
+    border-color: hsl(var(--primary) / 0.25);
+    transform: translateY(-2px);
+  }
+  &:active { transform: translateY(0) scale(0.995); }
 }
 @utility gradient-primary { background: var(--gradient-primary); }
 @utility gradient-secondary { background: var(--gradient-secondary); }
 @utility gradient-success { background: var(--gradient-success); }
+@utility gradient-violet { background: var(--gradient-violet); }
 @utility shadow-glow { box-shadow: var(--shadow-xl); }
 @utility shadow-glow-hover { &:hover { box-shadow: var(--shadow-xl); } }
+@utility shadow-primary { box-shadow: var(--shadow-primary); }
 @utility transition-smooth { transition: var(--transition-smooth); }
-@utility shadow-sm-soft { box-shadow: var(--shadow-sm); }
-@utility shadow-md-soft { box-shadow: var(--shadow-md); }
-@utility shadow-lg-soft { box-shadow: var(--shadow-lg); }
+
+/* Мікровідгук натиску */
+@utility press {
+  transition: transform 0.16s var(--ease-spring);
+  &:active { transform: scale(0.96); }
+}
+
+/* Мерехтливий скелетон */
+@utility skeleton {
+  position: relative;
+  overflow: hidden;
+  background: hsl(var(--muted));
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(90deg, transparent, hsl(0 0% 100% / 0.55), transparent);
+    animation: shimmer 1.6s infinite;
+  }
+}
 
 @utility scrollbar-hide {
   -ms-overflow-style: none;
@@ -171,7 +254,13 @@
   &::-webkit-scrollbar { display: none; }
 }
 
-/* Відступ під нижній док */
 @utility pb-dock {
-  padding-bottom: calc(6rem + env(safe-area-inset-bottom, 0px));
+  padding-bottom: calc(6.5rem + env(safe-area-inset-bottom, 0px));
+}
+
+@utility rise-in {
+  animation: var(--animate-rise);
+}
+@utility pop-in {
+  animation: var(--animate-pop);
 }

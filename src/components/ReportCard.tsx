@@ -1,7 +1,9 @@
 import { Report } from "@/types/report";
-import { Clock, Euro, Calendar } from "lucide-react";
+import { Clock, Euro } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { decimalToHours } from "@/utils/timeFormat";
+import { motion } from "motion/react";
+import NumberFlow from "@number-flow/react";
 
 interface ReportCardProps {
   report: Report;
@@ -11,54 +13,45 @@ interface ReportCardProps {
 export const ReportCard = ({ report, index = 0 }: ReportCardProps) => {
   const navigate = useNavigate();
 
-  const paymentStatus = report.paymentStatus || report.payment_status || "unpaid";
-  const remainingAmount = Math.round((report.totalEarned || report.total_earned || 0) - (report.paidAmount || report.paid_amount || 0));
+  const remainingAmount = Math.round(
+    (report.totalEarned || report.total_earned || 0) - (report.paidAmount || report.paid_amount || 0),
+  );
   const totalHours = report.totalHours || report.total_hours || 0;
-  
-  // Функція для визначення кольору в залежності від статусу оплати
-  const getPaymentColor = () => {
-    switch (paymentStatus) {
-      case "paid":
-        return "text-success";
-      case "partial":
-        return "text-warning";
-      case "unpaid":
-        return "text-destructive";
-      default:
-        return "text-foreground";
-    }
+
+  const open = () => {
+    if (report.id?.startsWith("consolidated-")) navigate(`/client-reports/${report.clientId}`);
+    else navigate(`/report/${report.id}`);
   };
 
   return (
-    <div
-      onClick={() => {
-        // Якщо це зведений звіт (має префікс consolidated-), переходимо на сторінку з усіма робочими днями клієнта
-        if (report.id?.startsWith('consolidated-')) {
-          // Переходимо на сторінку деталей звіту, але передаємо ID клієнта
-          navigate(`/client-reports/${report.clientId}`);
-        } else {
-          navigate(`/report/${report.id}`);
-        }
-      }}
-      className="bg-card rounded-lg p-4 shadow-md border border-border hover:shadow-lg transition-smooth cursor-pointer"
+    <motion.button
+      type="button"
+      onClick={open}
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: Math.min(index * 0.045, 0.3), ease: [0.22, 1, 0.36, 1], duration: 0.45 }}
+      whileTap={{ scale: 0.975 }}
+      className="glass-card w-full rounded-xl p-4 text-left"
     >
-      <div className="text-center mb-3">
-        <p className="text-base font-semibold text-foreground">
-          {report.clientName || report.client_name || 'Без імені'}
-        </p>
-      </div>
+      <p className="mb-3 text-center text-base font-semibold text-foreground">
+        {report.clientName || report.client_name || "Без імені"}
+      </p>
 
-      <div className="grid grid-cols-2 gap-2">
-        <div className="bg-purple-50 dark:bg-purple-950 rounded-md p-2 flex items-center justify-center gap-1 border border-purple-200/50 dark:border-purple-800/50 shadow-md">
-          <Clock className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-          <p className="text-base font-semibold text-black dark:text-white">{decimalToHours(totalHours)}</p>
+      <div className="grid grid-cols-2 gap-2.5">
+        <div className="flex items-center justify-center gap-1.5 rounded-lg border border-violet-200/60 bg-violet-50/70 py-2.5 dark:border-violet-800/40 dark:bg-violet-950/40">
+          <Clock className="h-4 w-4 text-violet-500" strokeWidth={2.25} />
+          <span className="num-display text-base text-violet-900 dark:text-violet-100">
+            {decimalToHours(totalHours)}
+          </span>
         </div>
 
-        <div className="bg-amber-50 dark:bg-amber-950 rounded-md p-2 flex items-center justify-center gap-1 border border-amber-200/50 dark:border-amber-800/50 shadow-md">
-          <Euro className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-          <p className="text-base font-semibold text-amber-800 dark:text-amber-200">{remainingAmount}€</p>
+        <div className="flex items-center justify-center gap-1 rounded-lg border border-amber-200/60 bg-amber-50/70 py-2.5 dark:border-amber-800/40 dark:bg-amber-950/40">
+          <Euro className="h-4 w-4 text-amber-500" strokeWidth={2.25} />
+          <span className="num-display text-base text-amber-900 dark:text-amber-100">
+            <NumberFlow value={remainingAmount} />€
+          </span>
         </div>
       </div>
-    </div>
+    </motion.button>
   );
 };

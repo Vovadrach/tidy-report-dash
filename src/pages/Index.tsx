@@ -4,6 +4,7 @@ import { api } from "@/lib/api";
 import { Report, WorkDay, PaymentStatus } from "@/types/report";
 import { Clock, TrendingUp, CheckCircle2, XCircle, AlertCircle, Calendar, Loader2, Euro, ChevronLeft, ChevronRight, X, Undo2, Redo2 } from "lucide-react";
 import { toast } from "sonner";
+import NumberFlow from "@number-flow/react";
 import { BottomNavigation } from "@/components/BottomNavigation";
 import { WorkerSelector } from "@/components/WorkerSelector";
 import { Button } from "@/components/ui/button";
@@ -603,13 +604,15 @@ const Index = () => {
 
           {/* Month Statistics */}
           <div className="grid grid-cols-2 gap-2.5">
-            <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-3 text-center border border-purple-200/60">
-              <p className="text-sm text-purple-700 font-semibold">Годин</p>
-              <p className="text-xl font-bold text-purple-900">{decimalToHours(monthStats.totalHours)}</p>
+            <div className="rounded-2xl border border-violet-200/60 bg-gradient-to-br from-violet-50 to-violet-100/70 p-3.5 text-center shadow-sm">
+              <p className="text-[0.7rem] font-semibold uppercase tracking-wider text-violet-600/90">Годин</p>
+              <p className="num-display mt-0.5 text-2xl text-violet-950">{decimalToHours(monthStats.totalHours)}</p>
             </div>
-            <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-3 text-center border border-blue-200/60">
-              <p className="text-sm text-blue-700 font-semibold">Заробіток</p>
-              <p className="text-xl font-bold text-blue-900">{Math.round(monthStats.totalEarned)}€</p>
+            <div className="rounded-2xl border border-blue-200/60 bg-gradient-to-br from-sky-50 to-blue-100/70 p-3.5 text-center shadow-sm">
+              <p className="text-[0.7rem] font-semibold uppercase tracking-wider text-blue-600/90">Заробіток</p>
+              <p className="num-display mt-0.5 text-2xl text-blue-950">
+                <NumberFlow value={Math.round(monthStats.totalEarned)} />€
+              </p>
             </div>
           </div>
         </div>
@@ -654,7 +657,7 @@ const Index = () => {
             const isToday = new Date().toISOString().split('T')[0] === dateKey;
 
             return (
-              <div key={dateKey} className="space-y-2" data-no-swipe>
+              <div key={dateKey} className="space-y-2 rise-in" data-no-swipe>
                 {/* Day Header - Sticky (Telegram style) */}
                 <div
                   className="sticky flex flex-col items-center gap-1.5 py-1.5 bg-background/80"
@@ -708,7 +711,7 @@ const Index = () => {
                                 navigate(`/report/${day.reportId}/day/${day.id}`);
                               }
                             }}
-                            className={`flex-1 rounded-lg p-2 sm:p-2.5 hover:shadow-lg transition-smooth cursor-pointer ${
+                            className={`flex-1 rounded-xl p-2.5 sm:p-3 hover:shadow-lg transition-smooth cursor-pointer press ${
                               day.is_planned
                                 ? 'bg-gradient-to-br from-amber-50/80 to-orange-50/80 dark:from-amber-950/30 dark:to-orange-950/30 border-2 border-dashed border-amber-400/70 dark:border-amber-500/70'
                                 : `bg-card border border-border ${dayIndex === daysData.length - 1 ? 'shadow-[0_4px_16px_0_rgba(31,38,135,0.15)]' : 'shadow-sm'}`
