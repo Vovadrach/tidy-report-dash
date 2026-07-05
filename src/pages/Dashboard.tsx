@@ -1,620 +1,266 @@
 import { useState, useEffect, useMemo } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
-import { Button } from "@/components/ui/button";
 import { api } from "@/lib/api";
 import { Report, Client, WorkDay } from "@/types/report";
-import { DollarSign, Clock, TrendingUp, Users, ChevronDown, AlertCircle, ArrowLeft } from "lucide-react";
-import { toast } from "sonner";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
+  Clock, Wallet, TrendingUp, CircleCheckBig, CircleAlert, Users, ChevronDown, CalendarRange,
+} from "lucide-react";
+import { toast } from "sonner";
+import NumberFlow from "@number-flow/react";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { BottomNavigation } from "@/components/BottomNavigation";
 import { decimalToHours } from "@/utils/timeFormat";
 import { useWorker } from "@/contexts/WorkerContext";
 
-// Helper function to extract worker-specific data from work day
-const getWorkerDataFromWorkDay = (day: WorkDay, workerId: string | 'all') => {
-  if (workerId === 'all') {
-    return { amount: day.amount, hours: day.hours };
-  }
+const MONTHS = ["Січень", "Лютий", "Березень", "Квітень", "Травень", "Червень", "Липень", "Серпень", "Вересень", "Жовтень", "Листопад", "Грудень"];
 
-  const assignment = day.assignments?.find(a =>
-    (a.worker_id === workerId || a.workerId === workerId)
-  );
-
-  if (assignment) {
-    return { amount: assignment.amount, hours: assignment.hours };
-  }
-
-  return { amount: 0, hours: 0 };
+const workerData = (day: WorkDay, wid: string) => {
+  if (wid === "all") return { amount: day.amount, hours: day.hours };
+  const a = day.assignments?.find((x) => x.worker_id === wid || x.workerId === wid);
+  return a ? { amount: a.amount, hours: a.hours } : { amount: 0, hours: 0 };
 };
 
-const Dashboard = () => {
-  const navigate = useNavigate();
-  const location = useLocation();
+const Tile = ({ tint, icon: Icon, label, children }: { tint: string; icon: typeof Clock; label: string; children: React.ReactNode }) => (
+  <div className={`rounded-2xl p-4 ${tint}`}>
+    <div className="mb-2.5 flex items-center gap-2">
+      <span className="ibadge h-8 w-8 bg-white/70"><Icon size={16} strokeWidth={2.4} /></span>
+      <span className="text-[0.7rem] font-bold uppercase tracking-wider opacity-90">{label}</span>
+    </div>
+    <div className="num-display text-[1.5rem] leading-none text-foreground">{children}</div>
+  </div>
+);
+
+export default function Dashboard() {
   const { selectedWorkerId } = useWorker();
   const [reports, setReports] = useState<Report[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
-  const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth());
-  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
-  const [selectedClientId, setSelectedClientId] = useState<string>("all");
+  const [month, setMonth] = useState<number | null>(new Date().getMonth());
+  const [year, setYear] = useState<number | null>(new Date().getFullYear());
+  const [clientId, setClientId] = useState("all");
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  
-  const getMonthLabel = () => {
-    if (selectedMonth === null) return "Всі місяці";
-    const monthNames = ["Січень", "Лютий", "Березень", "Квітень", "Травень", "Червень",
-                        "Липень", "Серпень", "Вересень", "Жовтень", "Листопад", "Грудень"];
-    return monthNames[selectedMonth];
-  };
-
-  const getPeriodLabel = () => {
-    if (selectedYear === null) return "За весь період";
-    if (selectedMonth === null) return `${selectedYear}`;
-    return `${getMonthLabel()} ${selectedYear}`;
-  };
-
-  const getClientLabel = (clientId: string) => {
-    if (clientId === "all") return "Всі клієнти";
-    const client = clients.find(c => c.id === clientId);
-    return client ? client.name : "Всі клієнти";
-  };
 
   useEffect(() => {
     loadData();
   }, []);
-
-  useEffect(() => {
-    const handleFocus = () => {
-      loadData();
-    };
-    
-    window.addEventListener('focus', handleFocus);
-    return () => window.removeEventListener('focus', handleFocus);
-  }, []);
-
-  useEffect(() => {
-    loadData();
-  }, [location.pathname]);
 
   const loadData = async () => {
     try {
       setLoading(true);
-      setError(null);
-      const [reportsData, clientsData] = await Promise.all([
-        api.getReports(),
-        api.getClients()
-      ]);
-      
-      const reportsWithRecalculatedPayments = reportsData.map(report => {
-        const workDays = report.workDays || [];
-        
-        let totalMinutes = 0;
-        let totalEarned = 0;
-        let paidAmount = 0;
-        
-        workDays.forEach(day => {
-          const dayHours = day.hours || 0;
-          const dayAmount = day.amount || 0;
+      const [reportsData, clientsData] = await Promise.all([api.getReports(), api.getClients()]);
+      const recalc = reportsData.map((report) => {
+        let totalMinutes = 0, totalEarned = 0, paidAmount = 0;
+        (report.workDays || []).forEach((day) => {
+          if (day.is_planned) return;
           const dayStatus = day.paymentStatus || day.payment_status;
-          const dayPaid = day.day_paid_amount || 0;
-          
-          totalMinutes += Math.round(dayHours * 60);
-          totalEarned += dayAmount;
-          
-          if (dayStatus === 'paid') {
-            paidAmount += dayAmount;
-          } else if (dayStatus === 'partial') {
-            paidAmount += dayPaid;
-          }
+          totalMinutes += Math.round((day.hours || 0) * 60);
+          totalEarned += day.amount || 0;
+          if (dayStatus === "paid") paidAmount += day.amount || 0;
+          else if (dayStatus === "partial") paidAmount += day.day_paid_amount || 0;
         });
-        
-        const totalHours = totalMinutes / 60;
-        const remainingAmount = totalEarned - paidAmount;
-        
-        let paymentStatus = 'unpaid';
-        if (paidAmount === totalEarned && totalEarned > 0) {
-          paymentStatus = 'paid';
-        } else if (paidAmount > 0) {
-          paymentStatus = 'partial';
-        }
-        
-        return {
-          ...report,
-          totalHours,
-          totalEarned,
-          paidAmount,
-          remainingAmount,
-          paymentStatus,
-        };
+        return { ...report, totalHours: totalMinutes / 60, totalEarned, paidAmount, remainingAmount: totalEarned - paidAmount };
       });
-      
-      setReports(reportsWithRecalculatedPayments);
+      setReports(recalc);
       setClients(clientsData);
-    } catch (error) {
-      const errorMessage = 'Помилка завантаження даних';
-      toast.error(errorMessage);
-      setError(errorMessage);
-      console.error(error);
+    } catch (e) {
+      toast.error("Помилка завантаження");
+      console.error(e);
     } finally {
       setLoading(false);
     }
   };
 
-  const filteredReports = useMemo(() => {
-    let filtered = [...reports];
+  const periodLabel = year === null ? "Весь час" : month === null ? `${year}` : `${MONTHS[month]} ${year}`;
+  const clientLabel = clientId === "all" ? "Всі клієнти" : clients.find((c) => c.id === clientId)?.name || "Всі клієнти";
 
-    // Filter by worker
-    if (selectedWorkerId !== 'all') {
-      filtered = filtered.map(report => {
-        const filteredWorkDays = (report.workDays || []).filter(day => {
-          const hasAssignment = day.assignments?.some(a =>
-            a.worker_id === selectedWorkerId || a.workerId === selectedWorkerId
-          );
-          return hasAssignment;
-        });
-
-        // Only include report if it has work days for this worker
-        if (filteredWorkDays.length === 0) return null;
-
-        // Recalculate totals based on worker-specific data
-        let totalMinutes = 0;
-        let totalEarned = 0;
-        let paidAmount = 0;
-
-        filteredWorkDays.forEach(day => {
-          // Get worker-specific data from assignments
-          const workerData = getWorkerDataFromWorkDay(day, selectedWorkerId);
-
-          totalMinutes += Math.round(workerData.hours * 60);
-          totalEarned += workerData.amount;
-
-          const dayStatus = day.paymentStatus || day.payment_status;
-          if (dayStatus === 'paid') {
-            // Worker gets their full share
-            paidAmount += workerData.amount;
-          } else if (dayStatus === 'partial') {
-            // Calculate worker's proportional share of partial payment
-            const dayTotalAmount = day.amount || 0;
-            if (dayTotalAmount > 0) {
-              const workerShare = (workerData.amount / dayTotalAmount) * (day.day_paid_amount || 0);
-              paidAmount += workerShare;
-            }
-          }
-        });
-
-        return {
-          ...report,
-          workDays: filteredWorkDays,
-          totalHours: totalMinutes / 60,
-          totalEarned,
-          paidAmount,
-          remainingAmount: totalEarned - paidAmount
-        };
-      }).filter(r => r !== null) as Report[];
+  const filtered = useMemo(() => {
+    let list = [...reports];
+    if (selectedWorkerId !== "all") {
+      list = list
+        .map((report) => {
+          const wDays = (report.workDays || []).filter((d) => d.assignments?.some((a) => a.worker_id === selectedWorkerId || a.workerId === selectedWorkerId));
+          if (wDays.length === 0) return null;
+          let mins = 0, earned = 0, paid = 0;
+          wDays.forEach((day) => {
+            const wd = workerData(day, selectedWorkerId);
+            mins += Math.round(wd.hours * 60);
+            earned += wd.amount;
+            const st = day.paymentStatus || day.payment_status;
+            if (st === "paid") paid += wd.amount;
+            else if (st === "partial" && (day.amount || 0) > 0) paid += (wd.amount / day.amount) * (day.day_paid_amount || 0);
+          });
+          return { ...report, workDays: wDays, totalHours: mins / 60, totalEarned: earned, paidAmount: paid, remainingAmount: earned - paid };
+        })
+        .filter(Boolean) as Report[];
     }
-
-    if (selectedClientId !== "all") {
-      filtered = filtered.filter((r) => (r.clientId || r.client_id) === selectedClientId);
-    }
-
-    // Filter by period
-    if (selectedYear !== null) {
-      filtered = filtered.filter((r) => {
-        const reportDate = new Date(r.date);
-        if (selectedMonth !== null) {
-          // Filter by specific month and year
-          return reportDate.getMonth() === selectedMonth && reportDate.getFullYear() === selectedYear;
-        } else {
-          // Filter by year only
-          return reportDate.getFullYear() === selectedYear;
-        }
+    if (clientId !== "all") list = list.filter((r) => (r.clientId || r.client_id) === clientId);
+    if (year !== null) {
+      list = list.filter((r) => {
+        const d = new Date(r.date);
+        return month !== null ? d.getMonth() === month && d.getFullYear() === year : d.getFullYear() === year;
       });
     }
-    // If selectedYear is null, show all periods (no filtering)
-
-    return filtered;
-  }, [reports, selectedClientId, selectedMonth, selectedYear, selectedWorkerId]);
+    return list;
+  }, [reports, clientId, month, year, selectedWorkerId]);
 
   const stats = useMemo(() => {
-    // Розраховуємо статистику тільки для відфільтрованих звітів
-    const totalEarned = filteredReports.reduce((sum, r) => sum + (r.totalEarned || r.total_earned || 0), 0);
-    const totalPaid = filteredReports.reduce((sum, r) => sum + (r.paidAmount || r.paid_amount || 0), 0);
-    const totalRemaining = totalEarned - totalPaid; // Розраховуємо залишок правильно
-    const totalHours = filteredReports.reduce((sum, r) => sum + (r.totalHours || r.total_hours || 0), 0);
+    const totalEarned = filtered.reduce((s, r) => s + (r.totalEarned || 0), 0);
+    const totalPaid = filtered.reduce((s, r) => s + (r.paidAmount || 0), 0);
+    const totalHours = filtered.reduce((s, r) => s + (r.totalHours || 0), 0);
+    return { totalEarned, totalPaid, totalHours, totalRemaining: totalEarned - totalPaid };
+  }, [filtered]);
 
-    return {
-      totalEarned,
-      totalPaid,
-      totalRemaining,
-      totalHours,
-    };
-  }, [filteredReports]);
-
-  const clientLeaderboard = useMemo(() => {
-    const clientStats = new Map<string, { name: string; earned: number; hours: number; remaining: number }>();
-
-    filteredReports.forEach((report) => {
-      const clientId = report.clientId || report.client_id || '';
-      const clientName = report.clientName || report.client_name || 'Без імені';
-      const totalEarned = report.totalEarned || report.total_earned || 0;
-      const totalHours = report.totalHours || report.total_hours || 0;
-      const paidAmount = report.paidAmount || report.paid_amount || 0;
-      const remainingAmount = totalEarned - paidAmount;
-      
-      const existing = clientStats.get(clientId) || { name: clientName, earned: 0, hours: 0, remaining: 0 };
-      clientStats.set(clientId, {
-        name: clientName,
-        earned: existing.earned + totalEarned,
-        hours: existing.hours + totalHours,
-        remaining: existing.remaining + remainingAmount,
-      });
+  const leaderboard = useMemo(() => {
+    const m = new Map<string, { name: string; earned: number; hours: number }>();
+    filtered.forEach((r) => {
+      const id = r.clientId || r.client_id || "";
+      const e = m.get(id) || { name: r.clientName || r.client_name || "Без імені", earned: 0, hours: 0 };
+      e.earned += r.totalEarned || 0;
+      e.hours += r.totalHours || 0;
+      m.set(id, e);
     });
+    return [...m.values()].sort((a, b) => b.earned - a.earned).slice(0, 5);
+  }, [filtered]);
 
-    // Сортуємо за заробітком (від більшого до меншого)
-    return Array.from(clientStats.values()).sort((a, b) => b.earned - a.earned);
-  }, [filteredReports]);
+  const debts = useMemo(() => {
+    const m = new Map<string, { name: string; remaining: number }>();
+    filtered.forEach((r) => {
+      const rem = (r.totalEarned || 0) - (r.paidAmount || 0);
+      if (rem <= 0) return;
+      const id = r.clientId || r.client_id || "";
+      const e = m.get(id) || { name: r.clientName || r.client_name || "Без імені", remaining: 0 };
+      e.remaining += rem;
+      m.set(id, e);
+    });
+    return [...m.values()].sort((a, b) => b.remaining - a.remaining);
+  }, [filtered]);
 
-  const debtsBreakdown = useMemo(() => {
-    const debts = new Map<string, { name: string; remaining: number }>();
+  const chip = (active: boolean) =>
+    `press flex flex-1 items-center justify-between gap-1.5 rounded-full border px-3.5 py-2.5 text-sm font-semibold ${
+      active ? "border-primary bg-[hsl(var(--t-indigo-bg))] text-primary" : "border-border bg-card text-foreground"
+    }`;
 
-    filteredReports
-      .forEach((report) => {
-        const clientId = report.clientId || report.client_id || '';
-        const clientName = report.clientName || report.client_name || 'Без імені';
-        // Розраховуємо залишок правильно: загальна сума - оплачена сума
-        const totalEarned = report.totalEarned || report.total_earned || 0;
-        const paidAmount = report.paidAmount || report.paid_amount || 0;
-        const remainingAmount = totalEarned - paidAmount;
-        
-        // Додаємо тільки якщо є борг
-        if (remainingAmount > 0) {
-          const existing = debts.get(clientId) || { name: clientName, remaining: 0 };
-          debts.set(clientId, {
-            name: clientName,
-            remaining: existing.remaining + remainingAmount,
-          });
-        }
-      });
-
-    return Array.from(debts.values()).sort((a, b) => b.remaining - a.remaining);
-  }, [filteredReports]);
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-secondary flex items-center justify-center">
-        <p className="text-foreground text-lg">Завантаження...</p>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gradient-secondary flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-foreground text-lg mb-4">{error}</p>
-          <Button onClick={loadData}>Спробувати знову</Button>
-        </div>
-      </div>
-    );
-  }
+  const paidFull = stats.totalRemaining <= 0 && stats.totalEarned > 0;
 
   return (
-    <div className="min-h-screen bg-background pb-32 pt-4">
-      <div className="fixed top-0 left-0 right-0 z-40 bg-white/5 dark:bg-gray-900/5 backdrop-blur-xl border-b border-white/10 shadow-[0_2px_16px_0_rgba(31,38,135,0.1)]">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex gap-3 justify-center max-w-[600px] mx-auto">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className={`group relative overflow-hidden backdrop-blur-xl px-6 py-3.5 rounded-xl border shadow-sm hover:shadow-md transition-all duration-300 flex-1 min-w-0 ${
-                  selectedYear !== null && selectedYear !== new Date().getFullYear() || selectedMonth !== new Date().getMonth()
-                    ? "bg-gradient-to-r from-blue-500/30 to-purple-500/30 border-blue-400/50 dark:border-blue-600/50"
-                    : "bg-card border-border"
-                }`}>
-                  <div className="relative flex items-center justify-between gap-2">
-                    <span className={`font-bold text-sm truncate ${
-                      selectedYear !== null && (selectedYear !== new Date().getFullYear() || selectedMonth !== new Date().getMonth())
-                        ? "text-blue-700 dark:text-blue-300"
-                        : "text-foreground"
-                    }`}>{getPeriodLabel()}</span>
-                    <ChevronDown className="w-5 h-5 text-blue-600 dark:text-blue-400 transition-colors duration-300 flex-shrink-0 stroke-[2.5]" />
-                  </div>
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="bg-card backdrop-blur-xl border border-border shadow-lg max-h-[85vh] overflow-y-auto rounded-xl z-[100] p-2 mt-2 w-[var(--radix-dropdown-menu-trigger-width)]" sideOffset={8}>
-                <div className="space-y-1.5">
-                  {/* All Time Option */}
-                  <DropdownMenuItem
-                    onClick={() => {
-                      setSelectedYear(null);
-                      setSelectedMonth(null);
-                    }}
-                    className={`cursor-pointer rounded-lg px-3 py-2 text-sm font-semibold transition-all duration-200 ${
-                      selectedYear === null
-                        ? "bg-gradient-to-r from-purple-500/40 to-pink-500/40 dark:from-purple-600/40 dark:to-pink-600/40 text-foreground shadow-md"
-                        : "text-foreground hover:bg-gradient-to-r hover:from-purple-500/20 hover:to-pink-500/20"
-                    }`}
+    <div className="min-h-dvh bg-background">
+      <header className="mx-auto max-w-md space-y-3 px-4 pt-4">
+        <div className="flex items-center gap-2">
+          <span className="ibadge tint-indigo h-9 w-9"><TrendingUp size={18} strokeWidth={2.3} /></span>
+          <h1 className="text-xl font-bold text-foreground">Звіт</h1>
+        </div>
+        <div className="flex gap-2.5">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className={chip(year !== new Date().getFullYear() || month !== new Date().getMonth())}>
+                <span className="flex items-center gap-1.5 truncate"><CalendarRange size={15} strokeWidth={2.2} /> {periodLabel}</span>
+                <ChevronDown size={16} />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="max-h-[70vh] w-56 overflow-y-auto rounded-xl">
+              <DropdownMenuItem onClick={() => { setYear(null); setMonth(null); }} className="font-semibold">
+                Весь час
+              </DropdownMenuItem>
+              <div className="flex gap-1 px-2 py-1.5">
+                {[2024, 2025, 2026, 2027].map((y) => (
+                  <button
+                    key={y}
+                    onClick={() => { setYear(y); setMonth(null); }}
+                    className={`flex-1 rounded-lg py-1.5 text-xs font-bold ${year === y ? "bg-primary text-primary-foreground" : "bg-muted text-foreground"}`}
                   >
-                    За весь період
-                  </DropdownMenuItem>
+                    {y}
+                  </button>
+                ))}
+              </div>
+              {MONTHS.map((m, i) => (
+                <DropdownMenuItem
+                  key={i}
+                  onClick={() => { setMonth(i); if (year === null) setYear(new Date().getFullYear()); }}
+                  className={month === i ? "font-bold text-primary" : ""}
+                >
+                  {m}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
 
-                  {/* Divider */}
-                  <div className="h-px bg-border my-1"></div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className={chip(clientId !== "all")}>
+                <span className="truncate">{clientLabel}</span>
+                <ChevronDown size={16} />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="max-h-[70vh] w-56 overflow-y-auto rounded-xl">
+              <DropdownMenuItem onClick={() => setClientId("all")} className="font-semibold">Всі клієнти</DropdownMenuItem>
+              {clients.map((c) => (
+                <DropdownMenuItem key={c.id} onClick={() => setClientId(c.id)} className={clientId === c.id ? "font-bold text-primary" : ""}>
+                  {c.name}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </header>
 
-                  {/* Year Selector */}
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <button className="w-full bg-gradient-to-r from-blue-500/20 to-purple-500/20 backdrop-blur-md px-3 py-2 rounded-lg font-bold text-sm text-foreground hover:from-blue-500/30 hover:to-purple-500/30 transition-all duration-200 flex items-center justify-between">
-                        <span>Рік: {selectedYear ?? "Всі"}</span>
-                        <ChevronDown className="w-4 h-4 stroke-[2.5]" />
-                      </button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent className="bg-card backdrop-blur-xl border border-border shadow-lg rounded-lg z-[110] p-1.5 min-w-[140px]">
-                      <div className="space-y-0.5">
-                        {[2024, 2025, 2026, 2027, 2028, 2029, 2030].map((year) => (
-                          <DropdownMenuItem
-                            key={year}
-                            onClick={() => {
-                              if (selectedYear === year) {
-                                // Clicking the same year again deselects it and shows all time
-                                setSelectedYear(null);
-                                setSelectedMonth(null);
-                              } else {
-                                setSelectedYear(year);
-                                setSelectedMonth(null);
-                              }
-                            }}
-                            className={`cursor-pointer rounded-md px-3 py-1.5 text-sm font-semibold transition-all duration-200 ${
-                              selectedYear === year
-                                ? "bg-gradient-to-r from-blue-500/40 to-purple-500/40 text-foreground"
-                                : "text-foreground hover:bg-gradient-to-r hover:from-blue-500/20 hover:to-purple-500/20"
-                            }`}
-                          >
-                            {year}
-                          </DropdownMenuItem>
-                        ))}
-                      </div>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+      <main className="mx-auto max-w-md space-y-4 px-4 pb-[calc(7rem+env(safe-area-inset-bottom))] pt-4">
+        {loading ? (
+          <div className="grid grid-cols-2 gap-3">
+            {[0, 1, 2, 3].map((i) => <div key={i} className="skeleton h-24 rounded-2xl" />)}
+          </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-2 gap-3">
+              <Tile tint="tint-indigo" icon={TrendingUp} label="Зароблено"><NumberFlow value={Math.round(stats.totalEarned)} />€</Tile>
+              <Tile tint="tint-violet" icon={Clock} label="Години">{decimalToHours(stats.totalHours)}</Tile>
+              <Tile tint={paidFull ? "tint-emerald" : "tint-sky"} icon={CircleCheckBig} label="Сплачено"><NumberFlow value={Math.round(stats.totalPaid)} />€</Tile>
+              <Tile tint="tint-rose" icon={CircleAlert} label="Залишок"><NumberFlow value={Math.round(stats.totalRemaining)} />€</Tile>
+            </div>
 
-                  {/* Divider */}
-                  <div className="h-px bg-border my-1"></div>
-
-                  {/* Months */}
-                  <div className="space-y-0.5">
-                    {Array.from({ length: 12 }, (_, i) => {
-                      const monthNames = ["Січень", "Лютий", "Березень", "Квітень", "Травень", "Червень",
-                                          "Липень", "Серпень", "Вересень", "Жовтень", "Листопад", "Грудень"];
-                      return (
-                        <DropdownMenuItem
-                          key={i}
-                          onClick={() => {
-                            setSelectedMonth(i);
-                            if (selectedYear === null) {
-                              setSelectedYear(new Date().getFullYear());
-                            }
-                          }}
-                          className={`cursor-pointer rounded-lg px-3 py-2 text-sm font-semibold transition-all duration-200 ${
-                            selectedMonth === i
-                              ? "bg-gradient-to-r from-blue-500/40 to-purple-500/40 text-foreground shadow-md"
-                              : "text-foreground hover:bg-gradient-to-r hover:from-blue-500/20 hover:to-purple-500/20"
-                          }`}
-                        >
-                          {monthNames[i]}
-                        </DropdownMenuItem>
-                      );
-                    })}
-                  </div>
+            {clientId === "all" && debts.length > 0 && (
+              <section className="card-flat rounded-2xl p-4">
+                <div className="mb-3 flex items-center gap-2">
+                  <span className="ibadge tint-rose h-8 w-8"><CircleAlert size={16} strokeWidth={2.3} /></span>
+                  <h2 className="font-semibold text-foreground">Борги по клієнтах</h2>
                 </div>
-              </DropdownMenuContent>
-            </DropdownMenu>
-
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className={`group relative overflow-hidden backdrop-blur-xl px-6 py-3.5 rounded-xl border shadow-sm hover:shadow-md transition-all duration-300 flex-1 min-w-0 ${
-                  selectedClientId !== "all"
-                    ? "bg-gradient-to-r from-emerald-500/30 to-teal-500/30 border-emerald-400/50 dark:border-emerald-600/50"
-                    : "bg-card border-border"
-                }`}>
-                  <div className="relative flex items-center justify-between gap-2">
-                    <span className={`font-bold text-sm truncate ${
-                      selectedClientId !== "all"
-                        ? "text-emerald-700 dark:text-emerald-300"
-                        : "text-foreground"
-                    }`}>{getClientLabel(selectedClientId)}</span>
-                    <ChevronDown className="w-5 h-5 text-emerald-600 dark:text-emerald-400 transition-colors duration-300 flex-shrink-0 stroke-[2.5]" />
-                  </div>
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="bg-card backdrop-blur-xl border border-border shadow-lg rounded-xl z-[100] p-2 mt-2 max-h-[85vh] overflow-y-auto w-[var(--radix-dropdown-menu-trigger-width)]" sideOffset={8}>
-                <div className="space-y-0.5">
-                  <DropdownMenuItem
-                    onClick={() => setSelectedClientId("all")}
-                    className={`cursor-pointer rounded-lg px-3 py-2 text-sm font-semibold transition-all duration-200 ${
-                      selectedClientId === "all"
-                        ? "bg-gradient-to-r from-emerald-500/40 to-teal-500/40 text-foreground shadow-md"
-                        : "text-foreground hover:bg-gradient-to-r hover:from-emerald-500/20 hover:to-teal-500/20"
-                    }`}
-                  >
-                    Всі клієнти
-                  </DropdownMenuItem>
-                  {clients.map((client) => (
-                    <DropdownMenuItem
-                      key={client.id}
-                      onClick={() => setSelectedClientId(client.id)}
-                      className={`cursor-pointer rounded-lg px-3 py-2 text-sm font-semibold transition-all duration-200 ${
-                        selectedClientId === client.id
-                          ? "bg-gradient-to-r from-emerald-500/40 to-teal-500/40 text-foreground shadow-md"
-                          : "text-foreground hover:bg-gradient-to-r hover:from-emerald-500/20 hover:to-teal-500/20"
-                      }`}
-                    >
-                      {client.name}
-                    </DropdownMenuItem>
+                <div className="space-y-1.5">
+                  {debts.map((d, i) => (
+                    <div key={i} className="flex items-center justify-between rounded-xl bg-muted/50 px-3.5 py-2.5">
+                      <span className="text-sm font-semibold text-foreground">{d.name}</span>
+                      <span className="num-display text-sm text-[hsl(var(--t-rose-fg))]">{Math.round(d.remaining)}€</span>
+                    </div>
                   ))}
                 </div>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </div>
-      </div>
+              </section>
+            )}
 
-      <main className="container mx-auto px-4 pt-24 pb-8 space-y-6">
-        {/* Client Name Header - показується тільки при виборі конкретного клієнта */}
-        {selectedClientId !== "all" && (
-          <div className="glass-effect rounded-2xl p-6 shadow-xl text-center">
-            <h1 className="text-2xl font-bold text-foreground">{getClientLabel(selectedClientId)}</h1>
-          </div>
-        )}
-
-        {/* Statistics Cards - Unified 4-card grid with elevated design */}
-        <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-3xl p-5 shadow-xl border border-white/20 dark:border-gray-800/50">
-          <div className="grid grid-cols-2 gap-3">
-          {/* PRIMARY CARDS - Main Information */}
-
-          {/* Total Earned */}
-          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950 dark:to-cyan-950 p-4 shadow-md border border-border/50 transition-smooth hover:shadow-lg">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-900 flex items-center justify-center flex-shrink-0 border border-blue-200 dark:border-blue-800">
-                <TrendingUp className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-xs font-medium text-muted-foreground mb-0.5">Зароблено</p>
-                <div className="flex items-baseline gap-1">
-                  <p className="text-xl font-bold text-black dark:text-white">{Math.round(stats.totalEarned)}</p>
-                  <p className="text-sm font-semibold text-black dark:text-white">€</p>
+            {clientId === "all" && leaderboard.length > 0 && (
+              <section className="card-flat rounded-2xl p-4">
+                <div className="mb-3 flex items-center gap-2">
+                  <span className="ibadge tint-indigo h-8 w-8"><Users size={16} strokeWidth={2.3} /></span>
+                  <h2 className="font-semibold text-foreground">Топ клієнтів</h2>
                 </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Total Hours */}
-          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-purple-50 to-violet-50 dark:from-purple-950 dark:to-violet-950 p-4 shadow-md border border-border/50 transition-smooth hover:shadow-lg">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-purple-100 dark:bg-purple-900 flex items-center justify-center flex-shrink-0 border border-purple-200 dark:border-purple-800">
-                <Clock className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-xs font-medium text-muted-foreground mb-0.5">Години</p>
-                <div className="flex items-baseline gap-1">
-                  <p className="text-xl font-bold text-black dark:text-white">{decimalToHours(stats.totalHours)}</p>
-                  <p className="text-sm font-semibold text-black dark:text-white">год</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* SECONDARY CARDS - Less prominent styling */}
-
-          {/* Paid Amount */}
-          <div className={`relative overflow-hidden rounded-2xl p-4 shadow-sm transition-smooth hover:shadow-md ${
-            stats.totalRemaining === 0 && stats.totalEarned > 0
-              ? "bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/40 dark:to-emerald-950/40 border border-green-200/60 dark:border-green-800/50"
-              : "bg-gray-50/60 dark:bg-gray-800/30 border border-gray-200/50 dark:border-gray-700/50"
-          }`}>
-            <div className="flex items-center gap-3">
-              <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                stats.totalRemaining === 0 && stats.totalEarned > 0
-                  ? "bg-success/25 dark:bg-success/30 border border-success/50 dark:border-success/60"
-                  : "bg-success/15 dark:bg-success/20 border border-success/30 dark:border-success/40"
-              }`}>
-                <DollarSign className="w-5 h-5 text-success dark:text-success" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className={`text-xs font-medium mb-0.5 ${
-                  stats.totalRemaining === 0 && stats.totalEarned > 0
-                    ? "text-success/80 dark:text-success/70"
-                    : "text-gray-500 dark:text-gray-400"
-                }`}>Сплачено</p>
-                <div className="flex items-baseline gap-1">
-                  <p className={`text-xl font-bold ${
-                    stats.totalRemaining === 0 && stats.totalEarned > 0
-                      ? "text-success dark:text-success"
-                      : "text-gray-700 dark:text-gray-200"
-                  }`}>{Math.round(stats.totalPaid)}</p>
-                  <p className={`text-sm font-semibold ${
-                    stats.totalRemaining === 0 && stats.totalEarned > 0
-                      ? "text-success dark:text-success"
-                      : "text-gray-700 dark:text-gray-200"
-                  }`}>€</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Remaining Amount */}
-          <div className="relative overflow-hidden rounded-2xl bg-gray-50/60 dark:bg-gray-800/30 p-4 shadow-sm border border-gray-200/50 dark:border-gray-700/50 transition-smooth hover:shadow-md">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-warning/15 dark:bg-warning/20 flex items-center justify-center flex-shrink-0 border border-warning/30 dark:border-warning/40">
-                <DollarSign className="w-5 h-5 text-warning dark:text-warning" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-0.5">Залишок</p>
-                <div className="flex items-baseline gap-1">
-                  <p className="text-xl font-bold text-gray-700 dark:text-gray-200">{Math.round(stats.totalRemaining)}</p>
-                  <p className="text-sm font-semibold text-gray-700 dark:text-gray-200">€</p>
-                </div>
-              </div>
-            </div>
-          </div>
-          </div>
-        </div>
-
-        {/* Debts Breakdown - тільки для всіх клієнтів */}
-        {selectedClientId === "all" && debtsBreakdown.length > 0 && (
-          <div className="glass-card rounded-2xl p-6 shadow-md border border-border transition-smooth hover:shadow-lg">
-            <div className="flex items-center gap-3 mb-5">
-              <div className="w-10 h-10 rounded-xl bg-warning/10 flex items-center justify-center border border-warning/20">
-                <AlertCircle className="w-5 h-5 text-warning" />
-              </div>
-              <h2 className="text-lg font-bold text-foreground">Борги по клієнтах</h2>
-            </div>
-            <div className="space-y-2.5">
-              {debtsBreakdown.map((debt, index) => (
-                <div key={index} className="flex items-center justify-between p-3.5 bg-warning/5 rounded-xl border border-warning/10 transition-smooth hover:bg-warning/10 hover:border-warning/20">
-                  <span className="font-semibold text-foreground text-sm">{debt.name}</span>
-                  <span className="font-bold text-warning text-base">{Math.round(debt.remaining)}€</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Client Leaderboard - тільки для всіх клієнтів */}
-        {selectedClientId === "all" && clientLeaderboard.length > 0 && (
-          <div className="glass-card rounded-2xl p-6 shadow-md border border-border transition-smooth hover:shadow-lg">
-            <div className="flex items-center gap-3 mb-5">
-              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/20">
-                <Users className="w-5 h-5 text-primary" />
-              </div>
-              <h2 className="text-lg font-bold text-foreground">Топ клієнтів</h2>
-            </div>
-            <div className="space-y-2.5">
-              {clientLeaderboard.slice(0, 5).map((client, index) => (
-                <div key={index} className="flex items-center justify-between p-3.5 bg-muted/20 rounded-xl border border-border/50 transition-smooth hover:bg-muted/30 hover:shadow-sm">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500/20 to-purple-500/20 flex items-center justify-center font-bold text-primary text-sm border border-primary/20">
-                      {index + 1}
+                <div className="space-y-1.5">
+                  {leaderboard.map((c, i) => (
+                    <div key={i} className="flex items-center gap-3 rounded-xl bg-muted/50 px-3.5 py-2.5">
+                      <span className="ibadge tint-indigo h-7 w-7 font-display text-xs font-bold">{i + 1}</span>
+                      <span className="flex-1 truncate text-sm font-semibold text-foreground">{c.name}</span>
+                      <span className="text-xs text-muted-foreground">{decimalToHours(c.hours)} год</span>
+                      <span className="num-display w-16 text-right text-sm text-foreground">{Math.round(c.earned)}€</span>
                     </div>
-                    <span className="font-semibold text-foreground text-sm">{client.name}</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <p className="text-xs text-muted-foreground font-medium">{decimalToHours(client.hours)} год</p>
-                    <p className="font-bold text-success text-base min-w-[60px] text-right">{Math.round(client.earned)}€</p>
-                  </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          </div>
-        )}
+              </section>
+            )}
 
+            {filtered.length === 0 && (
+              <div className="py-16 text-center text-muted-foreground">Немає даних за цей період</div>
+            )}
+          </>
+        )}
       </main>
 
       <BottomNavigation />
     </div>
   );
-};
-
-export default Dashboard;
+}
