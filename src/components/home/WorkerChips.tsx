@@ -2,8 +2,8 @@ import { useWorker } from "@/contexts/WorkerContext";
 import { Users } from "lucide-react";
 
 /**
- * WorkerChips — горизонтальний скрол бейджів працівниць замість «Всі»-списку.
- * Вибір напряму, без відкриття екрана. Активний = заливка primary.
+ * WorkerChips — панель-бар вибору працівниці (як нав-меню): суцільна картка з
+ * hairline, усередині горизонтальний скрол бейджів (вправо-вліво), вибір напряму.
  */
 export const WorkerChips = () => {
   const { workers, selectedWorkerId, setSelectedWorkerId } = useWorker();
@@ -14,7 +14,7 @@ export const WorkerChips = () => {
     "press shrink-0 inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-sm font-semibold transition-colors border";
 
   return (
-    <div className="scrollbar-hide -mx-4 flex gap-2 overflow-x-auto px-4 py-0.5">
+    <div className="scrollbar-hide flex gap-2 overflow-x-auto rounded-[1.6rem] border border-border bg-card p-2">
       <button
         type="button"
         onClick={() => setSelectedWorkerId("all")}

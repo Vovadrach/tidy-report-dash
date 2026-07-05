@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { ChartColumnBig, Plus, Clock, House } from "lucide-react";
 
@@ -33,7 +34,7 @@ const NavItem = ({
   </button>
 );
 
-export const BottomNavigation = () => {
+export const BottomNavigation = ({ above }: { above?: ReactNode }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const go = (to: string) => navigate(to, { viewTransition: true });
@@ -43,6 +44,7 @@ export const BottomNavigation = () => {
   return (
     <div className="fixed inset-x-0 bottom-0 z-50 bg-gradient-to-t from-background via-background to-transparent pt-6" data-no-swipe>
       <div className="mx-auto max-w-md px-4 pb-[calc(0.7rem+env(safe-area-inset-bottom))]">
+        {above && <div className="mb-2">{above}</div>}
         {!isHome && (
           <div className="mb-2 flex justify-center">
             <button

@@ -160,11 +160,10 @@ export default function Index() {
           onNext={() => setAnchor((a) => new Date(a.getFullYear(), a.getMonth() + 1, 1))}
           onToday={() => setAnchor(new Date(now.getFullYear(), now.getMonth(), 1))}
         />
-        <StatTiles hours={stats.hours} earned={stats.earned} paid={stats.paid} />
-        <WorkerChips />
+        <StatTiles hours={stats.hours} earned={stats.earned} />
       </header>
 
-      <main className="mx-auto max-w-md space-y-5 px-4 pb-dock pt-5">
+      <main className="mx-auto max-w-md space-y-5 px-4 pb-[calc(10.5rem+env(safe-area-inset-bottom))] pt-5">
         {isLoading ? (
           <div className="space-y-3">
             {[0, 1, 2].map((i) => (
@@ -229,7 +228,7 @@ export default function Index() {
         )}
       </main>
 
-      <BottomNavigation />
+      <BottomNavigation above={<WorkerChips />} />
     </div>
   );
 }
