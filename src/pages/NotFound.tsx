@@ -1,24 +1,16 @@
-import { useLocation } from "react-router-dom";
-import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
-const NotFound = () => {
-  const location = useLocation();
-
-  useEffect(() => {
-    console.error("404 Error: User attempted to access non-existent route:", location.pathname);
-  }, [location.pathname]);
-
+export default function NotFound() {
+  const navigate = useNavigate();
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center">
-      <div className="text-center surface-card rounded-3xl p-8 shadow-md">
-        <h1 className="mb-4 text-4xl font-bold text-foreground">404</h1>
-        <p className="mb-4 text-xl text-muted-foreground">Сторінку не знайдено</p>
-        <a href="/" className="text-primary hover:text-primary/80 underline transition-smooth">
-          Повернутися на головну
-        </a>
+    <div className="flex min-h-dvh items-center justify-center bg-bg px-6">
+      <div className="surface-card max-w-sm p-8 text-center">
+        <p className="display mb-2 text-4xl">404</p>
+        <p className="mb-5 text-ink-2">Такої сторінки немає.</p>
+        <button type="button" onClick={() => navigate("/")} className="btn btn-accent mx-auto">
+          На головну
+        </button>
       </div>
     </div>
   );
-};
-
-export default NotFound;
+}

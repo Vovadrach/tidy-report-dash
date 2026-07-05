@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import type {
   NewAssignment, NewWorkEntry, PaymentStatus, WorkDay,
 } from "@/domain/types";
+import type { Allocation } from "@/domain/money";
 import { backend } from "./index";
 
 /** Ключі кешу (V3-SPEC §7). */
@@ -110,6 +111,33 @@ export const useMarkAllPaid = () => {
       mutationErrorToast("Не вдалося оновити оплати")(e);
     },
     onSuccess: (_d, targets) => toast.success(`Оплачено ${targets.length} записів`),
+    onSettled: () => qc.invalidateQueries({ queryKey: keys.workDays }),
+  });
+};
+
+/** Прийняти оплату як набір алокацій (PaymentSheet, розподіл на дні). */
+export const useApplyAllocations = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (allocs: Allocation[]) => {
+      await Promise.all(
+        allocs.map((a) => backend.setPayment(a.id, { status: a.status, paidAmount: a.paidAmount })),
+      );
+    },
+    onMutate: (allocs) => {
+      const map = new Map(allocs.map((a) => [a.id, a]));
+      return optimisticDays(qc, (days) =>
+        days.map((d) => {
+          const a = map.get(d.id);
+          return a ? { ...d, status: a.status, paidAmount: a.paidAmount } : d;
+        }),
+      );
+    },
+    onError: (e, _v, ctx) => {
+      rollback(qc, ctx);
+      mutationErrorToast("Не вдалося зберегти оплату")(e);
+    },
+    onSuccess: (_d, allocs) => toast.success(`Оплата прийнята · ${allocs.length} дн.`),
     onSettled: () => qc.invalidateQueries({ queryKey: keys.workDays }),
   });
 };
