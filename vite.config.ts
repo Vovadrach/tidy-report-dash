@@ -74,7 +74,6 @@ export default defineConfig(() => ({
           react: ["react", "react-dom", "react-router-dom"],
           supabase: ["@supabase/supabase-js"],
           query: ["@tanstack/react-query", "@tanstack/react-query-persist-client"],
-          icons: ["@phosphor-icons/react"],
           motion: ["motion"],
         },
       },
