@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { CloudSlash } from "@phosphor-icons/react";
+import { WifiOff } from "lucide-react";
 
-/** Банер офлайну: дані читаються з кешу, зміни — коли повернеться мережа. */
+/** Банер офлайну «Ясно»: тонка пігулка, дані з кешу; зміни — коли повернеться мережа. */
 export const OfflineBanner = () => {
   const [offline, setOffline] = useState(!navigator.onLine);
 
@@ -19,9 +19,9 @@ export const OfflineBanner = () => {
   if (!offline) return null;
 
   return (
-    <div className="fixed top-0 inset-x-0 z-[90] flex justify-center pointer-events-none">
-      <div className="mt-2 px-4 py-1.5 rounded-full bg-foreground text-background text-xs font-bold flex items-center gap-1.5 shadow-lg">
-        <CloudSlash className="w-3.5 h-3.5" />
+    <div className="pointer-events-none fixed inset-x-0 top-0 z-[90] flex justify-center">
+      <div className="mt-2 flex items-center gap-1.5 rounded-full border border-line bg-surface px-3 py-1.5 text-xs font-medium text-ink-2">
+        <WifiOff size={14} className="text-danger" />
         Офлайн — показую збережені дані
       </div>
     </div>

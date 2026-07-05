@@ -1,7 +1,5 @@
-import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { Sheet } from "./Sheet";
+import { Button } from "./Button";
 
 interface ConfirmSheetProps {
   open: boolean;
@@ -12,25 +10,38 @@ interface ConfirmSheetProps {
   onConfirm: () => void;
 }
 
-/** Підтвердження небезпечної дії у мові Aria. */
+/** Підтвердження небезпечної дії — нижній лист «Ясно». */
 export const ConfirmSheet = ({
-  open, onOpenChange, title, description, confirmLabel = "Видалити", onConfirm,
+  open,
+  onOpenChange,
+  title,
+  description,
+  confirmLabel = "Видалити",
+  onConfirm,
 }: ConfirmSheetProps) => (
-  <AlertDialog open={open} onOpenChange={onOpenChange}>
-    <AlertDialogContent className="w-[calc(100%-3rem)] max-w-md rounded-3xl">
-      <AlertDialogHeader>
-        <AlertDialogTitle className="display text-xl">{title}</AlertDialogTitle>
-        <AlertDialogDescription>{description}</AlertDialogDescription>
-      </AlertDialogHeader>
-      <AlertDialogFooter>
-        <AlertDialogCancel>Скасувати</AlertDialogCancel>
-        <AlertDialogAction
-          onClick={onConfirm}
-          className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+  <Sheet
+    open={open}
+    onOpenChange={onOpenChange}
+    title={title}
+    description={description}
+    footer={
+      <div className="flex gap-2">
+        <Button variant="ghost" block onClick={() => onOpenChange(false)}>
+          Скасувати
+        </Button>
+        <Button
+          variant="danger"
+          block
+          onClick={() => {
+            onConfirm();
+            onOpenChange(false);
+          }}
         >
           {confirmLabel}
-        </AlertDialogAction>
-      </AlertDialogFooter>
-    </AlertDialogContent>
-  </AlertDialog>
+        </Button>
+      </div>
+    }
+  >
+    <p className="text-ink-2">{description}</p>
+  </Sheet>
 );

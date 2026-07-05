@@ -1,30 +1,25 @@
-/** Скелетони маршрутів: контент не «стрибає», спінерів немає. */
+/** Скелетони маршрутів «Ясно»: контент не «стрибає», спінерів немає. */
 
-const Line = ({ className = "" }: { className?: string }) => (
-  <div className={`animate-pulse rounded-full bg-muted ${className}`} />
+const Bar = ({ className = "" }: { className?: string }) => (
+  <div className={`animate-pulse rounded-full bg-surface-inset ${className}`} />
 );
 
-const Card = ({ className = "" }: { className?: string }) => (
-  <div className={`animate-pulse rounded-3xl bg-muted ${className}`} />
+const Block = ({ className = "" }: { className?: string }) => (
+  <div className={`animate-pulse rounded-[var(--r-card)] bg-surface-inset ${className}`} />
 );
 
-/** Універсальний скелет екрана зі стрічкою карток. */
+/** Універсальний скелет екрана зі стрічкою рядків. */
 export const ScreenSkeleton = () => (
-  <div className="min-h-screen bg-background">
-    <div className="container mx-auto px-4 pt-6 space-y-5">
-      <div className="flex justify-center">
-        <Line className="h-7 w-40" />
-      </div>
-      <div className="grid grid-cols-2 gap-2.5">
-        <Card className="h-16" />
-        <Card className="h-16" />
-      </div>
-      <div className="space-y-3 pt-4">
-        <div className="flex justify-center"><Line className="h-6 w-28" /></div>
-        <Card className="h-14" />
-        <Card className="h-14" />
-        <div className="flex justify-center pt-2"><Line className="h-6 w-28" /></div>
-        <Card className="h-14" />
+  <div className="min-h-dvh bg-bg">
+    <div className="container space-y-5 px-4 pt-6">
+      <Bar className="h-8 w-40" />
+      <Block className="h-3 w-full" />
+      <div className="space-y-3 pt-3">
+        <Bar className="h-4 w-24" />
+        <Block className="h-14" />
+        <Block className="h-14" />
+        <Bar className="mt-2 h-4 w-24" />
+        <Block className="h-14" />
       </div>
     </div>
   </div>

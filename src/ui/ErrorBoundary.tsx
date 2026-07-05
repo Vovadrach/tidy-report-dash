@@ -3,7 +3,7 @@ import { Component, type ReactNode } from "react";
 interface Props { children: ReactNode }
 interface State { error: Error | null }
 
-/** Кореневий запобіжник: м'який екран замість білої смерті. */
+/** Кореневий запобіжник «Ясно»: м'який екран замість білої смерті. */
 export class ErrorBoundary extends Component<Props, State> {
   state: State = { error: null };
 
@@ -19,16 +19,13 @@ export class ErrorBoundary extends Component<Props, State> {
   render() {
     if (this.state.error) {
       return (
-        <div className="min-h-screen bg-background flex items-center justify-center px-6">
-          <div className="surface-card rounded-3xl p-8 shadow-md text-center max-w-sm">
-            <p className="text-4xl mb-3">🫧</p>
-            <h1 className="display text-2xl text-foreground mb-2">Щось пішло не так</h1>
-            <p className="text-sm text-muted-foreground mb-5">
-              Спробуй оновити сторінку — дані в безпеці.
-            </p>
+        <div className="flex min-h-dvh items-center justify-center bg-bg px-6">
+          <div className="surface-card max-w-sm p-8 text-center">
+            <h1 className="mb-2 text-xl font-semibold">Щось пішло не так</h1>
+            <p className="mb-5 text-sm text-ink-2">Спробуй оновити — дані в безпеці.</p>
             <button
               onClick={() => window.location.reload()}
-              className="bg-primary text-primary-foreground rounded-full px-6 py-2.5 font-bold active:scale-95 transition-transform"
+              className="btn btn-accent mx-auto"
             >
               Оновити
             </button>
