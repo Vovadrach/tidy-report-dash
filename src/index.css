@@ -1,422 +1,321 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-@custom-variant dark (&:is(.dark *));
-
 /* ============================================================
-   Дизайн-система «Aria» 3.0 (V3-SPEC §5)
-   Повітря та евкаліпт · Fixel · світло замість декору
+   Дизайн-мова «Ясно» 4.0 (PRD §4)
+   Світло · чисті лінії · колір = стан
+   Біле полотно · 1px hairline · БЕЗ тіней · БЕЗ фіолету
+   Шрифт Inter підключається у main.tsx (@fontsource-variable/inter)
    ============================================================ */
 
-/* Fixel — українська гарнітура MacPaw (OFL, самохост, R-1) */
-@font-face {
-  font-family: "Fixel Text";
-  src: url("./assets/fonts/FixelText-Regular.woff2") format("woff2");
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: "Fixel Text";
-  src: url("./assets/fonts/FixelText-Bold.woff2") format("woff2");
-  font-weight: 500 800;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: "Fixel Display";
-  src: url("./assets/fonts/FixelDisplay-SemiBold.woff2") format("woff2");
-  font-weight: 400 800;
-  font-style: normal;
-  font-display: swap;
-}
-
 :root {
-  /* Полотно: аква-повітря + синьо-зелене чорнило */
-  --background: oklch(0.982 0.005 200);
-  --foreground: oklch(0.27 0.03 220);
+  /* Полотно і чорнило */
+  --bg:            oklch(0.99  0.003 240);
+  --surface:       oklch(1     0     0);
+  --surface-inset: oklch(0.972 0.004 240);
+  --ink:           oklch(0.25  0.02  250);
+  --ink-2:         oklch(0.52  0.015 250);
+  --ink-3:         oklch(0.68  0.012 250);
+  --line:          oklch(0.915 0.005 250);
+  --line-strong:   oklch(0.86  0.006 250);
 
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.27 0.03 220);
+  /* Бренд (дія) — яскравий синій, не фіолет */
+  --accent:        oklch(0.58  0.17  245);
+  --accent-strong: oklch(0.52  0.18  245);
+  --accent-ink:    oklch(0.99  0.01  245);
+  --accent-tint:   oklch(0.95  0.04  245);
 
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.27 0.03 220);
+  /* Статуси — яскраві, колоритні */
+  --ok:     oklch(0.63 0.15 155);
+  --warn:   oklch(0.74 0.14 78);
+  --danger: oklch(0.62 0.20 25);
+  --info:   oklch(0.66 0.12 230);
 
-  /* Евкаліпт — акцент покоління */
-  --primary: oklch(0.55 0.1 180);
-  --primary-foreground: oklch(0.99 0.003 200);
+  /* Радіуси */
+  --r-card:  0.875rem;
+  --r-field: 0.75rem;
+  --r-sheet: 1.25rem;
+  --r-pill:  999px;
 
-  --secondary: oklch(0.955 0.008 200);
-  --secondary-foreground: oklch(0.32 0.03 220);
-
-  --accent: oklch(0.55 0.1 180);
-  --accent-foreground: oklch(0.99 0.003 200);
-
-  --muted: oklch(0.945 0.008 200);
-  --muted-foreground: oklch(0.5 0.02 220);
-
-  /* Статуси: мох · бурштин · теракота */
-  --success: oklch(0.55 0.11 150);
-  --success-foreground: oklch(0.99 0.003 200);
-
-  --warning: oklch(0.63 0.125 75);
-  --warning-foreground: oklch(0.99 0.003 200);
-
-  --destructive: oklch(0.58 0.13 35);
-  --destructive-foreground: oklch(0.99 0.003 200);
-
-  --border: oklch(0.915 0.008 200);
-  --input: oklch(0.915 0.008 200);
-  --ring: oklch(0.55 0.1 180);
-
-  --radius: 1.5rem;
-
-  /* Відтінки чипів: колір = стан, гроші нейтральні */
-  --hue-time: oklch(0.5 0.09 210);      /* глибока аква — час */
-  --hue-money: oklch(0.34 0.03 220);    /* чорнило — гроші (нейтрально) */
-  --hue-ok: oklch(0.5 0.11 150);        /* мох */
-  --hue-due: oklch(0.56 0.12 70);       /* бурштин */
-  --hue-alert: oklch(0.55 0.14 35);     /* теракота */
-
-  --gradient-primary: linear-gradient(140deg, oklch(0.6 0.1 180), oklch(0.47 0.1 195));
-
-  --transition-smooth: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.dark {
-  /* «Кімната ввечері» */
-  --background: oklch(0.17 0.02 220);
-  --foreground: oklch(0.94 0.006 200);
-
-  --card: oklch(0.21 0.022 220);
-  --card-foreground: oklch(0.94 0.006 200);
-
-  --popover: oklch(0.21 0.022 220);
-  --popover-foreground: oklch(0.94 0.006 200);
-
-  --primary: oklch(0.72 0.09 180);
-  --primary-foreground: oklch(0.16 0.02 220);
-
-  --secondary: oklch(0.26 0.022 220);
-  --secondary-foreground: oklch(0.94 0.006 200);
-
-  --accent: oklch(0.72 0.09 180);
-  --accent-foreground: oklch(0.16 0.02 220);
-
-  --muted: oklch(0.27 0.022 220);
-  --muted-foreground: oklch(0.69 0.015 210);
-
-  --success: oklch(0.7 0.1 150);
-  --success-foreground: oklch(0.16 0.02 220);
-
-  --warning: oklch(0.75 0.12 75);
-  --warning-foreground: oklch(0.2 0.04 70);
-
-  --destructive: oklch(0.68 0.13 35);
-  --destructive-foreground: oklch(0.99 0.003 200);
-
-  --border: oklch(0.3 0.022 220);
-  --input: oklch(0.3 0.022 220);
-  --ring: oklch(0.72 0.09 180);
-
-  --hue-time: oklch(0.76 0.07 210);
-  --hue-money: oklch(0.88 0.01 210);
-  --hue-ok: oklch(0.75 0.09 150);
-  --hue-due: oklch(0.78 0.1 75);
-  --hue-alert: oklch(0.74 0.11 35);
+  /* Рух */
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+  --dur:  180ms;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-inset: var(--surface-inset);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+
   --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-success: var(--success);
-  --color-success-foreground: var(--success-foreground);
-  --color-warning: var(--warning);
-  --color-warning-foreground: var(--warning-foreground);
-  --color-destructive: var(--destructive);
-  --color-destructive-foreground: var(--destructive-foreground);
-  --color-border: var(--border);
-  --color-input: var(--input);
-  --color-ring: var(--ring);
+  --color-accent-strong: var(--accent-strong);
+  --color-accent-ink: var(--accent-ink);
+  --color-accent-tint: var(--accent-tint);
 
-  /* Sidebar tokens (shadcn compatibility) */
-  --color-sidebar: var(--card);
-  --color-sidebar-foreground: var(--card-foreground);
-  --color-sidebar-primary: var(--primary);
-  --color-sidebar-primary-foreground: var(--primary-foreground);
-  --color-sidebar-accent: var(--secondary);
-  --color-sidebar-accent-foreground: var(--secondary-foreground);
-  --color-sidebar-border: var(--border);
-  --color-sidebar-ring: var(--ring);
+  --color-ok: var(--ok);
+  --color-warn: var(--warn);
+  --color-danger: var(--danger);
+  --color-info: var(--info);
 
-  --font-sans: "Fixel Text", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --font-display: "Fixel Display", "Fixel Text", ui-sans-serif, system-ui, sans-serif;
+  /* shadcn/radix сумісність (нейтралізовано під «Ясно») */
+  --color-background: var(--bg);
+  --color-foreground: var(--ink);
+  --color-card: var(--surface);
+  --color-card-foreground: var(--ink);
+  --color-popover: var(--surface);
+  --color-popover-foreground: var(--ink);
+  --color-primary: var(--accent);
+  --color-primary-foreground: var(--accent-ink);
+  --color-secondary: var(--surface-inset);
+  --color-secondary-foreground: var(--ink);
+  --color-muted: var(--surface-inset);
+  --color-muted-foreground: var(--ink-2);
+  --color-accent-foreground: var(--accent-ink);
+  --color-destructive: var(--danger);
+  --color-destructive-foreground: oklch(0.99 0.01 25);
+  --color-border: var(--line);
+  --color-input: var(--line);
+  --color-ring: var(--accent);
 
-  --radius-sm: calc(var(--radius) - 12px);
-  --radius-md: calc(var(--radius) - 8px);
-  --radius-lg: var(--radius);
-  --radius-xl: var(--radius);
-  --radius-2xl: calc(var(--radius) + 4px);
+  --font-sans: "Inter Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 
-  /* Світло, не тінь: ледь помітний серпанок + політ для дока/FAB */
-  --shadow-xs: 0 1px 2px oklch(0.3 0.03 220 / 0.04);
-  --shadow-sm: 0 1px 3px oklch(0.3 0.03 220 / 0.04), 0 4px 14px -4px oklch(0.3 0.03 220 / 0.06);
-  --shadow-md: 0 2px 6px oklch(0.3 0.03 220 / 0.04), 0 10px 24px -8px oklch(0.3 0.03 220 / 0.09);
-  --shadow-lg: 0 4px 12px oklch(0.3 0.03 220 / 0.05), 0 18px 40px -12px oklch(0.3 0.03 220 / 0.13);
-  --shadow-xl: 0 8px 20px oklch(0.3 0.03 220 / 0.06), 0 30px 60px -16px oklch(0.3 0.03 220 / 0.16);
+  --radius-sm: var(--r-field);
+  --radius-md: var(--r-card);
+  --radius-lg: var(--r-card);
+  --radius-xl: var(--r-sheet);
+  --radius-2xl: var(--r-sheet);
 
-  --animate-accordion-down: accordion-down 0.2s ease-out;
-  --animate-accordion-up: accordion-up 0.2s ease-out;
+  --animate-sheet-in: sheet-in 0.24s var(--ease);
 
-  @keyframes accordion-down {
-    from { height: 0; }
-    to { height: var(--radix-accordion-content-height); }
-  }
-  @keyframes accordion-up {
-    from { height: var(--radix-accordion-content-height); }
-    to { height: 0; }
+  @keyframes sheet-in {
+    from { transform: translateY(8px); opacity: 0; }
+    to   { transform: translateY(0);   opacity: 1; }
   }
 }
 
-/* Компактна центрована колонка контенту */
+/* Центрована колонка контенту (мобільна ширина) */
 @utility container {
   width: 100%;
   margin-inline: auto;
-  max-width: 44rem;
+  max-width: 32rem;
 }
 
-/* Нижні відступи, що звільняють місце під плаваючий док (+ iOS safe area) */
+/* Відступ під плаваючий док + FAB (+ iOS safe area) */
 @utility pb-dock {
-  padding-bottom: calc(11.5rem + env(safe-area-inset-bottom, 0px));
+  padding-bottom: calc(9.5rem + env(safe-area-inset-bottom, 0px));
 }
 @utility pb-dock-sm {
-  padding-bottom: calc(7.5rem + env(safe-area-inset-bottom, 0px));
+  padding-bottom: calc(6rem + env(safe-area-inset-bottom, 0px));
 }
 
 @utility scrollbar-hide {
   -ms-overflow-style: none;
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
-  &::-webkit-scrollbar {
-    display: none;
-  }
+  &::-webkit-scrollbar { display: none; }
 }
 
-@utility transition-smooth {
-  transition: var(--transition-smooth);
-}
-
-@utility gradient-primary {
-  background: var(--gradient-primary);
+@utility tnum {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
 }
 
 @layer base {
-  * {
-    border-color: var(--color-border);
-  }
+  * { border-color: var(--color-line); }
 
-  html {
-    -webkit-tap-highlight-color: transparent;
-  }
+  html { -webkit-tap-highlight-color: transparent; }
 
   body {
-    background-color: var(--color-background);
-    color: var(--color-foreground);
+    background-color: var(--color-bg);
+    color: var(--color-ink);
     font-family: var(--font-sans);
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
-  button {
-    touch-action: manipulation;
+  button { touch-action: manipulation; }
+
+  ::selection { background: var(--accent-tint); }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
   }
 }
 
 @layer components {
-  /* Верхня панель: майже суцільна, hairline-межа */
+  /* Верхня панель: майже суцільна, hairline знизу */
   .app-bar {
-    background: color-mix(in oklab, var(--color-background) 93%, transparent);
+    background: color-mix(in oklab, var(--color-bg) 88%, transparent);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    border-bottom: 1px solid var(--color-border);
+    border-bottom: 1px solid var(--color-line);
   }
 
-  /* Плаваючий док: ЧОРНИЛЬНИЙ — головний упізнаваний елемент Aria */
+  /* Плаваючий док — світлий, hairline-верх, БЕЗ тіні */
   .dock {
-    background: var(--color-foreground);
-    color: var(--color-background);
-    border: none;
-    box-shadow: var(--shadow-lg);
-  }
-  .dark .dock {
-    background: oklch(0.27 0.025 220);
-    color: var(--color-foreground);
+    background: color-mix(in oklab, var(--color-surface) 92%, transparent);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-top: 1px solid var(--color-line);
   }
 
-  /* Світла пігулка (селектор працівниці над доком) */
-  .dock-light {
-    background: var(--color-card);
-    border: 1px solid var(--color-border);
-    box-shadow: var(--shadow-md);
-  }
-
-  /* Бульбашка дати в таймлайні */
-  .day-bubble {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    width: 2.9rem;
-    height: 2.9rem;
-    border-radius: 999px;
-    background: var(--color-card);
-    border: 1px solid var(--color-border);
-    flex-shrink: 0;
-  }
-  .day-bubble-today {
-    background: var(--gradient-primary);
-    border-color: transparent;
-    color: var(--color-primary-foreground);
-  }
-  .day-bubble-empty {
-    background: transparent;
-    border-style: dashed;
-  }
-
-  /* Вертикальна рейка таймлайна */
-  .timeline-rail {
-    position: absolute;
-    left: 1.45rem;
-    top: 3.2rem;
-    bottom: -0.6rem;
-    width: 1px;
-    background: var(--color-border);
-  }
-
-  /* Кругла FAB «Створити» */
+  /* Кругла FAB «+» — плаский акцент, БЕЗ тіні */
   .dock-fab {
-    background: var(--gradient-primary);
-    color: var(--color-primary-foreground);
-    box-shadow:
-      0 6px 14px oklch(0.55 0.1 180 / 0.35),
-      0 2px 4px oklch(0.55 0.1 180 / 0.22);
+    background: var(--accent);
+    color: var(--accent-ink);
+    transition: transform var(--dur) var(--ease), background var(--dur) var(--ease);
   }
+  .dock-fab:active { transform: scale(0.92); background: var(--accent-strong); }
 
-  /* Тихий підпис (замість капітелі 2.x) */
-  .caption-label {
-    font-size: 0.78rem;
-    font-weight: 500;
-    letter-spacing: 0.01em;
-    color: var(--color-muted-foreground);
+  /* Універсальний рядок списку */
+  .row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
+    padding: 0.85rem 0.25rem;
+    background: var(--color-surface);
+    transition: background var(--dur) var(--ease);
   }
+  .row:active { background: var(--color-surface-inset); }
 
-  /* Дисплейні числа/заголовки — Fixel Display */
-  .display {
-    font-family: var(--font-display);
-    font-weight: 600;
-    letter-spacing: -0.01em;
-    font-variant-numeric: tabular-nums;
-  }
-
-  /* Картка: папір на повітрі, hairline */
+  /* Картка-поверхня: папір на полотні, hairline, БЕЗ тіні */
   .surface-card {
-    background: var(--color-card);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-xs);
+    background: var(--color-surface);
+    border: 1px solid var(--color-line);
+    border-radius: var(--r-card);
   }
 
-  .surface-card-hover {
-    transition: box-shadow 0.22s ease, transform 0.22s ease, border-color 0.22s ease;
+  /* Нижній лист (vaul) */
+  .sheet {
+    background: var(--color-surface);
+    border-top-left-radius: var(--r-sheet);
+    border-top-right-radius: var(--r-sheet);
+    border-top: 1px solid var(--color-line);
   }
-  .surface-card-hover:hover {
-    box-shadow: var(--shadow-md);
-    border-color: color-mix(in oklab, var(--color-primary) 30%, var(--color-border));
-  }
-  .surface-card-hover:active {
-    transform: scale(0.98);
+  .sheet-grabber {
+    width: 2.25rem;
+    height: 0.25rem;
+    border-radius: var(--r-pill);
+    background: var(--color-line-strong);
+    margin: 0.6rem auto 0.25rem;
   }
 
-  /* Чип-пігулка: значення з іконкою */
-  .chip {
+  /* Поле вводу */
+  .field {
+    width: 100%;
+    background: var(--color-surface-inset);
+    border: 1px solid var(--color-line);
+    border-radius: var(--r-field);
+    padding: 0.7rem 0.85rem;
+    color: var(--color-ink);
+    font-size: 1rem;
+    transition: border-color var(--dur) var(--ease);
+  }
+  .field:focus-visible {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-tint);
+  }
+  .field::placeholder { color: var(--color-ink-3); }
+
+  /* Кнопки */
+  .btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 0.32rem;
-    border-radius: 999px;
-    padding: 0.34rem 0.62rem;
-    font-size: 0.75rem;
-    font-weight: 700;
-    font-variant-numeric: tabular-nums;
+    gap: 0.5rem;
+    border-radius: var(--r-field);
+    padding: 0.7rem 1rem;
+    font-weight: 600;
+    font-size: 0.95rem;
+    border: 1px solid transparent;
+    transition: transform var(--dur) var(--ease), background var(--dur) var(--ease), border-color var(--dur) var(--ease);
+    user-select: none;
+  }
+  .btn:active { transform: scale(0.98); }
+  .btn-accent { background: var(--accent); color: var(--accent-ink); }
+  .btn-accent:active { background: var(--accent-strong); }
+  .btn-ghost { background: var(--color-surface); border-color: var(--color-line); color: var(--color-ink); }
+  .btn-ghost:active { background: var(--color-surface-inset); }
+  .btn-danger { background: color-mix(in oklab, var(--danger) 12%, var(--color-surface)); color: var(--danger); }
+  .btn:disabled { opacity: 0.45; pointer-events: none; }
+
+  /* Пігулка статусу/чипа */
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    border-radius: var(--r-pill);
+    padding: 0.22rem 0.6rem;
+    font-size: 0.78rem;
+    font-weight: 600;
     line-height: 1;
     white-space: nowrap;
   }
-  .chip-time {
-    background: color-mix(in oklab, var(--hue-time) 9%, transparent);
-    color: var(--hue-time);
-  }
-  .chip-money {
-    background: color-mix(in oklab, var(--hue-money) 7%, transparent);
-    color: var(--hue-money);
-  }
-  .chip-ok {
-    background: color-mix(in oklab, var(--hue-ok) 11%, transparent);
-    color: var(--hue-ok);
-  }
-  .chip-due {
-    background: color-mix(in oklab, var(--hue-due) 13%, transparent);
-    color: var(--hue-due);
-  }
-  .chip-alert {
-    background: color-mix(in oklab, var(--hue-alert) 10%, transparent);
-    color: var(--hue-alert);
-  }
+  .pill-ok     { background: color-mix(in oklab, var(--ok) 12%, transparent);     color: var(--ok); }
+  .pill-warn   { background: color-mix(in oklab, var(--warn) 16%, transparent);   color: color-mix(in oklab, var(--warn) 82%, black); }
+  .pill-danger { background: color-mix(in oklab, var(--danger) 12%, transparent); color: var(--danger); }
+  .pill-info   { background: color-mix(in oklab, var(--info) 13%, transparent);   color: var(--info); }
+  .pill-neutral{ background: var(--color-surface-inset); color: var(--color-ink-2); }
 
-  /* Плитка статистики: м'який тон без рамки */
-  .stat-tile {
-    position: relative;
-    overflow: hidden;
-    display: flex;
-    align-items: center;
-    gap: 0.7rem;
-    min-width: 0;
-    border-radius: calc(var(--radius) - 4px);
-    padding: 0.72rem 0.85rem;
-    border: none;
-    box-shadow: none;
-  }
-  .stat-tile-time { background: color-mix(in oklab, var(--hue-time) 6%, var(--color-card)); }
-  .stat-tile-money { background: color-mix(in oklab, var(--hue-money) 5%, var(--color-card)); }
-  .stat-tile-ok { background: color-mix(in oklab, var(--hue-ok) 7%, var(--color-card)); }
-  .stat-tile-due { background: color-mix(in oklab, var(--hue-due) 8%, var(--color-card)); }
-  .stat-tile-neutral { background: var(--color-secondary); }
-
-  /* Круглий тримач іконки */
-  .icon-badge {
+  /* Значення з іконкою: години */
+  .badge-hours {
     display: inline-flex;
     align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    width: 2.5rem;
-    height: 2.5rem;
-    border-radius: 999px;
-    border: none;
+    gap: 0.28rem;
+    color: var(--color-ink-2);
+    font-variant-numeric: tabular-nums;
+    font-size: 0.86rem;
   }
-  .icon-badge-time { background: color-mix(in oklab, var(--hue-time) 11%, transparent); color: var(--hue-time); }
-  .icon-badge-money { background: color-mix(in oklab, var(--hue-money) 8%, transparent); color: var(--hue-money); }
-  .icon-badge-ok { background: color-mix(in oklab, var(--hue-ok) 12%, transparent); color: var(--hue-ok); }
-  .icon-badge-due { background: color-mix(in oklab, var(--hue-due) 13%, transparent); color: var(--hue-due); }
-  .icon-badge-alert { background: color-mix(in oklab, var(--hue-alert) 11%, transparent); color: var(--hue-alert); }
+
+  /* Дисплейні числа/заголовки */
+  .display {
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Тихий підпис */
+  .caption {
+    font-size: 0.78rem;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+    color: var(--color-ink-3);
+  }
+
+  /* Тонка прогрес-лінія */
+  .line-progress {
+    position: relative;
+    height: 3px;
+    border-radius: var(--r-pill);
+    background: var(--color-line);
+    overflow: hidden;
+  }
+  .line-progress > span {
+    position: absolute;
+    inset: 0 auto 0 0;
+    border-radius: var(--r-pill);
+    background: var(--ok);
+    transition: width 0.4s var(--ease);
+  }
+  .line-progress.neutral > span { background: var(--accent); }
+
+  /* Вертикальна рейка таймлайну */
+  .rail {
+    position: absolute;
+    top: 1.4rem;
+    bottom: -0.4rem;
+    width: 1px;
+    background: var(--color-line);
+  }
 }
