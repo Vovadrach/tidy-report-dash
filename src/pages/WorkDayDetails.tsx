@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import NumberFlow from "@number-flow/react";
 import { motion } from "motion/react";
 import { decimalToHours } from "@/utils/timeFormat";
+import { useI18n } from "@/i18n";
 
 const hoursToDecimal = (s: string): number => {
   if (!s) return 0;
@@ -21,14 +22,15 @@ const hoursToDecimal = (s: string): number => {
 };
 
 const STATUS = [
-  { key: "paid", label: "Оплачено", icon: CircleCheck, tint: "tint-emerald", ring: "ring-[hsl(var(--t-emerald-fg))]" },
-  { key: "partial", label: "Частково", icon: CircleDashed, tint: "tint-amber", ring: "ring-[hsl(var(--t-amber-fg))]" },
-  { key: "unpaid", label: "Не оплачено", icon: Circle, tint: "tint-rose", ring: "ring-[hsl(var(--t-rose-fg))]" },
+  { key: "paid", label: "status.paid", icon: CircleCheck, tint: "tint-emerald", ring: "ring-[hsl(var(--t-emerald-fg))]" },
+  { key: "partial", label: "status.partial", icon: CircleDashed, tint: "tint-amber", ring: "ring-[hsl(var(--t-amber-fg))]" },
+  { key: "unpaid", label: "status.unpaid", icon: Circle, tint: "tint-rose", ring: "ring-[hsl(var(--t-rose-fg))]" },
 ] as const;
 
 export default function WorkDayDetails() {
   const { reportId, dayId } = useParams();
   const navigate = useNavigate();
+  const { t } = useI18n();
   const [report, setReport] = useState<Report | null>(null);
   const [workDay, setWorkDay] = useState<WorkDay | null>(null);
   const [client, setClient] = useState<Client | null>(null);
@@ -66,7 +68,7 @@ export default function WorkDayDetails() {
       }
       setDirty(false);
     } catch (e) {
-      toast.error("Помилка завантаження");
+      toast.error(t("toast.loadError"));
       console.error(e);
     } finally {
       setLoading(false);
@@ -91,9 +93,9 @@ export default function WorkDayDetails() {
       });
       setWorkDay({ ...workDay, date: editDate, hours: currentHours, amount: currentHours * rate, note: editNote });
       setDirty(false);
-      toast.success("Збережено");
+      toast.success(t("toast.saved"));
     } catch (e) {
-      toast.error("Помилка збереження");
+      toast.error(t("toast.saveError"));
       console.error(e);
     } finally {
       setSaving(false);
@@ -118,7 +120,7 @@ export default function WorkDayDetails() {
             : { payment_status: "partial", day_paid_amount: paid },
       );
     } catch (e) {
-      toast.error("Не вдалося оновити статус");
+      toast.error(t("toast.statusError"));
       console.error(e);
     }
   };
@@ -129,7 +131,7 @@ export default function WorkDayDetails() {
     if (!add || add <= 0) return;
     const total = dayPaidAmount + add;
     if (total > currentAmount + 0.01) {
-      toast.error("Сума перевищує вартість");
+      toast.error(t("toast.overAmount"));
       return;
     }
     const nextStatus: PaymentStatus = total >= currentAmount ? "paid" : "partial";
@@ -138,22 +140,22 @@ export default function WorkDayDetails() {
     setPartialAmount("");
     try {
       await api.updateWorkDay(workDay.id, { payment_status: nextStatus, day_paid_amount: total });
-      toast.success("Оплату додано");
+      toast.success(t("toast.paymentAdded"));
     } catch (e) {
-      toast.error("Помилка додавання оплати");
+      toast.error(t("toast.paymentError"));
       console.error(e);
     }
   };
 
   const remove = async () => {
     if (!report) return;
-    if (!confirm("Видалити цей запис?")) return;
+    if (!confirm(t("day.deleteRecord") + "?")) return;
     try {
       await api.deleteReport(report.id);
-      toast.success("Запис видалено");
+      toast.success(t("toast.deleted"));
       navigate("/", { viewTransition: true });
     } catch (e) {
-      toast.error("Помилка видалення");
+      toast.error(t("toast.deleteError"));
       console.error(e);
     }
   };
@@ -172,7 +174,7 @@ export default function WorkDayDetails() {
   if (!report || !workDay || !client) {
     return (
       <div className="flex min-h-dvh items-center justify-center bg-background">
-        <p className="text-muted-foreground">Дані не знайдено</p>
+        <p className="text-muted-foreground">{t("day.notFound")}</p>
       </div>
     );
   }
@@ -180,7 +182,7 @@ export default function WorkDayDetails() {
   const assignments = workDay.assignments && workDay.assignments.length > 0
     ? workDay.assignments.map((a) => ({
         id: a.id,
-        name: a.worker?.name || a.deleted_worker_name || "Працівниця",
+        name: a.worker?.name || a.deleted_worker_name || t("day.worker"),
         color: a.worker?.color || "#94a3b8",
         hours: a.hours || 0,
         amount: Math.round(a.amount || 0),
@@ -193,7 +195,7 @@ export default function WorkDayDetails() {
       <header className="mx-auto flex max-w-md items-center gap-3 px-4 pt-3">
         <button
           type="button"
-          aria-label="Назад"
+          aria-label={t("common.back")}
           onClick={() => navigate("/", { viewTransition: true })}
           className="press flex h-10 w-10 items-center justify-center rounded-full border border-border bg-card text-foreground"
         >
@@ -205,7 +207,7 @@ export default function WorkDayDetails() {
           </span>
           <div className="min-w-0">
             <h1 className="truncate text-lg font-bold leading-tight text-foreground">{client.name}</h1>
-            <p className="text-xs text-muted-foreground">{rate} €/год</p>
+            <p className="text-xs text-muted-foreground">{rate} {t("common.perHour")}</p>
           </div>
         </div>
       </header>
@@ -216,12 +218,12 @@ export default function WorkDayDetails() {
           <label className="press tint-violet relative block rounded-2xl p-4">
             <div className="mb-2.5 flex items-center gap-2">
               <span className="ibadge h-8 w-8 bg-white/70"><Clock size={16} strokeWidth={2.4} /></span>
-              <span className="text-[0.7rem] font-bold uppercase tracking-wider opacity-90">Години</span>
+              <span className="text-[0.7rem] font-bold uppercase tracking-wider opacity-90">{t("common.hours")}</span>
             </div>
             <div className="num-display text-[1.7rem] leading-none text-foreground">{decimalToHours(currentHours)}</div>
             <input
               type="time"
-              aria-label="Години"
+              aria-label={t("common.hours")}
               value={`${String(Math.floor(currentHours)).padStart(2, "0")}:${String(
                 Math.round((currentHours - Math.floor(currentHours)) * 60),
               ).padStart(2, "0")}`}
@@ -232,7 +234,7 @@ export default function WorkDayDetails() {
           <div className="tint-indigo rounded-2xl p-4">
             <div className="mb-2.5 flex items-center gap-2">
               <span className="ibadge h-8 w-8 bg-white/70"><Wallet size={16} strokeWidth={2.4} /></span>
-              <span className="text-[0.7rem] font-bold uppercase tracking-wider opacity-90">Сума</span>
+              <span className="text-[0.7rem] font-bold uppercase tracking-wider opacity-90">{t("common.amount")}</span>
             </div>
             <div className="num-display text-[1.7rem] leading-none text-foreground"><NumberFlow value={currentAmount} />€</div>
           </div>
@@ -240,7 +242,7 @@ export default function WorkDayDetails() {
 
         {/* Оплата */}
         <section className="card-flat rounded-2xl p-4">
-          <p className="mb-3 text-sm font-semibold text-foreground">Оплата</p>
+          <p className="mb-3 text-sm font-semibold text-foreground">{t("day.payment")}</p>
           <div className="grid grid-cols-3 gap-2">
             {STATUS.map((s) => {
               const active = status === s.key;
@@ -272,7 +274,7 @@ export default function WorkDayDetails() {
                     >
                       <Icon size={20} strokeWidth={2.3} />
                     </motion.span>
-                    {s.label}
+                    {t(s.label)}
                   </span>
                 </button>
               );
@@ -287,7 +289,7 @@ export default function WorkDayDetails() {
                   value={partialAmount}
                   onChange={(e) => setPartialAmount(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && applyPartial()}
-                  placeholder="Додати суму, €"
+                  placeholder={t("common.received")}
                   className="min-w-0 flex-1 rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm outline-none focus:border-primary"
                 />
                 <button
@@ -300,11 +302,11 @@ export default function WorkDayDetails() {
               </div>
               <div className="grid grid-cols-2 gap-2.5">
                 <div className="tint-emerald rounded-xl px-3 py-2.5">
-                  <p className="text-[0.7rem] font-semibold uppercase opacity-80">Оплачено</p>
+                  <p className="text-[0.7rem] font-semibold uppercase opacity-80">{t("common.paid")}</p>
                   <p className="num-display text-base text-foreground"><NumberFlow value={Math.round(dayPaidAmount)} />€</p>
                 </div>
                 <div className="tint-rose rounded-xl px-3 py-2.5">
-                  <p className="text-[0.7rem] font-semibold uppercase opacity-80">Залишок</p>
+                  <p className="text-[0.7rem] font-semibold uppercase opacity-80">{t("common.due")}</p>
                   <p className="num-display text-base text-foreground"><NumberFlow value={Math.max(0, currentAmount - Math.round(dayPaidAmount))} />€</p>
                 </div>
               </div>
@@ -316,14 +318,14 @@ export default function WorkDayDetails() {
         <section className="card-flat rounded-2xl p-4">
           <div className="mb-3 flex items-center gap-2">
             <Users size={16} strokeWidth={2.3} className="text-muted-foreground" />
-            <p className="text-sm font-semibold text-foreground">Хто скільки заробив</p>
+            <p className="text-sm font-semibold text-foreground">{t("day.whoEarned")}</p>
           </div>
           <div className="space-y-1">
             {assignments.map((a) => (
               <div key={a.id} className="flex items-center gap-3 rounded-xl px-1 py-2">
                 <span className="h-8 w-1.5 rounded-full" style={{ background: a.color }} />
                 <span className="flex-1 truncate text-sm font-semibold text-foreground">{a.name}</span>
-                <span className="tabular text-sm text-muted-foreground">{decimalToHours(a.hours)} год</span>
+                <span className="tabular text-sm text-muted-foreground">{decimalToHours(a.hours)} {t("common.hoursShort")}</span>
                 <span className="num-display w-16 text-right text-sm text-foreground">{a.amount}€</span>
               </div>
             ))}
@@ -333,7 +335,7 @@ export default function WorkDayDetails() {
         {/* Дата — нативний iOS date-picker */}
         <section className="space-y-1.5">
           <label className="flex items-center gap-1.5 px-1 text-sm font-semibold text-foreground">
-            <CalendarDays size={15} strokeWidth={2.3} className="text-muted-foreground" /> Дата
+            <CalendarDays size={15} strokeWidth={2.3} className="text-muted-foreground" /> {t("common.date")}
           </label>
           <input
             type="date"
@@ -349,7 +351,7 @@ export default function WorkDayDetails() {
         {/* Нотатка */}
         <section className="space-y-1.5">
           <label className="flex items-center gap-1.5 px-1 text-sm font-semibold text-foreground">
-            <StickyNote size={15} strokeWidth={2.3} className="text-muted-foreground" /> Нотатка
+            <StickyNote size={15} strokeWidth={2.3} className="text-muted-foreground" /> {t("common.note")}
           </label>
           <textarea
             value={editNote}
@@ -357,7 +359,7 @@ export default function WorkDayDetails() {
               setEditNote(e.target.value);
               setDirty(true);
             }}
-            placeholder="Що робили, деталі…"
+            placeholder={t("create.whatDidYouDo")}
             className="min-h-24 w-full resize-none rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground outline-none focus:border-primary"
           />
         </section>
@@ -367,7 +369,7 @@ export default function WorkDayDetails() {
           onClick={remove}
           className="press flex w-full items-center justify-center gap-1.5 py-2 text-sm font-semibold text-destructive"
         >
-          <Trash2 size={16} strokeWidth={2.3} /> Видалити запис
+          <Trash2 size={16} strokeWidth={2.3} /> {t("day.deleteRecord")}
         </button>
       </main>
 
@@ -381,7 +383,7 @@ export default function WorkDayDetails() {
             className="press flex w-full items-center justify-center gap-2 rounded-2xl bg-primary py-4 text-base font-bold text-primary-foreground disabled:opacity-60"
           >
             <Check size={20} strokeWidth={2.6} />
-            {dirty ? "Зберегти зміни" : "Збережено"}
+            {dirty ? t("common.saveChanges") : t("common.saved")}
           </button>
         </div>
       </div>

@@ -10,6 +10,7 @@ import NumberFlow from "@number-flow/react";
 import { motion } from "motion/react";
 import { WorkerAssignmentDialog } from "@/components/WorkerAssignmentDialog";
 import { useWorker } from "@/contexts/WorkerContext";
+import { useI18n } from "@/i18n";
 
 const hoursToDecimal = (s: string): number => {
   if (!s) return 0;
@@ -28,15 +29,16 @@ const decimalToHours = (d: number): string => {
 };
 
 const STATUS = [
-  { key: "paid", label: "Оплачено", icon: CircleCheck, tint: "tint-emerald", ring: "ring-[hsl(var(--t-emerald-fg))]" },
-  { key: "partial", label: "Частково", icon: CircleDashed, tint: "tint-amber", ring: "ring-[hsl(var(--t-amber-fg))]" },
-  { key: "unpaid", label: "Не оплачено", icon: Circle, tint: "tint-rose", ring: "ring-[hsl(var(--t-rose-fg))]" },
+  { key: "paid", label: "status.paid", icon: CircleCheck, tint: "tint-emerald", ring: "ring-[hsl(var(--t-emerald-fg))]" },
+  { key: "partial", label: "status.partial", icon: CircleDashed, tint: "tint-amber", ring: "ring-[hsl(var(--t-amber-fg))]" },
+  { key: "unpaid", label: "status.unpaid", icon: Circle, tint: "tint-rose", ring: "ring-[hsl(var(--t-rose-fg))]" },
 ] as const;
 
 export default function CreateReport() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { workers, addWorker } = useWorker();
+  const { t } = useI18n();
   const [clients, setClients] = useState<Client[]>([]);
   const [selectedClientId, setSelectedClientId] = useState("");
   const [reportDate, setReportDate] = useState(new Date().toISOString().split("T")[0]);
@@ -72,7 +74,7 @@ export default function CreateReport() {
       setEditingReportId(reportId);
       api.getWorkDay(reportId, workDayId).then((wd) => {
         if (wd) { setWorkNote(wd.note || ""); setReportDate(wd.date); }
-      }).catch((e) => { console.error(e); toast.error("Помилка завантаження"); });
+      }).catch((e) => { console.error(e); toast.error(t("toast.loadError")); });
     } else if (date) setReportDate(date);
   }, [searchParams]);
 
@@ -83,7 +85,7 @@ export default function CreateReport() {
   }, [selectedClientId, clients]);
 
   const loadClients = async () => {
-    try { setClients(await api.getClients()); } catch (e) { toast.error("Помилка завантаження клієнтів"); console.error(e); }
+    try { setClients(await api.getClients()); } catch (e) { toast.error(t("toast.loadClientsError")); console.error(e); }
   };
 
   const getClientHourlyRate = () => {
@@ -108,8 +110,8 @@ export default function CreateReport() {
     try {
       const colors = ["#3b82f6", "#ef4444", "#10b981", "#f59e0b", "#8b5cf6", "#ec4899"];
       await addWorker({ name, color: colors[Math.floor(name.length) % colors.length], is_primary: false });
-      toast.success("Працівницю додано");
-    } catch (e) { toast.error("Помилка"); console.error(e); }
+      toast.success(t("toast.workerAdded"));
+    } catch (e) { toast.error(t("common.error")); console.error(e); }
   };
   const getTotalAssignedAmount = () => selectedWorkers.reduce((s, id) => s + (parseFloat(workerAmounts[id] || "0") || 0), 0);
   const isWorkerAssignmentValid = () => {
@@ -154,7 +156,7 @@ export default function CreateReport() {
   };
 
   const handlePlanWork = async () => {
-    if (!selectedClientId) { toast.error("Оберіть клієнта"); return; }
+    if (!selectedClientId) { toast.error(t("toast.chooseClient")); return; }
     const client = clients.find((c) => c.id === selectedClientId);
     if (!client) return;
     try {
@@ -163,22 +165,22 @@ export default function CreateReport() {
         paymentStatus: "unpaid", totalHours: 0, totalEarned: 0, paidAmount: 0, remainingAmount: 0,
         workDays: [{ id: `new-${Date.now()}`, date: reportDate, hours: 0, amount: 0, paymentStatus: "unpaid", day_paid_amount: 0, is_planned: true, note: workNote || undefined }],
       });
-      toast.success("Роботу заплановано");
+      toast.success(t("toast.planned"));
       navigate("/", { viewTransition: true });
-    } catch (e) { toast.error("Помилка планування"); console.error(e); }
+    } catch (e) { toast.error(t("toast.planError")); console.error(e); }
   };
 
   const handleDeletePlannedWork = async () => {
     if (!editingWorkDayId) return;
-    if (!confirm("Видалити цей запис?")) return;
-    try { await api.deleteWorkDay(editingWorkDayId); toast.success("Запис видалено"); navigate("/", { viewTransition: true }); }
-    catch (e) { toast.error("Помилка видалення"); console.error(e); }
+    if (!confirm(t("day.deleteRecord") + "?")) return;
+    try { await api.deleteWorkDay(editingWorkDayId); toast.success(t("toast.deleted")); navigate("/", { viewTransition: true }); }
+    catch (e) { toast.error(t("toast.deleteError")); console.error(e); }
   };
 
   const handleSaveNote = async () => {
     if (!editingWorkDayId) return;
-    try { await api.updateWorkDay(editingWorkDayId, { note: workNote || null }); toast.success("Нотатку збережено"); }
-    catch (e) { toast.error("Помилка"); console.error(e); }
+    try { await api.updateWorkDay(editingWorkDayId, { note: workNote || null }); toast.success(t("toast.noteSaved")); }
+    catch (e) { toast.error(t("common.error")); console.error(e); }
   };
 
   const assignWorkers = async (workDayId: string, amount: number, fh: number) => {
@@ -195,7 +197,7 @@ export default function CreateReport() {
   };
 
   const handleCreateReport = async () => {
-    if (!selectedClientId) { toast.error("Оберіть клієнта"); return; }
+    if (!selectedClientId) { toast.error(t("toast.chooseClient")); return; }
     const client = clients.find((c) => c.id === selectedClientId);
     if (!client) return;
     const fh = finalHours();
@@ -203,11 +205,11 @@ export default function CreateReport() {
     const amount = fh * rate;
 
     if (workPaymentStatus === "partial" && partialAmount && parseFloat(partialAmount) > calculateEarnings()) {
-      toast.error(`Сума не може бути більшою за ${calculateEarnings()}€`);
+      toast.error(t("toast.overAmount"));
       return;
     }
     if (selectedWorkers.length > 0 && getTotalAssignedAmount() !== calculateEarnings()) {
-      toast.error(`Розподіліть усю суму (${calculateEarnings()}€)`);
+      toast.error(t("toast.distribute", { sum: calculateEarnings() }));
       return;
     }
 
@@ -217,7 +219,7 @@ export default function CreateReport() {
       if (editingWorkDayId && editingReportId) {
         await api.updateWorkDay(editingWorkDayId, { hours: fh, amount, payment_status: workPaymentStatus, day_paid_amount: dayPaid, is_planned: false, note: workNote || undefined });
         await assignWorkers(editingWorkDayId, amount, fh);
-        toast.success("Запис оновлено");
+        toast.success(t("toast.recordUpdated"));
         navigate("/", { viewTransition: true });
         return;
       }
@@ -228,9 +230,9 @@ export default function CreateReport() {
         workDays: [{ id: `new-${Date.now()}`, date: reportDate, hours: fh, amount, paymentStatus: workPaymentStatus, day_paid_amount: dayPaid, is_planned: isPlanned, note: workNote || undefined }],
       } as Omit<Report, "id">);
       if (newReport.workDays?.[0]) await assignWorkers(newReport.workDays[0].id, amount, fh);
-      toast.success("Запис створено");
+      toast.success(t("toast.recordCreated"));
       navigate("/", { viewTransition: true });
-    } catch (e) { toast.error("Помилка створення"); console.error(e); }
+    } catch (e) { toast.error(t("toast.createError")); console.error(e); }
   };
 
   const selectedClient = clients.find((c) => c.id === selectedClientId);
@@ -241,7 +243,7 @@ export default function CreateReport() {
   return (
     <div className="min-h-dvh bg-background">
       <header className="mx-auto flex max-w-md items-center gap-3 px-4 pt-3">
-        <button type="button" aria-label="Назад" onClick={() => navigate(-1)} className="press flex h-10 w-10 items-center justify-center rounded-full border border-border bg-card">
+        <button type="button" aria-label={t("common.back")} onClick={() => navigate(-1)} className="press flex h-10 w-10 items-center justify-center rounded-full border border-border bg-card">
           <ArrowLeft size={20} strokeWidth={2.3} />
         </button>
         <div className="flex min-w-0 flex-1 items-center gap-2.5">
@@ -252,8 +254,8 @@ export default function CreateReport() {
             {(selectedClient?.name || "?").charAt(0).toUpperCase()}
           </span>
           <div className="min-w-0">
-            <h1 className="truncate text-lg font-bold text-foreground">{selectedClient?.name || "Новий запис"}</h1>
-            <p className="text-xs text-muted-foreground">{editingWorkDayId ? "Редагування" : "Новий запис"}</p>
+            <h1 className="truncate text-lg font-bold text-foreground">{selectedClient?.name || t("create.newRecord")}</h1>
+            <p className="text-xs text-muted-foreground">{editingWorkDayId ? t("day.editing") : t("day.newRecord")}</p>
           </div>
         </div>
       </header>
@@ -262,7 +264,7 @@ export default function CreateReport() {
         {/* Дата */}
         <section className="space-y-1.5">
           <label className="flex items-center gap-1.5 px-1 text-sm font-semibold text-foreground">
-            <CalendarClock size={15} strokeWidth={2.3} className="text-muted-foreground" /> Дата
+            <CalendarClock size={15} strokeWidth={2.3} className="text-muted-foreground" /> {t("common.date")}
           </label>
           <input type="date" value={reportDate} onChange={(e) => setReportDate(e.target.value)}
             className="w-full rounded-2xl border border-border bg-card px-4 py-3.5 text-base font-medium text-foreground outline-none focus:border-primary" />
@@ -273,12 +275,12 @@ export default function CreateReport() {
           <label className="press tint-violet relative block rounded-2xl p-4">
             <div className="mb-2.5 flex items-center gap-2">
               <span className="ibadge h-8 w-8 bg-white/70"><Clock size={16} strokeWidth={2.4} /></span>
-              <span className="text-[0.7rem] font-bold uppercase tracking-wider opacity-90">Години</span>
+              <span className="text-[0.7rem] font-bold uppercase tracking-wider opacity-90">{t("common.hours")}</span>
             </div>
             <div className="num-display text-[1.7rem] leading-none text-foreground">{timeStr}</div>
             <input
               type="time"
-              aria-label="Години"
+              aria-label={t("common.hours")}
               value={`${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`}
               onChange={onTimeInput}
               className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
@@ -287,7 +289,7 @@ export default function CreateReport() {
           <div className="tint-indigo rounded-2xl p-4">
             <div className="mb-2.5 flex items-center gap-2">
               <span className="ibadge h-8 w-8 bg-white/70"><Wallet size={16} strokeWidth={2.4} /></span>
-              <span className="text-[0.7rem] font-bold uppercase tracking-wider opacity-90">Сума</span>
+              <span className="text-[0.7rem] font-bold uppercase tracking-wider opacity-90">{t("common.amount")}</span>
             </div>
             <input
               inputMode="decimal"
@@ -303,11 +305,11 @@ export default function CreateReport() {
 
         {/* Ставка */}
         <section className="flex items-center justify-between rounded-2xl border border-border bg-card px-4 py-3">
-          <span className="text-sm font-semibold text-foreground">Ставка за годину</span>
+          <span className="text-sm font-semibold text-foreground">{t("common.rate.hour")}</span>
           <div className="flex items-center gap-1">
             <input inputMode="decimal" value={customHourlyRate} onChange={(e) => setCustomHourlyRate(e.target.value)} placeholder="0"
               className="w-16 rounded-lg border border-border bg-background px-2 py-1.5 text-right text-sm font-semibold outline-none focus:border-primary" />
-            <span className="text-sm text-muted-foreground">€/год</span>
+            <span className="text-sm text-muted-foreground">{t("common.perHour")}</span>
           </div>
         </section>
 
@@ -317,7 +319,7 @@ export default function CreateReport() {
             className="press flex w-full items-center justify-between rounded-2xl border border-border bg-card px-4 py-3.5">
             <span className="flex items-center gap-2 text-sm font-semibold text-foreground">
               <Users size={17} strokeWidth={2.3} className="text-primary" />
-              {selectedWorkers.length > 0 ? `Поділено між ${selectedWorkers.length}` : "Поділити між помічницями"}
+              {selectedWorkers.length > 0 ? t("create.splitMany", { n: selectedWorkers.length }) : t("create.splitOne")}
             </span>
             <div className="flex -space-x-2">
               {selectedWorkers.slice(0, 3).map((id) => {
@@ -341,7 +343,7 @@ export default function CreateReport() {
         {/* Оплата */}
         {hasTime && selectedClientId && (
           <section className="card-flat rounded-2xl p-4">
-            <p className="mb-3 text-sm font-semibold text-foreground">Оплата</p>
+            <p className="mb-3 text-sm font-semibold text-foreground">{t("day.payment")}</p>
             <div className="grid grid-cols-3 gap-2">
               {STATUS.map((s) => {
                 const active = workPaymentStatus === s.key;
@@ -351,7 +353,7 @@ export default function CreateReport() {
                     className="press relative flex flex-col items-center gap-1.5 rounded-xl bg-muted py-3 text-xs font-bold">
                     {active && <motion.span layoutId="createStatusHL" transition={{ type: "spring", stiffness: 430, damping: 34 }} className={`absolute inset-0 rounded-xl ${s.tint} ring-2 ${s.ring}`} />}
                     <span className={`relative z-10 flex flex-col items-center gap-1.5 ${active ? "text-foreground" : "text-muted-foreground"}`}>
-                      <Icon size={20} strokeWidth={2.3} /> {s.label}
+                      <Icon size={20} strokeWidth={2.3} /> {t(s.label)}
                     </span>
                   </button>
                 );
@@ -359,7 +361,7 @@ export default function CreateReport() {
             </div>
             {workPaymentStatus === "partial" && (
               <div className="relative mt-3">
-                <input inputMode="decimal" value={partialAmount} onChange={(e) => setPartialAmount(e.target.value)} placeholder="Отримано, €"
+                <input inputMode="decimal" value={partialAmount} onChange={(e) => setPartialAmount(e.target.value)} placeholder={t("common.received")}
                   className="w-full rounded-xl border border-border bg-background px-3.5 py-2.5 pr-9 text-sm outline-none focus:border-primary" />
                 <span className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground">€</span>
               </div>
@@ -371,14 +373,14 @@ export default function CreateReport() {
         {selectedClientId && (
           <section className="space-y-1.5">
             <div className="flex items-center justify-between px-1">
-              <label className="text-sm font-semibold text-foreground">Нотатка</label>
+              <label className="text-sm font-semibold text-foreground">{t("common.note")}</label>
               {editingWorkDayId && (
                 <button onClick={handleSaveNote} className="press flex items-center gap-1 text-xs font-semibold text-primary">
-                  <Save size={13} /> Зберегти
+                  <Save size={13} /> {t("common.save")}
                 </button>
               )}
             </div>
-            <textarea value={workNote} onChange={(e) => setWorkNote(e.target.value)} placeholder="Що робили, деталі…"
+            <textarea value={workNote} onChange={(e) => setWorkNote(e.target.value)} placeholder={t("create.whatDidYouDo")}
               className="min-h-20 w-full resize-none rounded-2xl border border-border bg-card px-4 py-3 text-sm outline-none focus:border-primary" />
           </section>
         )}
@@ -390,18 +392,18 @@ export default function CreateReport() {
           {!hasTime && (!amountInput || amountInput === "0") ? (
             editingWorkDayId ? (
               <button onClick={handleDeletePlannedWork} className="press flex w-full items-center justify-center gap-2 rounded-2xl border border-border bg-card py-4 text-base font-bold text-destructive">
-                <Trash2 size={18} /> Видалити запис
+                <Trash2 size={18} /> {t("day.deleteRecord")}
               </button>
             ) : (
               <button onClick={handlePlanWork} disabled={!selectedClientId}
                 className="press flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-amber-400 bg-amber-50/60 py-4 text-base font-bold text-[hsl(var(--t-amber-fg))] disabled:opacity-50">
-                <CalendarClock size={18} /> Запланувати роботу
+                <CalendarClock size={18} /> {t("create.planWork")}
               </button>
             )
           ) : (
             <>
               {editingWorkDayId && (
-                <button onClick={handleDeletePlannedWork} aria-label="Видалити" className="press flex h-[3.6rem] w-14 shrink-0 items-center justify-center rounded-2xl border border-border bg-card text-destructive">
+                <button onClick={handleDeletePlannedWork} aria-label={t("common.delete")} className="press flex h-[3.6rem] w-14 shrink-0 items-center justify-center rounded-2xl border border-border bg-card text-destructive">
                   <Trash2 size={20} />
                 </button>
               )}
@@ -410,7 +412,7 @@ export default function CreateReport() {
                 disabled={!selectedClientId || !hasTime || (workPaymentStatus === "partial" && !partialAmount) || !isWorkerAssignmentValid()}
                 className="press flex flex-1 items-center justify-center gap-2 rounded-2xl bg-primary py-4 text-base font-bold text-primary-foreground disabled:opacity-50"
               >
-                {editingWorkDayId ? "Зберегти запис" : "Створити запис"} · <NumberFlow value={calculateEarnings()} />€
+                {editingWorkDayId ? t("create.saveRecord") : t("create.createRecord")} · <NumberFlow value={calculateEarnings()} />€
               </button>
             </>
           )}

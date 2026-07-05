@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { CalendarPlus } from "lucide-react";
+import { useI18n } from "@/i18n";
 import { api } from "@/lib/api";
 import { useWorker } from "@/contexts/WorkerContext";
 import { BottomNavigation } from "@/components/BottomNavigation";
@@ -11,7 +12,6 @@ import { WorkerChips } from "@/components/home/WorkerChips";
 import { StatTiles } from "@/components/home/StatTiles";
 import { DayCard, type DayItem } from "@/components/home/DayCard";
 
-const WD = ["Неділя", "Понеділок", "Вівторок", "Середа", "Четвер", "Пʼятниця", "Субота"];
 const iso = (d: Date) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
@@ -43,10 +43,10 @@ type AnyDay = {
   }[];
 };
 
-const buildDays = (reports: AnyReport[], wid: string, monthPrefix: string): DayItem[] => {
+const buildDays = (reports: AnyReport[], wid: string, monthPrefix: string, noName: string): DayItem[] => {
   const out: DayItem[] = [];
   for (const r of reports) {
-    const clientName = r.clientName || r.client_name || "Без імені";
+    const clientName = r.clientName || r.client_name || noName;
     const clientId = r.clientId || r.client_id || "";
     for (const d of r.workDays || []) {
       if (!d.date?.startsWith(monthPrefix)) continue;
@@ -92,6 +92,7 @@ export default function Index() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { selectedWorkerId } = useWorker();
+  const { t, weekdays } = useI18n();
 
   const now = useMemo(() => new Date(), []);
   const [anchor, setAnchor] = useState(() => new Date(now.getFullYear(), now.getMonth(), 1));
@@ -105,15 +106,15 @@ export default function Index() {
     mutationFn: (v: { dayId: string; status: DayItem["status"]; paidAmount: number }) =>
       api.updateWorkDay(v.dayId, { payment_status: v.status, day_paid_amount: v.paidAmount }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["reports"] }),
-    onError: () => toast.error("Не вдалося оновити оплату"),
+    onError: () => toast.error(t("toast.statusError")),
   });
 
   const monthPrefix = `${anchor.getFullYear()}-${String(anchor.getMonth() + 1).padStart(2, "0")}`;
   const isCurrent = anchor.getFullYear() === now.getFullYear() && anchor.getMonth() === now.getMonth();
 
   const days = useMemo(
-    () => buildDays(reports, selectedWorkerId, monthPrefix),
-    [reports, selectedWorkerId, monthPrefix],
+    () => buildDays(reports, selectedWorkerId, monthPrefix, t("common.noName")),
+    [reports, selectedWorkerId, monthPrefix, t],
   );
 
   const stats = useMemo(() => {
@@ -175,15 +176,13 @@ export default function Index() {
             <span className="ibadge tint-indigo mb-4 h-16 w-16">
               <CalendarPlus size={28} strokeWidth={2} />
             </span>
-            <p className="text-lg font-semibold">Немає записів</p>
-            <p className="mt-1 max-w-56 text-sm text-muted-foreground">
-              Натисни «Створити» внизу, щоб додати першу роботу цього місяця
-            </p>
+            <p className="text-lg font-semibold">{t("home.empty.title")}</p>
+            <p className="mt-1 max-w-56 text-sm text-muted-foreground">{t("home.empty.sub")}</p>
           </div>
         ) : (
           groups.map(([date, items]) => {
             const [y, m, dd] = date.split("-").map(Number);
-            const dow = WD[new Date(y, m - 1, dd).getDay()];
+            const dow = weekdays[new Date(y, m - 1, dd).getDay()];
             const today = iso(now) === date;
             return (
               <section key={date} className="space-y-2.5">
@@ -196,12 +195,12 @@ export default function Index() {
                     }`}
                   >
                     <span className="font-display">{dd}</span> {dow}
-                    {today && " · Сьогодні"}
+                    {today && ` · ${t("common.today")}`}
                   </span>
                   <span className="h-px flex-1 bg-border" />
                   <button
                     type="button"
-                    aria-label="Додати на цей день"
+                    aria-label={t("home.addOnDay")}
                     onClick={() => addOnDate(date)}
                     className="press text-muted-foreground active:text-primary"
                   >

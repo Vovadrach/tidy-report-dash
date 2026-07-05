@@ -13,6 +13,7 @@ import {
 import { BottomNavigation } from "@/components/BottomNavigation";
 import { decimalToHours } from "@/utils/timeFormat";
 import { useWorker } from "@/contexts/WorkerContext";
+import { useI18n } from "@/i18n";
 
 const workerData = (day: WorkDay, wid: string) => {
   if (wid === "all") return { amount: day.amount, hours: day.hours };
@@ -31,6 +32,7 @@ export default function ClientReports() {
   const { clientId } = useParams();
   const navigate = useNavigate();
   const { selectedWorkerId } = useWorker();
+  const { t, locale } = useI18n();
   const [client, setClient] = useState<Client | null>(null);
   const [days, setDays] = useState<UDay[] | null>(null);
   const [loading, setLoading] = useState(true);
@@ -63,7 +65,7 @@ export default function ClientReports() {
         );
       setDays(out);
     } catch (e) {
-      toast.error("Помилка завантаження");
+      toast.error(t("toast.loadError"));
       console.error(e);
     } finally {
       setLoading(false);
@@ -79,7 +81,7 @@ export default function ClientReports() {
       });
       loadData(true);
     } catch (e) {
-      toast.error("Помилка оновлення");
+      toast.error(t("toast.statusError"));
       loadData(true);
       console.error(e);
     }
@@ -91,10 +93,10 @@ export default function ClientReports() {
     setDays([]);
     try {
       await Promise.all(list.map((d) => api.updateWorkDay(d.id, { payment_status: "paid" as PaymentStatus, day_paid_amount: d.amount })));
-      toast.success(`Оплачено ${list.length} записів`);
+      toast.success(t("toast.allPaidN", { n: list.length }));
       loadData(true);
     } catch (e) {
-      toast.error("Помилка");
+      toast.error(t("toast.statusError"));
       loadData(true);
       console.error(e);
     }
@@ -126,7 +128,7 @@ export default function ClientReports() {
       <header className="mx-auto flex max-w-md items-center gap-3 px-4 pt-3">
         <button
           type="button"
-          aria-label="Назад"
+          aria-label={t("common.back")}
           onClick={() => navigate("/reports-status", { viewTransition: true })}
           className="press flex h-10 w-10 items-center justify-center rounded-full border border-border bg-card"
         >
@@ -139,7 +141,7 @@ export default function ClientReports() {
           >
             {(client?.name || "?").charAt(0).toUpperCase()}
           </span>
-          <h1 className="truncate text-lg font-bold text-foreground">{client?.name || "Клієнт"}</h1>
+          <h1 className="truncate text-lg font-bold text-foreground">{client?.name || t("client.notFound")}</h1>
         </div>
       </header>
 
@@ -152,19 +154,19 @@ export default function ClientReports() {
         ) : !days || days.length === 0 ? (
           <div className="rise-in flex flex-col items-center justify-center py-20 text-center">
             <span className="ibadge tint-emerald mb-4 h-16 w-16"><CircleCheck size={28} strokeWidth={2} /></span>
-            <p className="text-lg font-semibold">Все оплачено</p>
-            <p className="mt-1 text-sm text-muted-foreground">Немає боргів у цього клієнта</p>
+            <p className="text-lg font-semibold">{t("client.allPaid")}</p>
+            <p className="mt-1 text-sm text-muted-foreground">{t("client.noDebts")}</p>
           </div>
         ) : (
           <>
             <div className="card-flat space-y-3 rounded-2xl p-4">
               <div className="grid grid-cols-2 gap-3">
                 <div className="tint-rose rounded-xl p-3.5 text-center">
-                  <p className="text-[0.7rem] font-bold uppercase tracking-wider opacity-80">Борг</p>
+                  <p className="text-[0.7rem] font-bold uppercase tracking-wider opacity-80">{t("client.debt")}</p>
                   <p className="num-display mt-0.5 text-2xl text-foreground"><NumberFlow value={Math.round(totalDue)} />€</p>
                 </div>
                 <div className="tint-violet rounded-xl p-3.5 text-center">
-                  <p className="text-[0.7rem] font-bold uppercase tracking-wider opacity-80">Години</p>
+                  <p className="text-[0.7rem] font-bold uppercase tracking-wider opacity-80">{t("common.hours")}</p>
                   <p className="num-display mt-0.5 text-2xl text-foreground">{decimalToHours(totalHours)}</p>
                 </div>
               </div>
@@ -173,7 +175,7 @@ export default function ClientReports() {
                 onClick={markAllPaid}
                 className="press flex w-full items-center justify-center gap-2 rounded-xl bg-[hsl(var(--success))] py-3 text-sm font-bold text-white"
               >
-                <CheckCheck size={18} strokeWidth={2.5} /> Оплачено всі ({days.length})
+                <CheckCheck size={18} strokeWidth={2.5} /> {t("client.markAllPaid", { n: days.length })}
               </button>
             </div>
 
@@ -193,16 +195,16 @@ export default function ClientReports() {
                     {selectedWorkerId === "all" ? (
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <button className={`ibadge press h-9 w-9 ${meta.tint}`} aria-label="Статус">
+                          <button className={`ibadge press h-9 w-9 ${meta.tint}`} aria-label={t("common.status")}>
                             <Icon size={18} strokeWidth={2.4} />
                           </button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="start" className="rounded-xl">
                           <DropdownMenuItem onClick={() => changeStatus(day.id, "paid", day.amount)}>
-                            <CircleCheck size={16} className="text-success" /> Оплачено
+                            <CircleCheck size={16} className="text-success" /> {t("status.paid")}
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => changeStatus(day.id, "unpaid", 0)}>
-                            <Circle size={16} className="text-destructive" /> Не оплачено
+                            <Circle size={16} className="text-destructive" /> {t("status.unpaid")}
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -216,7 +218,7 @@ export default function ClientReports() {
                       className="min-w-0 flex-1 text-left"
                     >
                       <p className="font-semibold text-foreground">
-                        {new Date(day.date + "T00:00:00").toLocaleDateString("uk-UA")}
+                        {new Date(day.date + "T00:00:00").toLocaleDateString(locale)}
                       </p>
                       {day.note && (
                         <p className="mt-0.5 flex items-center gap-1 truncate text-xs text-muted-foreground">

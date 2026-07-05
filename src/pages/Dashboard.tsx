@@ -12,8 +12,7 @@ import {
 import { BottomNavigation } from "@/components/BottomNavigation";
 import { decimalToHours } from "@/utils/timeFormat";
 import { useWorker } from "@/contexts/WorkerContext";
-
-const MONTHS = ["Січень", "Лютий", "Березень", "Квітень", "Травень", "Червень", "Липень", "Серпень", "Вересень", "Жовтень", "Листопад", "Грудень"];
+import { useI18n } from "@/i18n";
 
 const workerData = (day: WorkDay, wid: string) => {
   if (wid === "all") return { amount: day.amount, hours: day.hours };
@@ -33,6 +32,7 @@ const Tile = ({ tint, icon: Icon, label, children }: { tint: string; icon: typeo
 
 export default function Dashboard() {
   const { selectedWorkerId } = useWorker();
+  const { t, months } = useI18n();
   const [reports, setReports] = useState<Report[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [month, setMonth] = useState<number | null>(new Date().getMonth());
@@ -63,15 +63,15 @@ export default function Dashboard() {
       setReports(recalc);
       setClients(clientsData);
     } catch (e) {
-      toast.error("Помилка завантаження");
+      toast.error(t("toast.loadError"));
       console.error(e);
     } finally {
       setLoading(false);
     }
   };
 
-  const periodLabel = year === null ? "Весь час" : month === null ? `${year}` : `${MONTHS[month]} ${year}`;
-  const clientLabel = clientId === "all" ? "Всі клієнти" : clients.find((c) => c.id === clientId)?.name || "Всі клієнти";
+  const periodLabel = year === null ? t("dash.allTime") : month === null ? `${year}` : `${months[month]} ${year}`;
+  const clientLabel = clientId === "all" ? t("dash.allClients") : clients.find((c) => c.id === clientId)?.name || t("dash.allClients");
 
   const filtered = useMemo(() => {
     let list = [...reports];
@@ -114,7 +114,7 @@ export default function Dashboard() {
     const m = new Map<string, { name: string; earned: number; hours: number }>();
     filtered.forEach((r) => {
       const id = r.clientId || r.client_id || "";
-      const e = m.get(id) || { name: r.clientName || r.client_name || "Без імені", earned: 0, hours: 0 };
+      const e = m.get(id) || { name: r.clientName || r.client_name || t("common.noName"), earned: 0, hours: 0 };
       e.earned += r.totalEarned || 0;
       e.hours += r.totalHours || 0;
       m.set(id, e);
@@ -128,7 +128,7 @@ export default function Dashboard() {
       const rem = (r.totalEarned || 0) - (r.paidAmount || 0);
       if (rem <= 0) return;
       const id = r.clientId || r.client_id || "";
-      const e = m.get(id) || { name: r.clientName || r.client_name || "Без імені", remaining: 0 };
+      const e = m.get(id) || { name: r.clientName || r.client_name || t("common.noName"), remaining: 0 };
       e.remaining += rem;
       m.set(id, e);
     });
@@ -147,7 +147,7 @@ export default function Dashboard() {
       <header className="mx-auto max-w-md space-y-3 px-4 pt-4">
         <div className="flex items-center gap-2">
           <span className="ibadge tint-indigo h-9 w-9"><TrendingUp size={18} strokeWidth={2.3} /></span>
-          <h1 className="text-xl font-bold text-foreground">Звіт</h1>
+          <h1 className="text-xl font-bold text-foreground">{t("dash.title")}</h1>
         </div>
         <div className="flex gap-2.5">
           <DropdownMenu>
@@ -159,7 +159,7 @@ export default function Dashboard() {
             </DropdownMenuTrigger>
             <DropdownMenuContent className="max-h-[70vh] w-56 overflow-y-auto rounded-xl">
               <DropdownMenuItem onClick={() => { setYear(null); setMonth(null); }} className="font-semibold">
-                Весь час
+                {t("dash.allTime")}
               </DropdownMenuItem>
               <div className="flex gap-1 px-2 py-1.5">
                 {[2024, 2025, 2026, 2027].map((y) => (
@@ -172,7 +172,7 @@ export default function Dashboard() {
                   </button>
                 ))}
               </div>
-              {MONTHS.map((m, i) => (
+              {months.map((m, i) => (
                 <DropdownMenuItem
                   key={i}
                   onClick={() => { setMonth(i); if (year === null) setYear(new Date().getFullYear()); }}
@@ -192,7 +192,7 @@ export default function Dashboard() {
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="max-h-[70vh] w-56 overflow-y-auto rounded-xl">
-              <DropdownMenuItem onClick={() => setClientId("all")} className="font-semibold">Всі клієнти</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setClientId("all")} className="font-semibold">{t("dash.allClients")}</DropdownMenuItem>
               {clients.map((c) => (
                 <DropdownMenuItem key={c.id} onClick={() => setClientId(c.id)} className={clientId === c.id ? "font-bold text-primary" : ""}>
                   {c.name}
@@ -211,17 +211,17 @@ export default function Dashboard() {
         ) : (
           <>
             <div className="grid grid-cols-2 gap-3">
-              <Tile tint="tint-indigo" icon={TrendingUp} label="Зароблено"><NumberFlow value={Math.round(stats.totalEarned)} />€</Tile>
-              <Tile tint="tint-violet" icon={Clock} label="Години">{decimalToHours(stats.totalHours)}</Tile>
-              <Tile tint={paidFull ? "tint-emerald" : "tint-sky"} icon={CircleCheckBig} label="Сплачено"><NumberFlow value={Math.round(stats.totalPaid)} />€</Tile>
-              <Tile tint="tint-rose" icon={CircleAlert} label="Залишок"><NumberFlow value={Math.round(stats.totalRemaining)} />€</Tile>
+              <Tile tint="tint-indigo" icon={TrendingUp} label={t("common.earned")}><NumberFlow value={Math.round(stats.totalEarned)} />€</Tile>
+              <Tile tint="tint-violet" icon={Clock} label={t("common.hours")}>{decimalToHours(stats.totalHours)}</Tile>
+              <Tile tint={paidFull ? "tint-emerald" : "tint-sky"} icon={CircleCheckBig} label={t("common.paid")}><NumberFlow value={Math.round(stats.totalPaid)} />€</Tile>
+              <Tile tint="tint-rose" icon={CircleAlert} label={t("common.due")}><NumberFlow value={Math.round(stats.totalRemaining)} />€</Tile>
             </div>
 
             {clientId === "all" && debts.length > 0 && (
               <section className="card-flat rounded-2xl p-4">
                 <div className="mb-3 flex items-center gap-2">
                   <span className="ibadge tint-rose h-8 w-8"><CircleAlert size={16} strokeWidth={2.3} /></span>
-                  <h2 className="font-semibold text-foreground">Борги по клієнтах</h2>
+                  <h2 className="font-semibold text-foreground">{t("dash.debtsByClient")}</h2>
                 </div>
                 <div className="space-y-1.5">
                   {debts.map((d, i) => (
@@ -238,14 +238,14 @@ export default function Dashboard() {
               <section className="card-flat rounded-2xl p-4">
                 <div className="mb-3 flex items-center gap-2">
                   <span className="ibadge tint-indigo h-8 w-8"><Users size={16} strokeWidth={2.3} /></span>
-                  <h2 className="font-semibold text-foreground">Топ клієнтів</h2>
+                  <h2 className="font-semibold text-foreground">{t("dash.topClients")}</h2>
                 </div>
                 <div className="space-y-1.5">
                   {leaderboard.map((c, i) => (
                     <div key={i} className="flex items-center gap-3 rounded-xl bg-muted/50 px-3.5 py-2.5">
                       <span className="ibadge tint-indigo h-7 w-7 font-display text-xs font-bold">{i + 1}</span>
                       <span className="flex-1 truncate text-sm font-semibold text-foreground">{c.name}</span>
-                      <span className="text-xs text-muted-foreground">{decimalToHours(c.hours)} год</span>
+                      <span className="text-xs text-muted-foreground">{decimalToHours(c.hours)} {t("common.hoursShort")}</span>
                       <span className="num-display w-16 text-right text-sm text-foreground">{Math.round(c.earned)}€</span>
                     </div>
                   ))}
@@ -254,7 +254,7 @@ export default function Dashboard() {
             )}
 
             {filtered.length === 0 && (
-              <div className="py-16 text-center text-muted-foreground">Немає даних за цей період</div>
+              <div className="py-16 text-center text-muted-foreground">{t("dash.noData")}</div>
             )}
           </>
         )}

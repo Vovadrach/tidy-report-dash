@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Clock, CalendarClock, Check, CircleCheck, CircleDashed, Circle } from "lucide-react";
 import NumberFlow from "@number-flow/react";
 import { motion } from "motion/react";
+import { useI18n } from "@/i18n";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -42,6 +43,7 @@ export const DayCard = ({
   onOpen: () => void;
   onStatus: (dayId: string, status: DayItem["status"], paidAmount: number) => void;
 }) => {
+  const { t } = useI18n();
   const [partialMode, setPartialMode] = useState(false);
   const [amt, setAmt] = useState("");
   const delay = { animationDelay: `${Math.min(index * 0.035, 0.22)}s` };
@@ -57,7 +59,7 @@ export const DayCard = ({
         <div className="flex items-center justify-between gap-2">
           <span className="truncate font-semibold text-foreground">{day.clientName}</span>
           <span className="tint-amber inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold">
-            <CalendarClock size={13} strokeWidth={2.4} /> Заплановано
+            <CalendarClock size={13} strokeWidth={2.4} /> {t("common.planned")}
           </span>
         </div>
         {day.note && <p className="mt-1 truncate text-sm text-muted-foreground">{day.note}</p>}
@@ -93,13 +95,13 @@ export const DayCard = ({
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="rounded-xl">
             <DropdownMenuItem onClick={() => onStatus(day.id, "paid", day.amount)}>
-              <CircleCheck size={16} className="text-success" /> Оплачено
+              <CircleCheck size={16} className="text-success" /> {t("status.paid")}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => { setPartialMode(true); setAmt(String(day.paidAmount || "")); }}>
-              <CircleDashed size={16} className="text-warning" /> Частково…
+              <CircleDashed size={16} className="text-warning" /> {t("status.partial")}…
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => onStatus(day.id, "unpaid", 0)}>
-              <Circle size={16} className="text-destructive" /> Не оплачено
+              <Circle size={16} className="text-destructive" /> {t("status.unpaid")}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

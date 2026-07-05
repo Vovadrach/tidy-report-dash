@@ -1,5 +1,6 @@
 import { useWorker } from "@/contexts/WorkerContext";
 import { Users } from "lucide-react";
+import { useI18n } from "@/i18n";
 
 /**
  * WorkerChips — панель-бар вибору працівниці (як нав-меню): суцільна картка з
@@ -7,6 +8,7 @@ import { Users } from "lucide-react";
  */
 export const WorkerChips = () => {
   const { workers, selectedWorkerId, setSelectedWorkerId } = useWorker();
+  const { t } = useI18n();
 
   if (!workers || workers.length <= 1) return null;
 
@@ -25,7 +27,7 @@ export const WorkerChips = () => {
         }
       >
         <Users size={15} strokeWidth={2.3} />
-        Всі
+        {t("common.all")}
       </button>
 
       {workers.map((w) => {

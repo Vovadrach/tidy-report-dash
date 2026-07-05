@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { ChartColumnBig, Plus, Clock, House } from "lucide-react";
+import { useI18n } from "@/i18n";
 
 /**
  * Нижня навігація v2 — СТАТИЧНА, пласка (без скла/blur/тіней).
@@ -37,6 +38,7 @@ const NavItem = ({
 export const BottomNavigation = ({ above }: { above?: ReactNode }) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { t } = useI18n();
   const go = (to: string) => navigate(to, { viewTransition: true });
   const p = location.pathname;
   const isHome = p === "/";
@@ -55,7 +57,7 @@ export const BottomNavigation = ({ above }: { above?: ReactNode }) => {
               onClick={() => go("/")}
               className="press flex items-center gap-1.5 rounded-full border border-border bg-card px-4 py-2 text-sm font-semibold text-primary"
             >
-              <House size={16} strokeWidth={2.4} /> Головна
+              <House size={16} strokeWidth={2.4} /> {t("nav.home")}
             </button>
           </div>
         )}
@@ -63,21 +65,21 @@ export const BottomNavigation = ({ above }: { above?: ReactNode }) => {
         <nav className="flex items-center gap-1 rounded-[1.6rem] border border-border bg-card px-2 py-2">
           <NavItem
             icon={ChartColumnBig}
-            label="Звіт"
+            label={t("nav.report")}
             active={p === "/dashboard"}
             onClick={() => go("/dashboard")}
           />
           <button
             type="button"
             onClick={() => go("/select-client")}
-            aria-label="Створити запис"
+            aria-label={t("nav.create")}
             className="press mx-1 flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground"
           >
             <Plus size={26} strokeWidth={2.6} />
           </button>
           <NavItem
             icon={Clock}
-            label="Очікую"
+            label={t("nav.waiting")}
             active={p === "/reports-status"}
             onClick={() => go("/reports-status")}
           />

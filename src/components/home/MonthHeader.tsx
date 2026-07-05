@@ -1,9 +1,5 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
-
-const MONTHS = [
-  "Січень", "Лютий", "Березень", "Квітень", "Травень", "Червень",
-  "Липень", "Серпень", "Вересень", "Жовтень", "Листопад", "Грудень",
-];
+import { useI18n } from "@/i18n";
 
 /** Заголовок місяця v2 — стрілки впритул до назви, назва в Unbounded з яскравим градієнтом. */
 export const MonthHeader = ({
@@ -18,7 +14,9 @@ export const MonthHeader = ({
   onNext: () => void;
   onToday: () => void;
   isCurrent: boolean;
-}) => (
+}) => {
+  const { t, months } = useI18n();
+  return (
   <div className="flex items-center justify-center gap-1.5 pt-1">
     <button
       type="button"
@@ -31,11 +29,11 @@ export const MonthHeader = ({
 
     <button type="button" onClick={onToday} className="press flex flex-col items-center px-1 leading-none">
       <span className="bg-gradient-to-r from-primary to-[hsl(280_84%_62%)] bg-clip-text font-display text-[1.7rem] font-semibold tracking-tight text-transparent">
-        {MONTHS[date.getMonth()]}
+        {months[date.getMonth()]}
       </span>
       <span className={`mt-1 text-xs font-semibold ${isCurrent ? "text-primary" : "text-muted-foreground"}`}>
         {date.getFullYear()}
-        {!isCurrent && " · до поточного"}
+        {!isCurrent && ` · ${t("home.year.toCurrent")}`}
       </span>
     </button>
 
@@ -48,4 +46,5 @@ export const MonthHeader = ({
       <ChevronRight size={22} strokeWidth={2.4} />
     </button>
   </div>
-);
+  );
+};

@@ -5,6 +5,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { lazy, Suspense } from "react";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { WorkerProvider } from "@/contexts/WorkerContext";
+import { LanguageProvider } from "@/i18n";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
 
@@ -32,6 +33,7 @@ const RouteFallback = () => (
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
+    <LanguageProvider>
     <AuthProvider>
       <WorkerProvider>
         <TooltipProvider delayDuration={200}>
@@ -57,6 +59,7 @@ const App = () => (
         </TooltipProvider>
       </WorkerProvider>
     </AuthProvider>
+    </LanguageProvider>
   </QueryClientProvider>
 );
 
