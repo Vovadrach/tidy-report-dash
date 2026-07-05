@@ -1,4 +1,6 @@
 import { createRoot } from "react-dom/client";
+import "@fontsource-variable/onest";
+import "@fontsource-variable/unbounded";
 import App from "./App.tsx";
 import "./index.css";
 

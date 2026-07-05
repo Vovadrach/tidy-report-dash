@@ -1,24 +1,22 @@
-import { useLocation } from "react-router-dom";
-import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useI18n } from "@/i18n";
 
-const NotFound = () => {
-  const location = useLocation();
-
-  useEffect(() => {
-    console.error("404 Error: User attempted to access non-existent route:", location.pathname);
-  }, [location.pathname]);
-
+export default function NotFound() {
+  const navigate = useNavigate();
+  const { t } = useI18n();
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center">
-      <div className="text-center surface-card rounded-3xl p-8 shadow-md">
-        <h1 className="mb-4 text-4xl font-bold text-foreground">404</h1>
-        <p className="mb-4 text-xl text-muted-foreground">Сторінку не знайдено</p>
-        <a href="/" className="text-primary hover:text-primary/80 underline transition-smooth">
-          Повернутися на головну
-        </a>
+    <div className="flex min-h-dvh items-center justify-center bg-background px-6">
+      <div className="card-flat max-w-sm p-8 text-center">
+        <p className="font-display text-5xl font-semibold text-foreground">404</p>
+        <p className="mb-6 mt-2 text-muted-foreground">{t("notFound.title")}</p>
+        <button
+          type="button"
+          onClick={() => navigate("/", { viewTransition: true })}
+          className="press rounded-2xl bg-primary px-6 py-3 text-base font-bold text-primary-foreground"
+        >
+          {t("notFound.home")}
+        </button>
       </div>
     </div>
   );
-};
-
-export default NotFound;
+}

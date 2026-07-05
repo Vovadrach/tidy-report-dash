@@ -1,548 +1,233 @@
-import { useState, useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  CheckCircle as CheckCircle2, XCircle, WarningCircle as AlertCircle,
-  CalendarPlus, CaretLeft as ChevronLeft, CaretRight as ChevronRight, X,
-  ArrowCounterClockwise as Undo2, ArrowClockwise as Redo2, CaretDown as ChevronDown,
-} from "@phosphor-icons/react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { CalendarPlus } from "lucide-react";
+import { useI18n } from "@/i18n";
+import { api } from "@/lib/api";
+import { useWorker } from "@/contexts/WorkerContext";
 import { BottomNavigation } from "@/components/BottomNavigation";
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { useDeleteReport, useSetPayment, useWorkDays } from "@/data/queries";
-import { useWorkerFilter } from "@/contexts/WorkerContext";
-import { decimalToHours } from "@/domain/time";
-import {
-  addMonths, dayNumber, dayOfWeekName, formatMonthYear, fromISODate, inRange,
-  isSameMonth, monthName, monthNames, monthRange, todayLocal,
-} from "@/domain/dates";
-import type { DateRange } from "@/domain/dates";
-import { applyPartialPayment, involvesWorker, workerView } from "@/domain/money";
-import { periodStats } from "@/domain/stats";
-import type { PaymentStatus, WorkDay } from "@/domain/types";
-import { ScreenSkeleton } from "@/ui/Skeleton";
-import { EmptyState } from "@/ui/EmptyState";
-import { MonthProgress } from "@/ui/MonthProgress";
-import { SwipeableRow } from "@/ui/SwipeableRow";
-import { ConfirmSheet } from "@/ui/ConfirmSheet";
-import { StatusDrop } from "@/ui/StatusDrop";
-import { usePullToRefresh } from "@/ui/usePullToRefresh";
+import { MonthHeader } from "@/components/home/MonthHeader";
+import { WorkerChips } from "@/components/home/WorkerChips";
+import { StatTiles } from "@/components/home/StatTiles";
+import { DayCard, type DayItem } from "@/components/home/DayCard";
 
-const Index = () => {
-  const navigate = useNavigate();
-  const { selectedWorkerId } = useWorkerFilter();
-  const { data: workDays = [], isLoading, isError, refetch } = useWorkDays();
-  const setPayment = useSetPayment();
-  const deleteReport = useDeleteReport();
-  const [dayToDelete, setDayToDelete] = useState<WorkDay | null>(null);
-  const { pulling, refreshing } = usePullToRefresh(() => refetch());
+const iso = (d: Date) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
-  const [currentMonth, setCurrentMonth] = useState<Date>(
-    () => new Date(new Date().getFullYear(), new Date().getMonth(), 1),
-  );
+type AnyReport = {
+  id: string;
+  clientId?: string;
+  client_id?: string;
+  clientName?: string;
+  client_name?: string;
+  workDays?: AnyDay[];
+};
+type AnyDay = {
+  id: string;
+  date: string;
+  hours?: number;
+  amount?: number;
+  paymentStatus?: string;
+  payment_status?: string;
+  day_paid_amount?: number;
+  is_planned?: boolean;
+  note?: string;
+  assignments?: {
+    worker_id?: string | null;
+    workerId?: string | null;
+    hours?: number;
+    amount?: number;
+    deleted_worker_name?: string | null;
+    worker?: { name?: string; color?: string } | null;
+  }[];
+};
 
-  const [customRange, setCustomRange] = useState<DateRange | null>(null);
-  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
-  const [pickerYear, setPickerYear] = useState<number | null>(null);
-  const [pickerMonth, setPickerMonth] = useState<number | null>(null);
-
-  const [partialPaymentDayId, setPartialPaymentDayId] = useState<string | null>(null);
-  const [partialPaymentAmount, setPartialPaymentAmount] = useState("");
-
-  const range: DateRange = useMemo(
-    () => customRange ?? monthRange(currentMonth),
-    [customRange, currentMonth],
-  );
-
-  const visibleDays = useMemo(
-    () =>
-      workDays.filter(
-        (d) => inRange(d.date, range) && involvesWorker(d, selectedWorkerId),
-      ),
-    [workDays, range, selectedWorkerId],
-  );
-
-  const stats = useMemo(
-    () => periodStats(workDays, range, selectedWorkerId),
-    [workDays, range, selectedWorkerId],
-  );
-
-  const groupedByDay = useMemo(() => {
-    const map = new Map<string, WorkDay[]>();
-    for (const day of visibleDays) {
-      const list = map.get(day.date) ?? [];
-      list.push(day);
-      map.set(day.date, list);
-    }
-    const today = todayLocal();
-    if (inRange(today, range) && !map.has(today)) map.set(today, []);
-    return [...map.entries()]
-      .map(([date, days]) => ({ date, days }))
-      .sort((a, b) => (a.date < b.date ? 1 : -1));
-  }, [visibleDays, range]);
-
-  const isCurrentMonth = !customRange && isSameMonth(currentMonth, new Date());
-
-  const handleStatusChange = (day: WorkDay, newStatus: PaymentStatus) => {
-    if (newStatus === "partial") {
-      setPartialPaymentDayId(day.id);
-      setPartialPaymentAmount("");
-      if (day.status === "paid") {
-        setPayment.mutate({ dayId: day.id, status: "partial", paidAmount: 0 });
+const buildDays = (reports: AnyReport[], wid: string, monthPrefix: string, noName: string): DayItem[] => {
+  const out: DayItem[] = [];
+  for (const r of reports) {
+    const clientName = r.clientName || r.client_name || noName;
+    const clientId = r.clientId || r.client_id || "";
+    for (const d of r.workDays || []) {
+      if (!d.date?.startsWith(monthPrefix)) continue;
+      const assigns = d.assignments || [];
+      const status = (d.paymentStatus || d.payment_status || "unpaid") as DayItem["status"];
+      const base = {
+        reportId: r.id,
+        id: d.id,
+        clientId,
+        clientName,
+        date: d.date,
+        paidAmount: d.day_paid_amount || 0,
+        status,
+        isPlanned: !!d.is_planned,
+        note: d.note,
+      };
+      if (wid === "all") {
+        out.push({
+          ...base,
+          hours: d.hours || 0,
+          amount: d.amount || 0,
+          workers: assigns.map((a) => ({
+            name: a.worker?.name ?? a.deleted_worker_name ?? "?",
+            color: a.worker?.color ?? "#94a3b8",
+          })),
+        });
+      } else {
+        const mine = assigns.filter((a) => (a.worker_id || a.workerId) === wid);
+        if (mine.length === 0) continue;
+        out.push({
+          ...base,
+          hours: mine.reduce((s, a) => s + (a.hours || 0), 0),
+          amount: mine.reduce((s, a) => s + (a.amount || 0), 0),
+          workers: [{ name: mine[0].worker?.name ?? "?", color: mine[0].worker?.color ?? "#94a3b8" }],
+        });
       }
-      return;
     }
-    if (partialPaymentDayId === day.id) {
-      setPartialPaymentDayId(null);
-      setPartialPaymentAmount("");
-    }
-    setPayment.mutate({
-      dayId: day.id,
-      status: newStatus,
-      paidAmount: newStatus === "paid" ? day.amount : 0,
-    });
-  };
+  }
+  return out;
+};
 
-  const handleApplyPartialPayment = (day: WorkDay) => {
-    const result = applyPartialPayment(day, parseFloat(partialPaymentAmount));
-    if (!result.ok) {
-      toast.error(result.error === "exceeds" ? "Сума перевищує загальну вартість" : "Введіть коректну суму");
-      return;
-    }
-    setPayment.mutate({ dayId: day.id, status: result.status, paidAmount: result.paidAmount });
-    setPartialPaymentDayId(null);
-    setPartialPaymentAmount("");
-    toast.success("Оплату додано", { duration: 2000 });
-  };
+export default function Index() {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { selectedWorkerId } = useWorker();
+  const { t, weekdays } = useI18n();
 
-  const handleOpenDatePicker = () => {
-    const now = new Date();
-    setIsDatePickerOpen(true);
-    setPickerYear(customRange ? null : now.getFullYear());
-    setPickerMonth(customRange ? null : now.getMonth());
-  };
+  const now = useMemo(() => new Date(), []);
+  const [anchor, setAnchor] = useState(() => new Date(now.getFullYear(), now.getMonth(), 1));
 
-  const handleApplyCustomPeriod = () => {
-    if (pickerYear === null) {
-      toast.error("Оберіть період");
-      return;
+  const { data: reports = [], isLoading } = useQuery<AnyReport[]>({
+    queryKey: ["reports"],
+    queryFn: api.getReports,
+  });
+
+  const setStatus = useMutation({
+    mutationFn: (v: { dayId: string; status: DayItem["status"]; paidAmount: number }) =>
+      api.updateWorkDay(v.dayId, { payment_status: v.status, day_paid_amount: v.paidAmount }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["reports"] }),
+    onError: () => toast.error(t("toast.statusError")),
+  });
+
+  const monthPrefix = `${anchor.getFullYear()}-${String(anchor.getMonth() + 1).padStart(2, "0")}`;
+  const isCurrent = anchor.getFullYear() === now.getFullYear() && anchor.getMonth() === now.getMonth();
+
+  const days = useMemo(
+    () => buildDays(reports, selectedWorkerId, monthPrefix, t("common.noName")),
+    [reports, selectedWorkerId, monthPrefix, t],
+  );
+
+  const stats = useMemo(() => {
+    let hours = 0, earned = 0, paid = 0;
+    for (const d of days) {
+      if (d.isPlanned) continue;
+      hours += d.hours;
+      earned += d.amount;
+      paid += Math.min(d.paidAmount, d.amount);
     }
-    if (pickerMonth === null) {
-      setCustomRange({ from: `${pickerYear}-01-01`, to: `${pickerYear}-12-31` });
+    return { hours, earned, paid };
+  }, [days]);
+
+  const groups = useMemo(() => {
+    const map = new Map<string, DayItem[]>();
+    for (const d of [...days].sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0))) {
+      const arr = map.get(d.date) ?? [];
+      arr.push(d);
+      map.set(d.date, arr);
+    }
+    return [...map.entries()];
+  }, [days]);
+
+  const openDay = (d: DayItem) => {
+    if (d.isPlanned) {
+      navigate(`/create-report?clientId=${d.clientId}&date=${d.date}&workDayId=${d.id}&reportId=${d.reportId}`, {
+        viewTransition: true,
+      });
     } else {
-      setCustomRange(monthRange(new Date(pickerYear, pickerMonth, 1)));
+      navigate(`/report/${d.reportId}/day/${d.id}`, { viewTransition: true });
     }
-    setIsDatePickerOpen(false);
-    toast.success("Період застосовано", { duration: 2000 });
   };
 
-  const goToCurrentMonth = () => {
-    setCurrentMonth(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
-    setCustomRange(null);
-  };
-
-  if (isLoading) {
-    return <ScreenSkeleton />;
-  }
-
-  if (isError) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-foreground text-lg mb-4">Помилка завантаження записів</p>
-          <Button onClick={() => refetch()}>Спробувати знову</Button>
-        </div>
-      </div>
-    );
-  }
+  const addOnDate = (date: string) =>
+    navigate(`/select-client?date=${date}`, { viewTransition: true });
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Редакційна шапка */}
-      <div className="fixed top-0 left-0 right-0 z-40 app-bar" data-no-swipe>
-        <div className="container mx-auto px-5 pt-3 pb-3">
-          {/* Рядок 1: місяць + стрілки */}
-          <div className="flex items-center justify-between">
-            <button
-              onClick={handleOpenDatePicker}
-              className="rounded-2xl -ml-1 px-1 active:scale-95 transition-transform text-left"
-            >
-              <span className="display text-[1.6rem] text-foreground leading-tight">
-                {customRange
-                  ? `${fromISODate(customRange.from).toLocaleDateString("uk-UA", { day: "numeric", month: "short" })} – ${fromISODate(customRange.to).toLocaleDateString("uk-UA", { day: "numeric", month: "short" })}`
-                  : formatMonthYear(currentMonth)}
-              </span>
-            </button>
+    <div className="min-h-dvh bg-background">
+      <header className="mx-auto max-w-md space-y-3.5 px-4 pt-3">
+        <MonthHeader
+          date={anchor}
+          isCurrent={isCurrent}
+          onPrev={() => setAnchor((a) => new Date(a.getFullYear(), a.getMonth() - 1, 1))}
+          onNext={() => setAnchor((a) => new Date(a.getFullYear(), a.getMonth() + 1, 1))}
+          onToday={() => setAnchor(new Date(now.getFullYear(), now.getMonth(), 1))}
+        />
+        <StatTiles hours={stats.hours} earned={stats.earned} />
+      </header>
 
-            {!customRange ? (
-              <div className="flex items-center gap-1">
-                <button
-                  onClick={() => setCurrentMonth((m) => addMonths(m, -1))}
-                  className="w-9 h-9 rounded-full bg-secondary text-foreground flex items-center justify-center transition-all active:scale-90"
-                  aria-label="Попередній місяць"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => setCurrentMonth((m) => addMonths(m, 1))}
-                  className="w-9 h-9 rounded-full bg-secondary text-foreground flex items-center justify-center transition-all active:scale-90"
-                  aria-label="Наступний місяць"
-                >
-                  <ChevronRight className="w-4 h-4" />
-                </button>
-              </div>
-            ) : (
-              <button
-                onClick={goToCurrentMonth}
-                className="text-xs text-destructive font-bold flex items-center gap-1 active:scale-95"
-              >
-                <X className="w-3.5 h-3.5" />
-                Скинути
-              </button>
-            )}
+      <main className="mx-auto max-w-md space-y-5 px-4 pb-[calc(10.5rem+env(safe-area-inset-bottom))] pt-5">
+        {isLoading ? (
+          <div className="space-y-3">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="skeleton h-16 rounded-2xl" />
+            ))}
           </div>
-
-          {/* Рядок 2: великий заробіток + години */}
-          <div className="flex items-end justify-between mt-1">
-            <div className="flex items-baseline gap-1.5">
-              <span className="display text-[2.1rem] leading-none text-foreground">{Math.round(stats.earned)}</span>
-              <span className="text-base font-bold text-muted-foreground">€</span>
-            </div>
-            <div className="text-right">
-              <span className="display text-lg text-foreground">{decimalToHours(stats.hours)}</span>
-              <span className="text-xs font-semibold text-muted-foreground ml-1">год</span>
-            </div>
+        ) : groups.length === 0 ? (
+          <div className="rise-in flex flex-col items-center justify-center py-16 text-center">
+            <span className="ibadge tint-indigo mb-4 h-16 w-16">
+              <CalendarPlus size={28} strokeWidth={2} />
+            </span>
+            <p className="text-lg font-semibold">{t("home.empty.title")}</p>
+            <p className="mt-1 max-w-56 text-sm text-muted-foreground">{t("home.empty.sub")}</p>
           </div>
-
-          {/* Прогрес оплат періоду */}
-          <MonthProgress earned={stats.earned} paid={stats.paid} />
-        </div>
-      </div>
-
-      {/* Індикатор pull-to-refresh */}
-      {(pulling > 0 || refreshing) && (
-        <div
-          className="fixed left-1/2 -translate-x-1/2 z-50 transition-all"
-          style={{ top: `${Math.min(pulling, 1) * 60 + 130}px`, opacity: Math.min(pulling, 1) }}
-        >
-          <div className={`w-9 h-9 rounded-full dock-light flex items-center justify-center ${refreshing ? "animate-spin" : ""}`}>
-            <Redo2 className="w-4 h-4 text-primary" />
-          </div>
-        </div>
-      )}
-
-      <main className="container mx-auto px-5 pt-[172px] pb-dock">
-        {!isCurrentMonth && !customRange && (
-          <div className="flex justify-center mb-5">
-            <button
-              onClick={goToCurrentMonth}
-              className="bg-secondary hover:bg-muted px-4 py-2 rounded-full flex items-center gap-2 transition-colors active:scale-95"
-            >
-              {currentMonth < new Date(new Date().getFullYear(), new Date().getMonth(), 1) ? (
-                <>
-                  <span className="text-sm font-bold text-foreground">Поточний місяць</span>
-                  <Redo2 className="w-4 h-4 text-primary" />
-                </>
-              ) : (
-                <>
-                  <Undo2 className="w-4 h-4 text-primary" />
-                  <span className="text-sm font-bold text-foreground">Поточний місяць</span>
-                </>
-              )}
-            </button>
-          </div>
-        )}
-
-        {groupedByDay.length === 0 ? (
-          <EmptyState
-            icon={<CalendarPlus />}
-            title="Немає записів"
-            subtitle="у цьому періоді — торкнись «+», щоб додати перший"
-          />
         ) : (
-          <div className="space-y-6">
-            {groupedByDay.map(({ date, days }, groupIndex) => {
-              const isToday = todayLocal() === date;
-              const isLast = groupIndex === groupedByDay.length - 1;
-
-              return (
-                <div key={date} className="relative" data-no-swipe>
-                  {/* Рейка таймлайна */}
-                  {!isLast && <div className="timeline-rail" />}
-
-                  <div className="flex gap-3.5">
-                    {/* Бульбашка дати — тап створює запис на цей день */}
-                    <button
-                      onClick={() => navigate(`/select-client?date=${date}`, { viewTransition: true })}
-                      aria-label={`Створити запис на ${date}`}
-                      className={`day-bubble transition-transform active:scale-90 ${
-                        isToday ? "day-bubble-today" : days.length === 0 ? "day-bubble-empty" : ""
-                      }`}
-                    >
-                      <span className="display text-base leading-none">{dayNumber(date)}</span>
-                      <span className={`text-[9px] font-bold uppercase tracking-wide ${
-                        isToday ? "opacity-90" : "text-muted-foreground"
-                      }`}>
-                        {dayOfWeekName(date).slice(0, 2)}
-                      </span>
-                    </button>
-
-                    {/* Картки дня */}
-                    <div className="flex-1 min-w-0 space-y-2 pt-0.5">
-                      {isToday && (
-                        <p className="caption-label !text-primary font-bold">
-                          Сьогодні{days.length === 0 ? " · записів ще немає" : ""}
-                        </p>
-                      )}
-
-                      {days.map((day) => {
-                        const v = workerView(day, selectedWorkerId);
-                        return (
-                          <div key={day.id}>
-                            <SwipeableRow
-                              disabled={day.isPlanned}
-                              onSwipeRight={() =>
-                                setPayment.mutate({ dayId: day.id, status: "paid", paidAmount: day.amount })
-                              }
-                              onSwipeLeft={() => setDayToDelete(day)}
-                            >
-                              <div
-                                onClick={() => {
-                                  if (day.isPlanned) {
-                                    navigate(`/create-report?clientId=${day.clientId}&date=${day.date}&workDayId=${day.id}&reportId=${day.reportId}`);
-                                  } else {
-                                    navigate(`/day/${day.id}`, { viewTransition: true });
-                                  }
-                                }}
-                                className={`rounded-[1.35rem] p-3 cursor-pointer ${
-                                  day.isPlanned
-                                    ? "bg-warning/8 border-2 border-dashed border-warning/45 surface-card-hover"
-                                    : "surface-card surface-card-hover"
-                                }`}
-                              >
-                                <div className="flex items-center justify-between gap-2">
-                                  <div className="flex items-center gap-2 min-w-0 flex-1">
-                                    {!day.isPlanned && (
-                                      <DropdownMenu>
-                                        <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                                          <button
-                                            aria-label="Статус оплати"
-                                            onPointerDown={(e) => e.stopPropagation()}
-                                            className="flex-shrink-0 transition-transform hover:scale-110 active:scale-95"
-                                          >
-                                            <StatusDrop status={day.status} />
-                                          </button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent className="z-[100] rounded-xl p-1.5 min-w-[150px] shadow-lg">
-                                          <DropdownMenuItem
-                                            onClick={(e) => { e.stopPropagation(); handleStatusChange(day, "paid"); }}
-                                            className={`cursor-pointer rounded-md px-3 py-2 text-sm font-semibold ${day.status === "paid" ? "bg-success/20 text-success" : "text-foreground hover:bg-success/10"}`}
-                                          >
-                                            <CheckCircle2 className="w-4 h-4 mr-2 inline" />
-                                            Оплачено
-                                          </DropdownMenuItem>
-                                          <DropdownMenuItem
-                                            onClick={(e) => { e.stopPropagation(); handleStatusChange(day, "partial"); }}
-                                            className={`cursor-pointer rounded-md px-3 py-2 text-sm font-semibold ${day.status === "partial" ? "bg-warning/20 text-warning" : "text-foreground hover:bg-warning/10"}`}
-                                          >
-                                            <AlertCircle className="w-4 h-4 mr-2 inline" />
-                                            Частково
-                                          </DropdownMenuItem>
-                                          <DropdownMenuItem
-                                            onClick={(e) => { e.stopPropagation(); handleStatusChange(day, "unpaid"); }}
-                                            className={`cursor-pointer rounded-md px-3 py-2 text-sm font-semibold ${day.status === "unpaid" ? "bg-destructive/20 text-destructive" : "text-foreground hover:bg-destructive/10"}`}
-                                          >
-                                            <XCircle className="w-4 h-4 mr-2 inline" />
-                                            Не оплачено
-                                          </DropdownMenuItem>
-                                        </DropdownMenuContent>
-                                      </DropdownMenu>
-                                    )}
-
-                                    <div className="min-w-0 flex-1">
-                                      <h3 className="text-sm font-bold truncate text-foreground leading-tight">
-                                        {day.clientName}
-                                      </h3>
-                                      {day.assignments.length > 0 && (
-                                        <p className="text-[11px] text-muted-foreground truncate leading-tight mt-0.5">
-                                          {day.assignments.map((a) => a.workerName).join(" · ")}
-                                        </p>
-                                      )}
-                                    </div>
-                                  </div>
-
-                                  {day.isPlanned ? (
-                                    <span className="chip chip-due">Заплановано</span>
-                                  ) : (
-                                    <div className="flex items-center gap-1.5 flex-shrink-0">
-                                      <span className="chip chip-time">{decimalToHours(v.hours)} год</span>
-                                      <span className="chip chip-money">{Math.round(v.amount)} €</span>
-                                    </div>
-                                  )}
-                                </div>
-
-                                {day.note && (
-                                  <p className="text-xs text-muted-foreground mt-2 truncate">{day.note}</p>
-                                )}
-                              </div>
-                            </SwipeableRow>
-
-                            {partialPaymentDayId === day.id && (
-                              <div className="mt-2 surface-card p-3 border-warning/40" onClick={(e) => e.stopPropagation()}>
-                                <div className="flex gap-2 items-start">
-                                  <div className="flex-1">
-                                    <Input
-                                      type="number"
-                                      value={partialPaymentAmount}
-                                      onChange={(e) => setPartialPaymentAmount(e.target.value)}
-                                      placeholder={`Залишок: ${Math.round(day.amount - day.paidAmount)}€`}
-                                      className="h-9 text-sm rounded-lg"
-                                      autoFocus
-                                    />
-                                  </div>
-                                  <button
-                                    onClick={() => handleApplyPartialPayment(day)}
-                                    disabled={
-                                      !partialPaymentAmount ||
-                                      parseFloat(partialPaymentAmount) <= 0 ||
-                                      parseFloat(partialPaymentAmount) + day.paidAmount > day.amount
-                                    }
-                                    className="h-9 px-4 rounded-full text-sm font-bold bg-warning hover:bg-warning/90 text-warning-foreground transition-colors active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
-                                  >
-                                    ✓
-                                  </button>
-                                  <button
-                                    onClick={() => { setPartialPaymentDayId(null); setPartialPaymentAmount(""); }}
-                                    className="h-9 px-4 rounded-full text-sm font-bold bg-secondary hover:bg-muted text-secondary-foreground transition-colors active:scale-95"
-                                  >
-                                    ✕
-                                  </button>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
+          groups.map(([date, items]) => {
+            const [y, m, dd] = date.split("-").map(Number);
+            const dow = weekdays[new Date(y, m - 1, dd).getDay()];
+            const today = iso(now) === date;
+            return (
+              <section key={date} className="space-y-2.5">
+                <div className="flex items-center gap-3">
+                  <span
+                    className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-semibold ${
+                      today
+                        ? "bg-primary text-primary-foreground"
+                        : "border border-border bg-card text-foreground"
+                    }`}
+                  >
+                    <span className="font-display">{dd}</span> {dow}
+                    {today && ` · ${t("common.today")}`}
+                  </span>
+                  <span className="h-px flex-1 bg-border" />
+                  <button
+                    type="button"
+                    aria-label={t("home.addOnDay")}
+                    onClick={() => addOnDate(date)}
+                    className="press text-muted-foreground active:text-primary"
+                  >
+                    <CalendarPlus size={18} />
+                  </button>
                 </div>
-              );
-            })}
-          </div>
+
+                <div className="space-y-2.5">
+                  {items.map((d, i) => (
+                    <DayCard
+                      key={`${d.reportId}-${d.id}`}
+                      day={d}
+                      index={i}
+                      onOpen={() => openDay(d)}
+                      onStatus={(dayId, status, paidAmount) =>
+                        setStatus.mutate({ dayId, status, paidAmount })
+                      }
+                    />
+                  ))}
+                </div>
+              </section>
+            );
+          })
         )}
       </main>
 
-      <ConfirmSheet
-        open={!!dayToDelete}
-        onOpenChange={(open) => !open && setDayToDelete(null)}
-        title="Видалити запис?"
-        description={dayToDelete ? `${dayToDelete.clientName}, ${dayToDelete.date} — запис буде видалено назавжди.` : ""}
-        onConfirm={() => {
-          if (dayToDelete) deleteReport.mutate(dayToDelete.reportId);
-          setDayToDelete(null);
-        }}
-      />
-
-      <BottomNavigation />
-
-      {/* Custom Period Dialog */}
-      <Dialog open={isDatePickerOpen} onOpenChange={setIsDatePickerOpen}>
-        <DialogContent className="w-[calc(100%-3rem)] max-w-md rounded-3xl left-1/2 -translate-x-1/2 shadow-xl">
-          <DialogHeader>
-            <DialogTitle className="display text-xl text-foreground">Виберіть період</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 pt-4">
-            <div className="space-y-2">
-              <Label className="text-base font-semibold text-foreground">Швидкий вибір</Label>
-              <div className="flex gap-2">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <button className={`flex-1 px-4 py-3 rounded-xl border shadow-xs hover:shadow-sm transition-all active:scale-[0.98] ${
-                      pickerYear !== null ? "bg-primary/10 border-primary/40" : "bg-card border-border"
-                    }`}>
-                      <div className="flex items-center justify-between gap-2">
-                        <span className={`font-bold text-sm ${pickerYear !== null ? "text-primary" : "text-foreground"}`}>
-                          {pickerYear ?? "Рік"}
-                        </span>
-                        <ChevronDown className="w-5 h-5 text-primary" />
-                      </div>
-                    </button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent className="z-[110] rounded-xl p-1.5 min-w-[140px] max-h-[300px] overflow-y-auto shadow-lg">
-                    <div className="space-y-0.5">
-                      {[2024, 2025, 2026, 2027, 2028].map((year) => (
-                        <DropdownMenuItem
-                          key={year}
-                          onClick={() => setPickerYear(year)}
-                          className={`cursor-pointer rounded-md px-3 py-1.5 text-sm font-semibold ${
-                            pickerYear === year ? "bg-primary/15 text-primary" : "text-foreground hover:bg-primary/8"
-                          }`}
-                        >
-                          {year}
-                        </DropdownMenuItem>
-                      ))}
-                    </div>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <button className={`flex-1 px-4 py-3 rounded-xl border shadow-xs hover:shadow-sm transition-all active:scale-[0.98] ${
-                      pickerMonth !== null ? "bg-primary/10 border-primary/40" : "bg-card border-border"
-                    }`}>
-                      <div className="flex items-center justify-between gap-2">
-                        <span className={`font-bold text-sm ${pickerMonth !== null ? "text-primary" : "text-foreground"}`}>
-                          {pickerMonth !== null ? monthName(pickerMonth) : "Місяць"}
-                        </span>
-                        <ChevronDown className="w-5 h-5 text-primary" />
-                      </div>
-                    </button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent className="z-[110] rounded-xl p-1.5 min-w-[140px] max-h-[300px] overflow-y-auto shadow-lg">
-                    <div className="space-y-0.5">
-                      <DropdownMenuItem
-                        onClick={() => setPickerMonth(null)}
-                        className={`cursor-pointer rounded-md px-3 py-1.5 text-sm font-semibold ${
-                          pickerMonth === null ? "bg-primary/15 text-primary" : "text-foreground hover:bg-primary/8"
-                        }`}
-                      >
-                        Весь рік
-                      </DropdownMenuItem>
-                      {monthNames().map((month, i) => (
-                        <DropdownMenuItem
-                          key={i}
-                          onClick={() => setPickerMonth(i)}
-                          className={`cursor-pointer rounded-md px-3 py-1.5 text-sm font-semibold ${
-                            pickerMonth === i ? "bg-primary/15 text-primary" : "text-foreground hover:bg-primary/8"
-                          }`}
-                        >
-                          {month}
-                        </DropdownMenuItem>
-                      ))}
-                    </div>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            </div>
-
-            <div className="flex gap-2">
-              <Button onClick={() => setIsDatePickerOpen(false)} variant="outline" className="flex-1 h-10">
-                Скасувати
-              </Button>
-              <Button onClick={handleApplyCustomPeriod} disabled={pickerYear === null} className="flex-1 h-10">
-                Застосувати
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <BottomNavigation above={<WorkerChips />} />
     </div>
   );
-};
-
-export default Index;
+}

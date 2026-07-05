@@ -4,419 +4,273 @@
 @custom-variant dark (&:is(.dark *));
 
 /* ============================================================
-   Дизайн-система «Aria» 3.0 (V3-SPEC §5)
-   Повітря та евкаліпт · Fixel · світло замість декору
+   Home v2 — нова візуальна база
+   Світло-біле полотно · ПЛАСКО (без тіней/скла) ·
+   яскраві кольорові підтінки · Onest (UI) + Unbounded (display)
+   Глибина = межі + колірні заливки, а не тіні.
    ============================================================ */
 
-/* Fixel — українська гарнітура MacPaw (OFL, самохост, R-1) */
-@font-face {
-  font-family: "Fixel Text";
-  src: url("./assets/fonts/FixelText-Regular.woff2") format("woff2");
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: "Fixel Text";
-  src: url("./assets/fonts/FixelText-Bold.woff2") format("woff2");
-  font-weight: 500 800;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: "Fixel Display";
-  src: url("./assets/fonts/FixelDisplay-SemiBold.woff2") format("woff2");
-  font-weight: 400 800;
-  font-style: normal;
-  font-display: swap;
-}
-
 :root {
-  /* Полотно: аква-повітря + синьо-зелене чорнило */
-  --background: oklch(0.982 0.005 200);
-  --foreground: oklch(0.27 0.03 220);
+  --background: 220 40% 99%;         /* майже біле, ледь прохолодне */
+  --foreground: 224 33% 12%;         /* глибоке чорнило */
 
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.27 0.03 220);
+  --card: 0 0% 100%;
+  --card-foreground: 224 33% 12%;
 
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.27 0.03 220);
+  --popover: 0 0% 100%;
+  --popover-foreground: 224 33% 12%;
 
-  /* Евкаліпт — акцент покоління */
-  --primary: oklch(0.55 0.1 180);
-  --primary-foreground: oklch(0.99 0.003 200);
+  --primary: 243 82% 62%;            /* яскравий індиго */
+  --primary-foreground: 0 0% 100%;
 
-  --secondary: oklch(0.955 0.008 200);
-  --secondary-foreground: oklch(0.32 0.03 220);
+  --secondary: 220 24% 96%;
+  --secondary-foreground: 224 33% 12%;
 
-  --accent: oklch(0.55 0.1 180);
-  --accent-foreground: oklch(0.99 0.003 200);
+  --accent: 158 84% 39%;             /* смарагд */
+  --accent-foreground: 0 0% 100%;
 
-  --muted: oklch(0.945 0.008 200);
-  --muted-foreground: oklch(0.5 0.02 220);
+  --muted: 220 20% 95%;
+  --muted-foreground: 222 12% 46%;
 
-  /* Статуси: мох · бурштин · теракота */
-  --success: oklch(0.55 0.11 150);
-  --success-foreground: oklch(0.99 0.003 200);
+  --success: 158 84% 36%;
+  --success-foreground: 0 0% 100%;
 
-  --warning: oklch(0.63 0.125 75);
-  --warning-foreground: oklch(0.99 0.003 200);
+  --warning: 35 95% 50%;
+  --warning-foreground: 0 0% 100%;
 
-  --destructive: oklch(0.58 0.13 35);
-  --destructive-foreground: oklch(0.99 0.003 200);
+  --destructive: 349 82% 58%;
+  --destructive-foreground: 0 0% 100%;
 
-  --border: oklch(0.915 0.008 200);
-  --input: oklch(0.915 0.008 200);
-  --ring: oklch(0.55 0.1 180);
+  --border: 220 20% 91%;
+  --input: 220 20% 91%;
+  --ring: 243 82% 62%;
 
-  --radius: 1.5rem;
+  --radius: 1.25rem;                 /* більші, сучасні форми */
 
-  /* Відтінки чипів: колір = стан, гроші нейтральні */
-  --hue-time: oklch(0.5 0.09 210);      /* глибока аква — час */
-  --hue-money: oklch(0.34 0.03 220);    /* чорнило — гроші (нейтрально) */
-  --hue-ok: oklch(0.5 0.11 150);        /* мох */
-  --hue-due: oklch(0.56 0.12 70);       /* бурштин */
-  --hue-alert: oklch(0.55 0.14 35);     /* теракота */
+  /* Немає тіней — усе пласко */
+  --shadow-none: 0 0 #0000;
 
-  --gradient-primary: linear-gradient(140deg, oklch(0.6 0.1 180), oklch(0.47 0.1 195));
+  --ease-spring: cubic-bezier(0.22, 1, 0.36, 1);
+  --transition-smooth: all 0.24s cubic-bezier(0.4, 0, 0.2, 1);
 
-  --transition-smooth: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+  /* Яскраві підтінки (bg / fg) для плиток та іконок */
+  --t-violet-bg: 262 90% 96%;   --t-violet-fg: 262 83% 58%;
+  --t-indigo-bg: 243 96% 96%;   --t-indigo-fg: 243 82% 62%;
+  --t-blue-bg:   214 100% 96%;  --t-blue-fg:   217 91% 55%;
+  --t-sky-bg:    198 100% 95%;  --t-sky-fg:    199 92% 44%;
+  --t-teal-bg:   172 76% 93%;   --t-teal-fg:   174 84% 33%;
+  --t-emerald-bg:152 74% 93%;   --t-emerald-fg:158 84% 34%;
+  --t-amber-bg:  43 100% 92%;   --t-amber-fg:  33 95% 46%;
+  --t-rose-bg:   350 100% 96%;  --t-rose-fg:   349 82% 58%;
 }
 
 .dark {
-  /* «Кімната ввечері» */
-  --background: oklch(0.17 0.02 220);
-  --foreground: oklch(0.94 0.006 200);
-
-  --card: oklch(0.21 0.022 220);
-  --card-foreground: oklch(0.94 0.006 200);
-
-  --popover: oklch(0.21 0.022 220);
-  --popover-foreground: oklch(0.94 0.006 200);
-
-  --primary: oklch(0.72 0.09 180);
-  --primary-foreground: oklch(0.16 0.02 220);
-
-  --secondary: oklch(0.26 0.022 220);
-  --secondary-foreground: oklch(0.94 0.006 200);
-
-  --accent: oklch(0.72 0.09 180);
-  --accent-foreground: oklch(0.16 0.02 220);
-
-  --muted: oklch(0.27 0.022 220);
-  --muted-foreground: oklch(0.69 0.015 210);
-
-  --success: oklch(0.7 0.1 150);
-  --success-foreground: oklch(0.16 0.02 220);
-
-  --warning: oklch(0.75 0.12 75);
-  --warning-foreground: oklch(0.2 0.04 70);
-
-  --destructive: oklch(0.68 0.13 35);
-  --destructive-foreground: oklch(0.99 0.003 200);
-
-  --border: oklch(0.3 0.022 220);
-  --input: oklch(0.3 0.022 220);
-  --ring: oklch(0.72 0.09 180);
-
-  --hue-time: oklch(0.76 0.07 210);
-  --hue-money: oklch(0.88 0.01 210);
-  --hue-ok: oklch(0.75 0.09 150);
-  --hue-due: oklch(0.78 0.1 75);
-  --hue-alert: oklch(0.74 0.11 35);
+  --background: 224 32% 8%;
+  --foreground: 0 0% 94%;
+  --card: 224 28% 12%;
+  --card-foreground: 0 0% 94%;
+  --popover: 224 28% 12%;
+  --popover-foreground: 0 0% 94%;
+  --primary: 243 82% 68%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 224 22% 18%;
+  --secondary-foreground: 0 0% 94%;
+  --muted: 224 20% 22%;
+  --muted-foreground: 222 12% 68%;
+  --accent: 158 84% 44%;
+  --accent-foreground: 0 0% 100%;
+  --destructive: 349 82% 62%;
+  --destructive-foreground: 0 0% 100%;
+  --success: 158 84% 42%;
+  --success-foreground: 0 0% 100%;
+  --warning: 35 95% 55%;
+  --warning-foreground: 0 0% 100%;
+  --border: 224 20% 22%;
+  --input: 224 20% 22%;
+  --ring: 243 82% 68%;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-success: var(--success);
-  --color-success-foreground: var(--success-foreground);
-  --color-warning: var(--warning);
-  --color-warning-foreground: var(--warning-foreground);
-  --color-destructive: var(--destructive);
-  --color-destructive-foreground: var(--destructive-foreground);
-  --color-border: var(--border);
-  --color-input: var(--input);
-  --color-ring: var(--ring);
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-success: hsl(var(--success));
+  --color-success-foreground: hsl(var(--success-foreground));
+  --color-warning: hsl(var(--warning));
+  --color-warning-foreground: hsl(var(--warning-foreground));
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
 
-  /* Sidebar tokens (shadcn compatibility) */
-  --color-sidebar: var(--card);
-  --color-sidebar-foreground: var(--card-foreground);
-  --color-sidebar-primary: var(--primary);
-  --color-sidebar-primary-foreground: var(--primary-foreground);
-  --color-sidebar-accent: var(--secondary);
-  --color-sidebar-accent-foreground: var(--secondary-foreground);
-  --color-sidebar-border: var(--border);
-  --color-sidebar-ring: var(--ring);
-
-  --font-sans: "Fixel Text", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --font-display: "Fixel Display", "Fixel Text", ui-sans-serif, system-ui, sans-serif;
-
-  --radius-sm: calc(var(--radius) - 12px);
-  --radius-md: calc(var(--radius) - 8px);
-  --radius-lg: var(--radius);
+  --radius-sm: calc(var(--radius) - 10px);
+  --radius-md: calc(var(--radius) - 6px);
+  --radius-lg: calc(var(--radius) - 2px);
   --radius-xl: var(--radius);
-  --radius-2xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 6px);
 
-  /* Світло, не тінь: ледь помітний серпанок + політ для дока/FAB */
-  --shadow-xs: 0 1px 2px oklch(0.3 0.03 220 / 0.04);
-  --shadow-sm: 0 1px 3px oklch(0.3 0.03 220 / 0.04), 0 4px 14px -4px oklch(0.3 0.03 220 / 0.06);
-  --shadow-md: 0 2px 6px oklch(0.3 0.03 220 / 0.04), 0 10px 24px -8px oklch(0.3 0.03 220 / 0.09);
-  --shadow-lg: 0 4px 12px oklch(0.3 0.03 220 / 0.05), 0 18px 40px -12px oklch(0.3 0.03 220 / 0.13);
-  --shadow-xl: 0 8px 20px oklch(0.3 0.03 220 / 0.06), 0 30px 60px -16px oklch(0.3 0.03 220 / 0.16);
+  /* Прибираємо тіні Tailwind повністю */
+  --shadow-2xs: 0 0 #0000;
+  --shadow-xs: 0 0 #0000;
+  --shadow-sm: 0 0 #0000;
+  --shadow: 0 0 #0000;
+  --shadow-md: 0 0 #0000;
+  --shadow-lg: 0 0 #0000;
+  --shadow-xl: 0 0 #0000;
+  --shadow-2xl: 0 0 #0000;
 
-  --animate-accordion-down: accordion-down 0.2s ease-out;
-  --animate-accordion-up: accordion-up 0.2s ease-out;
+  --font-sans: "Onest Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-display: "Unbounded Variable", "Onest Variable", ui-sans-serif, system-ui, sans-serif;
 
-  @keyframes accordion-down {
-    from { height: 0; }
-    to { height: var(--radix-accordion-content-height); }
+  --animate-rise: rise 0.5s var(--ease-spring) both;
+  --animate-pop: pop 0.34s var(--ease-spring) both;
+
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
   }
-  @keyframes accordion-up {
-    from { height: var(--radix-accordion-content-height); }
-    to { height: 0; }
+  @keyframes pop {
+    0%   { transform: scale(0.82); opacity: 0; }
+    60%  { transform: scale(1.05); }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  @keyframes shimmer { 100% { transform: translateX(100%); } }
+}
+
+@layer base {
+  * { border-color: hsl(var(--border)); }
+  html { -webkit-tap-highlight-color: transparent; }
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+  button { touch-action: manipulation; }
+
+  .font-display { font-family: var(--font-display); }
+  .tabular, [data-tabular] { font-variant-numeric: tabular-nums; }
+  .num-display {
+    font-family: var(--font-display);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+    font-weight: 600;
+  }
+
+  ::selection { background: hsl(var(--primary) / 0.16); }
+
+  :focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px hsl(var(--ring) / 0.28);
+  }
+
+  /* View Transitions — плавні переходи між екранами (fade + легкий підйом) */
+  @keyframes vt-out {
+    to { opacity: 0; transform: scale(0.99); }
+  }
+  @keyframes vt-in {
+    from { opacity: 0; transform: translateY(12px) scale(0.99); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  ::view-transition-old(root) {
+    animation: vt-out 0.2s var(--ease-spring) both;
+  }
+  ::view-transition-new(root) {
+    animation: vt-in 0.32s var(--ease-spring) both;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+    ::view-transition-group(*),
+    ::view-transition-old(*),
+    ::view-transition-new(*) { animation: none !important; }
   }
 }
 
-/* Компактна центрована колонка контенту */
-@utility container {
-  width: 100%;
-  margin-inline: auto;
-  max-width: 44rem;
+/* Пласка картка: папір + hairline, БЕЗ тіні */
+@utility card-flat {
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius);
 }
 
-/* Нижні відступи, що звільняють місце під плаваючий док (+ iOS safe area) */
-@utility pb-dock {
-  padding-bottom: calc(11.5rem + env(safe-area-inset-bottom, 0px));
+/* Кольорові icon-badge (заливка підтінком + насичена іконка) */
+@utility ibadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: 999px;
 }
-@utility pb-dock-sm {
-  padding-bottom: calc(7.5rem + env(safe-area-inset-bottom, 0px));
+@utility tint-violet  { background: hsl(var(--t-violet-bg));  color: hsl(var(--t-violet-fg)); }
+@utility tint-indigo  { background: hsl(var(--t-indigo-bg));  color: hsl(var(--t-indigo-fg)); }
+@utility tint-blue    { background: hsl(var(--t-blue-bg));    color: hsl(var(--t-blue-fg)); }
+@utility tint-sky     { background: hsl(var(--t-sky-bg));     color: hsl(var(--t-sky-fg)); }
+@utility tint-teal    { background: hsl(var(--t-teal-bg));    color: hsl(var(--t-teal-fg)); }
+@utility tint-emerald { background: hsl(var(--t-emerald-bg)); color: hsl(var(--t-emerald-fg)); }
+@utility tint-amber   { background: hsl(var(--t-amber-bg));   color: hsl(var(--t-amber-fg)); }
+@utility tint-rose    { background: hsl(var(--t-rose-bg));    color: hsl(var(--t-rose-fg)); }
+
+/* Мікровідгук натиску */
+@utility press {
+  transition: transform 0.16s var(--ease-spring);
+  &:active { transform: scale(0.96); }
+}
+
+/* Мерехтливий скелетон */
+@utility skeleton {
+  position: relative;
+  overflow: hidden;
+  background: hsl(var(--muted));
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(90deg, transparent, hsl(0 0% 100% / 0.6), transparent);
+    animation: shimmer 1.6s infinite;
+  }
 }
 
 @utility scrollbar-hide {
   -ms-overflow-style: none;
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
-  &::-webkit-scrollbar {
-    display: none;
-  }
+  &::-webkit-scrollbar { display: none; }
 }
 
-@utility transition-smooth {
-  transition: var(--transition-smooth);
+@utility pb-dock {
+  padding-bottom: calc(6.5rem + env(safe-area-inset-bottom, 0px));
 }
 
-@utility gradient-primary {
-  background: var(--gradient-primary);
-}
+@utility rise-in { animation: var(--animate-rise); }
+@utility pop-in { animation: var(--animate-pop); }
+@utility transition-smooth { transition: var(--transition-smooth); }
 
-@layer base {
-  * {
-    border-color: var(--color-border);
-  }
-
-  html {
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  body {
-    background-color: var(--color-background);
-    color: var(--color-foreground);
-    font-family: var(--font-sans);
-    text-rendering: optimizeLegibility;
-    -webkit-font-smoothing: antialiased;
-  }
-
-  button {
-    touch-action: manipulation;
-  }
-}
-
-@layer components {
-  /* Верхня панель: майже суцільна, hairline-межа */
-  .app-bar {
-    background: color-mix(in oklab, var(--color-background) 93%, transparent);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border-bottom: 1px solid var(--color-border);
-  }
-
-  /* Плаваючий док: ЧОРНИЛЬНИЙ — головний упізнаваний елемент Aria */
-  .dock {
-    background: var(--color-foreground);
-    color: var(--color-background);
-    border: none;
-    box-shadow: var(--shadow-lg);
-  }
-  .dark .dock {
-    background: oklch(0.27 0.025 220);
-    color: var(--color-foreground);
-  }
-
-  /* Світла пігулка (селектор працівниці над доком) */
-  .dock-light {
-    background: var(--color-card);
-    border: 1px solid var(--color-border);
-    box-shadow: var(--shadow-md);
-  }
-
-  /* Бульбашка дати в таймлайні */
-  .day-bubble {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    width: 2.9rem;
-    height: 2.9rem;
-    border-radius: 999px;
-    background: var(--color-card);
-    border: 1px solid var(--color-border);
-    flex-shrink: 0;
-  }
-  .day-bubble-today {
-    background: var(--gradient-primary);
-    border-color: transparent;
-    color: var(--color-primary-foreground);
-  }
-  .day-bubble-empty {
-    background: transparent;
-    border-style: dashed;
-  }
-
-  /* Вертикальна рейка таймлайна */
-  .timeline-rail {
-    position: absolute;
-    left: 1.45rem;
-    top: 3.2rem;
-    bottom: -0.6rem;
-    width: 1px;
-    background: var(--color-border);
-  }
-
-  /* Кругла FAB «Створити» */
-  .dock-fab {
-    background: var(--gradient-primary);
-    color: var(--color-primary-foreground);
-    box-shadow:
-      0 6px 14px oklch(0.55 0.1 180 / 0.35),
-      0 2px 4px oklch(0.55 0.1 180 / 0.22);
-  }
-
-  /* Тихий підпис (замість капітелі 2.x) */
-  .caption-label {
-    font-size: 0.78rem;
-    font-weight: 500;
-    letter-spacing: 0.01em;
-    color: var(--color-muted-foreground);
-  }
-
-  /* Дисплейні числа/заголовки — Fixel Display */
-  .display {
-    font-family: var(--font-display);
-    font-weight: 600;
-    letter-spacing: -0.01em;
-    font-variant-numeric: tabular-nums;
-  }
-
-  /* Картка: папір на повітрі, hairline */
-  .surface-card {
-    background: var(--color-card);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-xs);
-  }
-
-  .surface-card-hover {
-    transition: box-shadow 0.22s ease, transform 0.22s ease, border-color 0.22s ease;
-  }
-  .surface-card-hover:hover {
-    box-shadow: var(--shadow-md);
-    border-color: color-mix(in oklab, var(--color-primary) 30%, var(--color-border));
-  }
-  .surface-card-hover:active {
-    transform: scale(0.98);
-  }
-
-  /* Чип-пігулка: значення з іконкою */
-  .chip {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.32rem;
-    border-radius: 999px;
-    padding: 0.34rem 0.62rem;
-    font-size: 0.75rem;
-    font-weight: 700;
-    font-variant-numeric: tabular-nums;
-    line-height: 1;
-    white-space: nowrap;
-  }
-  .chip-time {
-    background: color-mix(in oklab, var(--hue-time) 9%, transparent);
-    color: var(--hue-time);
-  }
-  .chip-money {
-    background: color-mix(in oklab, var(--hue-money) 7%, transparent);
-    color: var(--hue-money);
-  }
-  .chip-ok {
-    background: color-mix(in oklab, var(--hue-ok) 11%, transparent);
-    color: var(--hue-ok);
-  }
-  .chip-due {
-    background: color-mix(in oklab, var(--hue-due) 13%, transparent);
-    color: var(--hue-due);
-  }
-  .chip-alert {
-    background: color-mix(in oklab, var(--hue-alert) 10%, transparent);
-    color: var(--hue-alert);
-  }
-
-  /* Плитка статистики: м'який тон без рамки */
-  .stat-tile {
-    position: relative;
-    overflow: hidden;
-    display: flex;
-    align-items: center;
-    gap: 0.7rem;
-    min-width: 0;
-    border-radius: calc(var(--radius) - 4px);
-    padding: 0.72rem 0.85rem;
-    border: none;
-    box-shadow: none;
-  }
-  .stat-tile-time { background: color-mix(in oklab, var(--hue-time) 6%, var(--color-card)); }
-  .stat-tile-money { background: color-mix(in oklab, var(--hue-money) 5%, var(--color-card)); }
-  .stat-tile-ok { background: color-mix(in oklab, var(--hue-ok) 7%, var(--color-card)); }
-  .stat-tile-due { background: color-mix(in oklab, var(--hue-due) 8%, var(--color-card)); }
-  .stat-tile-neutral { background: var(--color-secondary); }
-
-  /* Круглий тримач іконки */
-  .icon-badge {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    width: 2.5rem;
-    height: 2.5rem;
-    border-radius: 999px;
-    border: none;
-  }
-  .icon-badge-time { background: color-mix(in oklab, var(--hue-time) 11%, transparent); color: var(--hue-time); }
-  .icon-badge-money { background: color-mix(in oklab, var(--hue-money) 8%, transparent); color: var(--hue-money); }
-  .icon-badge-ok { background: color-mix(in oklab, var(--hue-ok) 12%, transparent); color: var(--hue-ok); }
-  .icon-badge-due { background: color-mix(in oklab, var(--hue-due) 13%, transparent); color: var(--hue-due); }
-  .icon-badge-alert { background: color-mix(in oklab, var(--hue-alert) 11%, transparent); color: var(--hue-alert); }
-}
+/* Легасі-класи старих екранів → нейтралізовано під пласку базу
+   (щоб решта сторінок не ламались до їхнього редизайну) */
+@utility glass-card { background: hsl(var(--card)); border: 1px solid hsl(var(--border)); border-radius: var(--radius-lg); }
+@utility glass-effect { background: hsl(var(--card)); border: 1px solid hsl(var(--border)); }
+@utility gradient-primary { background: linear-gradient(135deg, hsl(var(--primary)), hsl(243 82% 70%)); }
+@utility gradient-secondary { background: linear-gradient(180deg, hsl(0 0% 100%), hsl(220 24% 97%)); }
+@utility gradient-success { background: linear-gradient(135deg, hsl(158 84% 38%), hsl(158 84% 46%)); }
+@utility shadow-glow { box-shadow: none; }
+@utility shadow-glow-hover { box-shadow: none; }
+@utility notebook-bg { background-color: hsl(var(--background)); }

@@ -1,141 +1,108 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { User, UserPlus, SignOut as LogOut, CaretRight as ChevronRight, MagnifyingGlass as Search } from "@phosphor-icons/react";
+import { api } from "@/lib/api";
+import { Client } from "@/types/report";
+import { UserPlus, ArrowLeft, ChevronRight, Search, Users, LogOut, SlidersHorizontal } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
-import { Input } from "@/components/ui/input";
-import { HomeDock } from "@/components/HomeDock";
-import { useClients } from "@/data/queries";
-import { ScreenSkeleton } from "@/ui/Skeleton";
+import { useI18n } from "@/i18n";
+import { SettingsSheet } from "@/components/SettingsSheet";
 
-const SelectClient = () => {
+export default function SelectClient() {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const presetDate = searchParams.get("date");
+  const [params] = useSearchParams();
+  const dateParam = params.get("date");
   const { signOut } = useAuth();
-  const { data: clients = [], isLoading } = useClients();
-  const [searchQuery, setSearchQuery] = useState("");
+  const { t } = useI18n();
+  const [clients, setClients] = useState<Client[]>([]);
+  const [q, setQ] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
-  const handleSignOut = async () => {
-    try {
-      await signOut();
-      toast.success("Вихід успішний");
-      navigate("/login");
-    } catch (error) {
-      toast.error("Помилка виходу");
-      console.error(error);
-    }
-  };
+  useEffect(() => {
+    (async () => {
+      try {
+        setLoading(true);
+        setClients(await api.getClients());
+      } catch (e) {
+        toast.error(t("toast.loadClientsError"));
+        console.error(e);
+      } finally {
+        setLoading(false);
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  const filteredClients = clients.filter((client) =>
-    client.name.toLowerCase().includes(searchQuery.toLowerCase()),
-  );
+  const pick = (id: string) =>
+    navigate(`/create-report?clientId=${id}${dateParam ? `&date=${dateParam}` : ""}`, { viewTransition: true });
 
-  if (isLoading) {
-    return <ScreenSkeleton />;
-  }
+  const filtered = clients.filter((c) => c.name.toLowerCase().includes(q.toLowerCase()));
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="fixed top-0 left-0 right-0 z-40 app-bar">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <div className="icon-badge icon-badge-time rounded-full">
-                <User className="w-5 h-5" />
-              </div>
-              <h1 className="display text-xl text-foreground">Оберіть клієнта</h1>
-            </div>
-            <button
-              onClick={() => navigate('/client-management?returnTo=/select-client')}
-              className="h-10 w-10 rounded-full bg-primary/10 hover:bg-primary/15 transition-all active:scale-95 flex items-center justify-center"
-              aria-label="Керування клієнтами"
-            >
-              <UserPlus className="w-5 h-5 text-primary" />
-            </button>
-          </div>
-        </div>
-      </div>
+    <div className="min-h-dvh bg-background">
+      <header className="mx-auto flex max-w-md items-center gap-2 px-4 pt-3">
+        <button type="button" aria-label={t("common.back")} onClick={() => navigate("/", { viewTransition: true })}
+          className="press flex h-10 w-10 items-center justify-center rounded-full border border-border bg-card">
+          <ArrowLeft size={20} strokeWidth={2.3} />
+        </button>
+        <h1 className="flex-1 text-lg font-bold text-foreground">{t("select.title")}</h1>
+        <button type="button" aria-label={t("settings.title")} onClick={() => setSettingsOpen(true)}
+          className="press flex h-10 w-10 items-center justify-center rounded-full text-ink-3">
+          <SlidersHorizontal size={19} strokeWidth={1.6} />
+        </button>
+        <button type="button" aria-label={t("select.addClient")} onClick={() => navigate("/client-management", { viewTransition: true })}
+          className="press flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground">
+          <UserPlus size={18} strokeWidth={2.3} />
+        </button>
+      </header>
 
-      <main className="container mx-auto px-4 pt-24 pb-dock-sm max-w-md space-y-3">
-        <div className="surface-card p-3">
-          <div className="flex items-center gap-3">
-            <div className="icon-badge icon-badge-time rounded-full">
-              <Search className="w-5 h-5" />
-            </div>
-            <Input
-              type="text"
-              placeholder="Пошук клієнта..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="flex-1 border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 text-base placeholder:text-muted-foreground"
-            />
-          </div>
+      <main className="mx-auto max-w-md space-y-3 px-4 pb-10 pt-4">
+        <div className="relative">
+          <Search size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("select.search")}
+            className="w-full rounded-2xl border border-border bg-card py-3 pl-11 pr-4 text-base outline-none focus:border-primary" />
         </div>
 
-        {filteredClients.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-center">
-            {searchQuery ? (
-              <>
-                <Search className="w-16 h-16 text-muted-foreground mb-4" />
-                <p className="text-xl font-semibold text-foreground mb-2">Нічого не знайдено</p>
-                <p className="text-muted-foreground text-sm">Спробуйте інший запит</p>
-              </>
-            ) : (
-              <>
-                <User className="w-16 h-16 text-muted-foreground mb-4" />
-                <p className="text-xl font-semibold text-foreground mb-2">Немає клієнтів</p>
-                <p className="text-muted-foreground text-sm mb-4">Додайте першого клієнта</p>
-                <button
-                  onClick={() => navigate('/client-management?returnTo=/select-client')}
-                  className="bg-primary text-primary-foreground px-6 py-3 rounded-full shadow-md hover:shadow-lg hover:bg-primary/90 transition-all active:scale-95 flex items-center gap-2 font-semibold"
-                >
-                  <UserPlus className="w-5 h-5" />
-                  Додати клієнта
-                </button>
-              </>
+        {loading ? (
+          <div className="space-y-2.5">{[0, 1, 2].map((i) => <div key={i} className="skeleton h-16 rounded-2xl" />)}</div>
+        ) : filtered.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <span className="ibadge tint-indigo mb-4 h-16 w-16"><Users size={28} strokeWidth={2} /></span>
+            <p className="text-lg font-semibold">{q ? t("select.notFound") : t("select.noClients")}</p>
+            {!q && (
+              <button onClick={() => navigate("/client-management", { viewTransition: true })}
+                className="press mt-4 rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground">
+                {t("select.addClient")}
+              </button>
             )}
           </div>
         ) : (
-          filteredClients.map((client) => (
-            <div
-              key={client.id}
-              onClick={() => navigate(`/create-report?clientId=${client.id}${presetDate ? `&date=${presetDate}` : ''}`, { viewTransition: true })}
-              className="surface-card surface-card-hover p-4 cursor-pointer group"
-            >
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3 flex-1 min-w-0">
-                  <div className="icon-badge icon-badge-time w-12 h-12 rounded-full">
-                    <User className="w-6 h-6" />
-                  </div>
-                  <h3 className="text-base font-bold text-foreground truncate">
-                    {client.name}
-                  </h3>
-                </div>
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  <div className="chip chip-money">
-                    <span>{client.hourlyRate}€</span>
-                    <span className="font-medium opacity-70">/год</span>
-                  </div>
-                  <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
-                </div>
-              </div>
-            </div>
-          ))
+          <div className="card-flat divide-y divide-border overflow-hidden rounded-2xl">
+            {filtered.map((c) => (
+              <button key={c.id} type="button" onClick={() => pick(c.id)}
+                className="press flex w-full items-center gap-3 p-3.5 text-left">
+                <span className="ibadge tint-indigo h-11 w-11 font-display text-base font-semibold"
+                  style={{ viewTransitionName: `avatar-${c.id}` }}>
+                  {c.name.charAt(0).toUpperCase()}
+                </span>
+                <span className="flex-1 truncate font-semibold text-foreground">{c.name}</span>
+                <span className="text-sm font-semibold text-primary">
+                  {c.hourlyRate || c.hourly_rate || 0}{t("common.perHour")}
+                </span>
+                <ChevronRight size={18} className="text-muted-foreground" />
+              </button>
+            ))}
+          </div>
         )}
 
-        <button
-          onClick={handleSignOut}
-          className="w-full flex items-center justify-center gap-2 text-muted-foreground hover:text-foreground transition-colors py-3 mt-8"
-        >
-          <LogOut className="w-4 h-4" />
-          <span className="text-sm font-medium">Вийти</span>
+        <button onClick={async () => { await signOut(); navigate("/login"); }}
+          className="press mx-auto mt-6 flex items-center gap-1.5 py-2 text-sm font-medium text-muted-foreground">
+          <LogOut size={15} /> {t("select.signOut")}
         </button>
       </main>
 
-      <HomeDock />
+      <SettingsSheet open={settingsOpen} onOpenChange={setSettingsOpen} />
     </div>
   );
-};
-
-export default SelectClient;
+}

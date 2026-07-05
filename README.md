@@ -1,73 +1,47 @@
-# Welcome to your Lovable project
+# Ясно — облік прибирання
 
-## Project info
+Персональний мобільний застосунок (PWA) для самозайнятої прибиральниці: за 15 секунд
+записати роботу (клієнт + години → сума), бачити скільки зароблено й сплачено, у один
+дотик приймати оплату, і мати живу **картку клієнта** з повною історією робіт.
 
-**URL**: https://lovable.dev/projects/5a79a91b-a3e5-4c52-a5ff-e8bac0908f27
+Покоління **4.0 «Ясно»** — світлий чистий дизайн, чисті лінії, колір = стан.
+Єдине джерело правди — [`docs/PRD-4.0-YASNO.md`](docs/PRD-4.0-YASNO.md).
 
-## How can I edit this code?
+## Стек
+React 19 · React Router 7 · TanStack Query 5 (+persist, offline-read) · Supabase ·
+Tailwind CSS 4 (CSS-first) · Vite 7 · Motion · vaul (нижні листи) · Lucide (іконки) ·
+Zod 4 · Inter (self-host) · PWA (vite-plugin-pwa) · Vitest · Playwright (smoke).
 
-There are several ways of editing your application.
+Архітектура коду:
+- `src/domain/` — чисті доменні розрахунки (гроші, час, дати, статистика) + тести.
+- `src/data/` — контракт `Backend` (supabase / demo-fixture), React Query хуки, zod-маппери.
+- `src/ui/` — примітиви дизайн-мови «Ясно».
+- `src/pages/` — екрани.
 
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/5a79a91b-a3e5-4c52-a5ff-e8bac0908f27) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
+## Розробка
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+npm install
+npm run dev                 # прод-бекенд (потрібні VITE_SUPABASE_*)
+VITE_DEMO=1 npm run dev     # in-memory demo (розробка / скриншоти / smoke)
 ```
 
-**Edit a file directly in GitHub**
+## Скрипти
+```sh
+npm run build       # tsc --noEmit && vite build (типи блокують збірку)
+npm run typecheck
+npm run lint
+npm run test        # vitest
+node scripts/ui-smoke.mjs   # UI smoke (потрібен запущений dev на VITE_DEMO=1)
+```
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## Змінні оточення
+```
+VITE_SUPABASE_URL=...
+VITE_SUPABASE_ANON_KEY=...
+VITE_SENTRY_DSN=...   # опційно, вмикає спостережуваність
+VITE_DEMO=1           # опційно, demo-бекенд без Supabase
+```
 
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/5a79a91b-a3e5-4c52-a5ff-e8bac0908f27) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+## Дані
+Схема мігрує на v3 (`work_days_v3` + в'ю замість обгортки `reports`). Порядок застосування —
+`supabase/README.md` і §10 PRD (дія користувача: потрібен доступ до прод-БД).

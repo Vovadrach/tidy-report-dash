@@ -1,86 +1,154 @@
-import { useMemo } from "react";
-import { CurrencyEur as Euro } from "@phosphor-icons/react";
+import { useState, useEffect, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
+import { api } from "@/lib/api";
+import { Report, Client } from "@/types/report";
+import { Clock, ChevronRight, PartyPopper, HandCoins } from "lucide-react";
+import { toast } from "sonner";
+import NumberFlow from "@number-flow/react";
 import { BottomNavigation } from "@/components/BottomNavigation";
-import { ClientBalanceCard } from "@/components/ClientBalanceCard";
-import { useWorkDays } from "@/data/queries";
-import { debtors } from "@/domain/stats";
-import { decimalToHours } from "@/domain/time";
-import { useWorkerFilter } from "@/contexts/WorkerContext";
-import { ScreenSkeleton } from "@/ui/Skeleton";
-import { EmptyState } from "@/ui/EmptyState";
+import { decimalToHours } from "@/utils/timeFormat";
+import { useWorker } from "@/contexts/WorkerContext";
+import { useI18n } from "@/i18n";
 
-const ReportsStatus = () => {
-  const { selectedWorkerId } = useWorkerFilter();
-  const { data: workDays = [], isLoading, isError, refetch } = useWorkDays();
+export default function ReportsStatus() {
+  const navigate = useNavigate();
+  const { selectedWorkerId } = useWorker();
+  const { t } = useI18n();
+  const [reports, setReports] = useState<Report[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const balances = useMemo(
-    () => debtors(workDays, selectedWorkerId),
-    [workDays, selectedWorkerId],
-  );
+  useEffect(() => {
+    loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedWorkerId]);
 
-  const totals = useMemo(
-    () =>
-      balances.reduce(
-        (acc, b) => ({ due: acc.due + b.totalDue, hours: acc.hours + b.unpaidHours }),
-        { due: 0, hours: 0 },
-      ),
-    [balances],
-  );
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const [reportsData, clientsData] = await Promise.all([api.getReports(), api.getClients()]);
+      const recalculated = reportsData.map((report) => {
+        let totalHours = 0, totalEarned = 0, paidAmount = 0;
+        (report.workDays || []).forEach((day) => {
+          if (day.is_planned) return;
+          const dayStatus = day.paymentStatus || day.payment_status;
+          const dayPaid = day.day_paid_amount || 0;
+          if (selectedWorkerId !== "all") {
+            const a = day.assignments?.find((x) => x.worker_id === selectedWorkerId || x.workerId === selectedWorkerId);
+            if (!a) return;
+            const wA = a.amount || 0, wH = a.hours || 0;
+            totalHours += wH; totalEarned += wA;
+            if (dayStatus === "paid") paidAmount += wA;
+            else if (dayStatus === "partial") paidAmount += day.amount > 0 ? (wA / day.amount) * dayPaid : 0;
+          } else {
+            totalHours += day.hours || 0; totalEarned += day.amount || 0;
+            if (dayStatus === "paid") paidAmount += day.amount || 0;
+            else if (dayStatus === "partial") paidAmount += dayPaid;
+          }
+        });
+        const remainingAmount = totalEarned - paidAmount;
+        const paymentStatus = paidAmount >= totalEarned && totalEarned > 0 ? "paid" : paidAmount > 0 ? "partial" : "unpaid";
+        return { ...report, totalHours, totalEarned, paidAmount, remainingAmount, paymentStatus };
+      });
+      setReports(recalculated);
+      setClients(clientsData);
+    } catch (e) {
+      setError(t("waiting.loadError"));
+      toast.error(t("toast.loadError"));
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  if (isLoading) {
-    return <ScreenSkeleton />;
-  }
+  const debtors = useMemo(() => {
+    const unpaid = reports.filter((r) => (r.paymentStatus === "unpaid" || r.paymentStatus === "partial") && r.remainingAmount > 0);
+    const byClient = new Map<string, { clientId: string; name: string; hours: number; remaining: number }>();
+    for (const r of unpaid) {
+      const cid = r.clientId || r.client_id || "";
+      const e = byClient.get(cid) || { clientId: cid, name: r.clientName || r.client_name || t("common.noName"), hours: 0, remaining: 0 };
+      e.hours += r.totalHours || 0;
+      e.remaining += r.remainingAmount || 0;
+      byClient.set(cid, e);
+    }
+    return [...byClient.values()].filter((d) => d.remaining > 0.5).sort((a, b) => b.remaining - a.remaining);
+  }, [reports]);
 
-  if (isError) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-foreground text-lg mb-4">Помилка завантаження даних</p>
-          <button onClick={() => refetch()} className="bg-primary text-primary-foreground rounded-full px-6 py-2.5 font-bold">
-            Спробувати знову
-          </button>
-        </div>
-      </div>
-    );
-  }
+  const totalDue = debtors.reduce((s, d) => s + d.remaining, 0);
+  const totalHours = debtors.reduce((s, d) => s + d.hours, 0);
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="fixed top-0 left-0 right-0 z-40 app-bar">
-        <div className="container mx-auto px-4 py-4">
-          <h1 className="display text-[1.6rem] text-foreground leading-tight">Очікую оплату</h1>
-          <div className="flex items-end justify-between mt-1">
-            <div className="flex items-baseline gap-1.5">
-              <span className="display text-[2.1rem] leading-none text-foreground">{Math.round(totals.due)}</span>
-              <span className="text-base font-bold text-muted-foreground">€</span>
-            </div>
-            <div className="text-right">
-              <span className="display text-lg text-foreground">{decimalToHours(totals.hours)}</span>
-              <span className="text-xs font-semibold text-muted-foreground ml-1">год</span>
-            </div>
-          </div>
+    <div className="min-h-dvh bg-background">
+      <header className="mx-auto max-w-md px-4 pt-4">
+        <div className="flex items-center gap-2 pb-1">
+          <span className="ibadge tint-amber h-9 w-9"><HandCoins size={18} strokeWidth={2.3} /></span>
+          <h1 className="text-xl font-bold text-foreground">{t("waiting.title")}</h1>
         </div>
-      </div>
+      </header>
 
-      <main className="container mx-auto px-5 pt-32 pb-dock space-y-4">
-        {balances.length === 0 ? (
-          <EmptyState
-            icon={<Euro />}
-            title="Немає боргів"
-            subtitle="Все оплачено 🎉"
-          />
-        ) : (
-          <div className="space-y-3">
-            {balances.map((b) => (
-              <ClientBalanceCard key={b.clientId} balance={b} />
-            ))}
+      <main className="mx-auto max-w-md space-y-4 px-4 pb-[calc(7rem+env(safe-area-inset-bottom))] pt-4">
+        {loading ? (
+          <>
+            <div className="skeleton h-28 rounded-2xl" />
+            <div className="skeleton h-16 rounded-2xl" />
+            <div className="skeleton h-16 rounded-2xl" />
+          </>
+        ) : error ? (
+          <div className="card-flat rounded-2xl p-5 text-center">
+            <p className="mb-3 text-muted-foreground">{error}</p>
+            <button onClick={loadData} className="press rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground">
+              {t("waiting.tryAgain")}
+            </button>
           </div>
+        ) : debtors.length === 0 ? (
+          <div className="rise-in flex flex-col items-center justify-center py-20 text-center">
+            <span className="ibadge tint-emerald mb-4 h-16 w-16"><PartyPopper size={28} strokeWidth={2} /></span>
+            <p className="text-lg font-semibold">{t("waiting.allPaid")}</p>
+            <p className="mt-1 text-sm text-muted-foreground">{t("waiting.noDebts")}</p>
+          </div>
+        ) : (
+          <>
+            <div className="rise-in tint-rose rounded-2xl p-5 text-center">
+              <p className="text-[0.72rem] font-bold uppercase tracking-wider opacity-80">{t("waiting.owed")}</p>
+              <p className="num-display mt-1 text-4xl text-foreground"><NumberFlow value={Math.round(totalDue)} />€</p>
+              <p className="mt-1 text-sm font-medium opacity-80">{t("waiting.forHours", { h: decimalToHours(totalHours) })}</p>
+            </div>
+
+            <div className="space-y-2.5">
+              {debtors.map((d, i) => (
+                <button
+                  key={d.clientId}
+                  type="button"
+                  onClick={() => navigate(`/client-reports/${d.clientId}`, { viewTransition: true })}
+                  style={{ animationDelay: `${Math.min(i * 0.04, 0.25)}s` }}
+                  className="press rise-in card-flat flex w-full items-center gap-3 rounded-2xl p-3.5 text-left"
+                >
+                  <span
+                    className="ibadge tint-indigo h-11 w-11 font-display text-base font-semibold"
+                    style={{ viewTransitionName: `avatar-${d.clientId}` }}
+                  >
+                    {d.name.charAt(0).toUpperCase()}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-semibold text-foreground">{d.name}</p>
+                    <p className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
+                      <Clock size={12} strokeWidth={2.3} /> {decimalToHours(d.hours)} {t("common.hoursShort")}
+                    </p>
+                  </div>
+                  <span className="tint-rose num-display rounded-xl px-3 py-1.5 text-sm">
+                    <NumberFlow value={Math.round(d.remaining)} />€
+                  </span>
+                  <ChevronRight size={18} className="text-muted-foreground" />
+                </button>
+              ))}
+            </div>
+          </>
         )}
       </main>
 
       <BottomNavigation />
     </div>
   );
-};
-
-export default ReportsStatus;
+}

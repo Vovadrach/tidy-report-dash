@@ -1,102 +1,89 @@
+import type { ReactNode } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { ChartDonut, Plus, Coins, Broom } from "@phosphor-icons/react";
-import { WorkerSelector } from "./WorkerSelector";
+import { ChartColumnBig, Plus, Clock, House } from "lucide-react";
+import { useI18n } from "@/i18n";
 
-interface DockItemProps {
+/**
+ * Нижня навігація v2 — СТАТИЧНА, пласка (без скла/blur/тіней).
+ * Суцільний рядок-картка з hairline, кольоровий активний стан,
+ * центральна кнопка «Створити» — заповнене коло primary.
+ */
+const NavItem = ({
+  icon: Icon,
+  label,
+  active,
+  onClick,
+}: {
+  icon: typeof Clock;
   label: string;
-  icon: React.ReactNode;
-  active?: boolean;
+  active: boolean;
   onClick: () => void;
-}
-
-const DockItem = ({ label, icon, active, onClick }: DockItemProps) => (
+}) => (
   <button
+    type="button"
     onClick={onClick}
-    className={`flex-1 flex flex-col items-center justify-center gap-1 h-14 rounded-2xl transition-all duration-150 active:scale-95 ${
-      active ? "opacity-100" : "opacity-55"
-    }`}
+    className="press flex flex-1 flex-col items-center gap-1 py-1.5"
   >
-    {icon}
-    <span className={`text-[10px] tracking-wide ${active ? "font-extrabold" : "font-semibold"}`}>
+    <Icon
+      size={23}
+      strokeWidth={active ? 2.5 : 1.9}
+      className={active ? "text-primary" : "text-muted-foreground"}
+    />
+    <span className={`text-[0.68rem] font-semibold ${active ? "text-primary" : "text-muted-foreground"}`}>
       {label}
     </span>
   </button>
 );
 
-/**
- * Чорнильний док Aria.
- *
- * ВАЖЛИВО: обгортка повністю pointer-events-none — клікабельні лише самі
- * кнопки/панелі (pointer-events-auto). Інакше невидима смуга внизу екрана
- * перехоплює тапи по контенту сторінки (кнопки "Видалити" тощо).
- */
-export const BottomNavigation = () => {
+export const BottomNavigation = ({ above }: { above?: ReactNode }) => {
   const navigate = useNavigate();
   const location = useLocation();
-
-  const isHomePage = location.pathname === "/";
-  const isDashboard = location.pathname === "/dashboard";
-  const isReportsStatus = location.pathname === "/reports-status";
+  const { t } = useI18n();
+  const go = (to: string) => navigate(to, { viewTransition: true });
+  const p = location.pathname;
+  const isHome = p === "/";
 
   return (
-    <div
-      className="fixed bottom-0 left-0 right-0 z-50 pointer-events-none"
-      data-no-swipe
-    >
-      {/* М'який перехід контенту у фон під доком */}
-      <div className="absolute inset-x-0 bottom-0 h-36 pointer-events-none bg-gradient-to-t from-background via-background/85 via-40% to-transparent" />
-
-      <div
-        className="relative px-6"
-        style={{ paddingBottom: "calc(1.25rem + env(safe-area-inset-bottom, 0px))" }}
-      >
-        {/* WorkerSelector над доком (лише на головній) */}
-        {isHomePage && (
-          <div className="flex justify-center mb-2.5">
-            <div className="w-full max-w-[330px] pointer-events-auto">
-              <WorkerSelector />
-            </div>
-          </div>
-        )}
-
-        {/* Кнопка "Головна" над доком (на інших сторінках) */}
-        {!isHomePage && (
-          <div className="flex justify-center mb-2.5">
+    <div className="pointer-events-none fixed inset-x-0 bottom-0 z-50" data-no-swipe>
+      {/* Плавний градієнт-fade НАД усім блоком (над воркер-баром) */}
+      <div className="h-24 bg-gradient-to-t from-background to-transparent" />
+      <div className="pointer-events-auto bg-background">
+        <div className="mx-auto max-w-md px-4 pb-[calc(0.7rem+env(safe-area-inset-bottom))]">
+          {above && <div className="mb-2">{above}</div>}
+        {!isHome && (
+          <div className="mb-2 flex justify-center">
             <button
-              onClick={() => navigate("/")}
-              className="pointer-events-auto dock flex items-center gap-2 h-11 rounded-full px-5 transition-all duration-150 active:scale-95"
+              type="button"
+              onClick={() => go("/")}
+              className="press flex items-center gap-1.5 rounded-full border border-border bg-card px-4 py-2 text-sm font-semibold text-primary"
             >
-              <Broom size={19} weight="fill" />
-              <span className="text-xs font-extrabold tracking-wide">Головна</span>
+              <House size={16} strokeWidth={2.4} /> {t("nav.home")}
             </button>
           </div>
         )}
 
-        {/* Док: Звіт · FAB Створити · Очікую */}
-        <div className="relative mx-auto max-w-[330px] pointer-events-auto">
-          <div className="dock rounded-[2.1rem] px-3">
-            <div className="flex items-center h-[72px] gap-1">
-              <DockItem
-                label="Звіт"
-                active={isDashboard}
-                onClick={() => navigate("/dashboard")}
-                icon={<ChartDonut size={24} weight={isDashboard ? "fill" : "regular"} />}
-              />
-              <button
-                onClick={() => navigate("/select-client")}
-                aria-label="Створити запис"
-                className="dock-fab -mt-9 h-[62px] w-[62px] rounded-full flex items-center justify-center flex-shrink-0 ring-4 ring-background transition-transform duration-150 active:scale-90"
-              >
-                <Plus size={26} weight="bold" />
-              </button>
-              <DockItem
-                label="Очікую"
-                active={isReportsStatus}
-                onClick={() => navigate("/reports-status")}
-                icon={<Coins size={24} weight={isReportsStatus ? "fill" : "regular"} />}
-              />
-            </div>
-          </div>
+        <nav className="flex items-center gap-1 rounded-[1.6rem] border border-border bg-card px-2 py-2">
+          <NavItem
+            icon={ChartColumnBig}
+            label={t("nav.report")}
+            active={p === "/dashboard"}
+            onClick={() => go("/dashboard")}
+          />
+          <button
+            type="button"
+            onClick={() => go("/select-client")}
+            aria-label={t("nav.create")}
+            className="press mx-1 flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground"
+          >
+            <Plus size={26} strokeWidth={2.6} />
+          </button>
+          <NavItem
+            icon={Clock}
+            label={t("nav.waiting")}
+            active={p === "/reports-status"}
+            onClick={() => go("/reports-status")}
+          />
+        </nav>
         </div>
       </div>
     </div>

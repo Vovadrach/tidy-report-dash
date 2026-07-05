@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import { Clock, CurrencyEur as Euro } from "@phosphor-icons/react";
+import { Clock, Euro } from "lucide-react";
 import { Input } from "@/components/ui/input";
 
 interface TimePickerWheelProps {
@@ -231,21 +231,21 @@ export const TimePickerWheel = ({ value, onChange, placeholder = "0:00", hourlyR
       {/* Input Display */}
       <div
         onClick={handleOpen}
-        className="flex items-center gap-1.5 px-2 py-2 rounded-xl border-2 border-primary/25 bg-transparent cursor-pointer hover:border-primary/45 transition-all overflow-hidden"
+        className="flex items-center gap-1.5 px-2 py-2 rounded-lg border-2 border-purple-200/60 dark:border-purple-700/60 bg-transparent cursor-pointer hover:border-purple-400/60 dark:hover:border-purple-500/60 transition-all overflow-hidden"
         style={{ width: '100%', boxSizing: 'border-box' }}
       >
-        <Clock className="w-4 h-4 text-primary flex-shrink-0" />
+        <Clock className="w-4 h-4 text-purple-600 dark:text-purple-400 flex-shrink-0" />
         <span className="text-sm font-semibold text-foreground truncate flex-1 text-center">{displayValue}</span>
       </div>
 
       {/* Modal Overlay */}
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 backdrop-blur-sm p-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
           <div
             ref={modalRef}
-            className="bg-card rounded-3xl shadow-xl p-6 w-[340px] max-w-full max-h-[90vh] overflow-y-auto border border-border"
+            className="bg-card rounded-2xl shadow-2xl p-6 w-[340px] max-h-[90vh] overflow-y-auto border border-border"
           >
-            <h3 className="text-xl font-bold tracking-tight text-center text-foreground mb-6">
+            <h3 className="text-xl font-bold text-center text-foreground mb-6">
               Виберіть час
             </h3>
 
@@ -334,7 +334,7 @@ export const TimePickerWheel = ({ value, onChange, placeholder = "0:00", hourlyR
 
               {/* Amount Input - always visible if hourlyRate provided */}
               {hourlyRate > 0 && (
-                <div className="bg-primary/6 rounded-2xl p-4 border border-primary/20">
+                <div className="bg-gradient-to-br from-blue-50/50 to-indigo-50/50 dark:from-blue-950/30 dark:to-indigo-950/30 rounded-xl p-4 border border-blue-200/50 dark:border-blue-800/50">
                   <label className="block text-sm font-bold text-center text-muted-foreground mb-3">
                     або введіть суму
                   </label>
@@ -346,10 +346,10 @@ export const TimePickerWheel = ({ value, onChange, placeholder = "0:00", hourlyR
                       onFocus={handleAmountFocus}
                       onBlur={handleAmountBlur}
                       placeholder=""
-                      className="flex-1 px-4 py-3 text-center text-xl font-bold rounded-xl border-2 border-primary/30 focus-visible:ring-primary"
+                      className="flex-1 px-4 py-3 text-center text-xl font-bold rounded-lg border-2 border-blue-300 dark:border-blue-700 focus-visible:ring-blue-500"
                     />
-                    <div className="icon-badge icon-badge-money w-12 h-12">
-                      <Euro className="w-5 h-5" />
+                    <div className="flex items-center justify-center w-12 h-12 flex-shrink-0 rounded-lg bg-blue-100 dark:bg-blue-900 border border-blue-300 dark:border-blue-700">
+                      <Euro className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                     </div>
                   </div>
                 </div>
@@ -360,13 +360,13 @@ export const TimePickerWheel = ({ value, onChange, placeholder = "0:00", hourlyR
             <div className="flex gap-3 mt-6">
               <button
                 onClick={handleClose}
-                className="flex-1 px-6 py-3 rounded-2xl bg-secondary text-secondary-foreground font-bold hover:bg-muted transition-all active:scale-[0.98]"
+                className="flex-1 px-6 py-3 rounded-xl bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-900 text-gray-700 dark:text-gray-300 font-bold hover:from-gray-200 hover:to-gray-300 dark:hover:from-gray-700 dark:hover:to-gray-800 transition-all shadow-md hover:shadow-lg"
               >
                 Скасувати
               </button>
               <button
                 onClick={handleConfirm}
-                className="flex-1 px-6 py-3 rounded-2xl bg-primary text-primary-foreground font-bold hover:bg-primary/90 transition-all shadow-sm active:scale-[0.98]"
+                className="flex-1 px-6 py-3 rounded-xl bg-gradient-to-br from-primary to-primary/90 text-primary-foreground font-bold hover:from-primary/90 hover:to-primary/80 transition-all shadow-md hover:shadow-lg"
               >
                 Підтвердити
               </button>
@@ -375,6 +375,18 @@ export const TimePickerWheel = ({ value, onChange, placeholder = "0:00", hourlyR
         </div>
       )}
 
+      {/* Hide scrollbar and optimize scrolling CSS */}
+      <style>{`
+        .scrollbar-hide::-webkit-scrollbar {
+          display: none;
+        }
+        .scrollbar-hide {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+          -webkit-overflow-scrolling: touch;
+          touch-action: pan-y;
+        }
+      `}</style>
     </>
   );
 };
