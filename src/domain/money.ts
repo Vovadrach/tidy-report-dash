@@ -1,4 +1,4 @@
-import type { PaymentStatus, WorkDay } from "./types";
+import type { ISODate, PaymentStatus, WorkDay } from "./types";
 
 /**
  * Фінансовий домен: єдине місце розрахунків оплат і часток.
@@ -88,3 +88,58 @@ export const validateSplit = (total: number, entries: SplitEntry[]): SplitValida
 };
 
 export const round2 = (n: number): number => Math.round(n * 100) / 100;
+
+/**
+ * Реконсиляція оплати після зміни суми дня (фікс B1):
+ * paidAmount ніколи не перевищує amount і не від'ємний; статус — похідний.
+ * Викликається ЗАВЖДИ разом зі зміною amount/hours.
+ */
+export const reconcile = (
+  amount: number,
+  paidAmount: number,
+): { paidAmount: number; status: PaymentStatus } => {
+  const p = round2(Math.min(Math.max(0, paidAmount), amount));
+  return { paidAmount: p, status: resolveStatus(p, amount) };
+};
+
+export interface DayLike {
+  id: string;
+  date: ISODate;
+  amount: number;
+  paidAmount: number;
+}
+
+export interface Allocation {
+  id: string;
+  paidAmount: number;
+  status: PaymentStatus;
+}
+
+export interface DistributeResult {
+  allocations: Allocation[];
+  /** Скільки з lump-суми реально лягло на дні */
+  applied: number;
+  /** Нерозподілений залишок (сума перевищила борг) */
+  leftover: number;
+}
+
+/**
+ * Розподіл lump-оплати між днями клієнта — НАЙСТАРІШІ несплачені першими (R6).
+ * Кожен день добивається до повної суми, поки lump не вичерпається.
+ * Повертає лише змінені дні.
+ */
+export const distributePayment = (days: DayLike[], amount: number): DistributeResult => {
+  const sorted = [...days].sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+  let remaining = round2(Math.max(0, Number.isFinite(amount) ? amount : 0));
+  const allocations: Allocation[] = [];
+  for (const d of sorted) {
+    if (remaining <= 0.004) break;
+    const due = round2(d.amount - Math.min(d.paidAmount, d.amount));
+    if (due <= 0.004) continue;
+    const pay = Math.min(due, remaining);
+    const nextPaid = round2(Math.min(d.amount, d.paidAmount + pay));
+    allocations.push({ id: d.id, paidAmount: nextPaid, status: resolveStatus(nextPaid, d.amount) });
+    remaining = round2(remaining - pay);
+  }
+  return { allocations, applied: round2(Math.max(0, amount) - remaining), leftover: remaining };
+};
