@@ -1,148 +1,82 @@
 import { useNavigate, useLocation } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import {
-  ChartBar,
-  PlusCircle,
-  Clock as ClockIcon,
-  House,
-} from "@phosphor-icons/react";
-import { WorkerSelector } from "./WorkerSelector";
+import { ChartColumnBig, Plus, Clock, House } from "lucide-react";
+
+/**
+ * Нижня навігація v2 — СТАТИЧНА, пласка (без скла/blur/тіней).
+ * Суцільний рядок-картка з hairline, кольоровий активний стан,
+ * центральна кнопка «Створити» — заповнене коло primary.
+ */
+const NavItem = ({
+  icon: Icon,
+  label,
+  active,
+  onClick,
+}: {
+  icon: typeof Clock;
+  label: string;
+  active: boolean;
+  onClick: () => void;
+}) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className="press flex flex-1 flex-col items-center gap-1 py-1.5"
+  >
+    <Icon
+      size={23}
+      strokeWidth={active ? 2.5 : 1.9}
+      className={active ? "text-primary" : "text-muted-foreground"}
+    />
+    <span className={`text-[0.68rem] font-semibold ${active ? "text-primary" : "text-muted-foreground"}`}>
+      {label}
+    </span>
+  </button>
+);
 
 export const BottomNavigation = () => {
   const navigate = useNavigate();
   const location = useLocation();
-
-  // Визначаємо поточну сторінку
-  const isHomePage = location.pathname === "/";
-  const isDashboard = location.pathname === "/dashboard";
-  const isReportsStatus = location.pathname === "/reports-status";
-  const isSelectClient = location.pathname === "/select-client";
-  const isCreateReport = location.pathname.startsWith("/create-report");
-
-  // Показувати кнопку головна тільки не на головній
-  const showHomeButton = !isHomePage;
-
-  // Функція для переходу на головну
-  const handleHomeClick = () => {
-    navigate("/"); // Завжди йдемо на головну
-  };
+  const go = (to: string) => navigate(to, { viewTransition: true });
+  const p = location.pathname;
+  const isHome = p === "/";
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 pointer-events-none" data-no-swipe>
-      {/* Градієнтний ефект розмиття (дим) */}
-      <div className="absolute inset-0 pointer-events-none" style={{ height: '200px' }}>
-        {/* Розмиття backdrop */}
-        <div
-          className="absolute inset-0 backdrop-blur-xl"
-          style={{
-            maskImage: 'linear-gradient(to top, black 0%, black 30%, transparent 100%)',
-            WebkitMaskImage: 'linear-gradient(to top, black 0%, black 30%, transparent 100%)'
-          }}
-        ></div>
-
-        {/* Градієнтний фон */}
-        <div
-          className="absolute inset-0 bg-gradient-to-t from-background via-background/90 via-30% to-transparent"
-        ></div>
-      </div>
-
-      <div className="px-6 pb-6 relative pointer-events-auto">
-        {/* WorkerSelector над панеллю (на головній) */}
-        {isHomePage && (
-          <div className="flex justify-center mb-2">
-            <div className="w-full" style={{ maxWidth: '360px' }}>
-              <WorkerSelector />
-            </div>
-          </div>
-        )}
-
-        {/* Маленька кнопка Головна над панеллю */}
-        {showHomeButton && (
-          <div className="flex justify-center mb-2">
+    <div className="fixed inset-x-0 bottom-0 z-50 bg-gradient-to-t from-background via-background to-transparent pt-6" data-no-swipe>
+      <div className="mx-auto max-w-md px-4 pb-[calc(0.7rem+env(safe-area-inset-bottom))]">
+        {!isHome && (
+          <div className="mb-2 flex justify-center">
             <button
-              onClick={handleHomeClick}
-              className="flex flex-col items-center justify-center gap-[2px] h-[56px] rounded-full transition-all duration-150 active:scale-95 px-8 bg-white/5 dark:bg-gray-900/5 backdrop-blur-xl border border-white/10 shadow-[0_4px_16px_0_rgba(31,38,135,0.15),0_8px_24px_0_rgba(0,0,0,0.1)]"
-              style={{ backgroundColor: 'rgba(0, 0, 0, 0.045)' }}
+              type="button"
+              onClick={() => go("/")}
+              className="press flex items-center gap-1.5 rounded-full border border-border bg-card px-4 py-2 text-sm font-semibold text-primary"
             >
-              <House
-                size={27}
-                weight="fill"
-                color="#007AFF"
-              />
-              <span
-                className="text-[10.5px] font-medium tracking-[-0.01em]"
-                style={{ color: '#007AFF' }}
-              >
-                Головна
-              </span>
+              <House size={16} strokeWidth={2.4} /> Головна
             </button>
           </div>
         )}
 
-        {/* Telegram-style панель з glass-morphism */}
-        <div className="relative mx-auto" style={{ maxWidth: '360px' }}>
-          {/* Головна панель */}
-          <div className="bg-white/5 dark:bg-gray-900/5 backdrop-blur-xl border border-white/10 shadow-[0_8px_32px_0_rgba(31,38,135,0.2),0_4px_16px_0_rgba(0,0,0,0.15)] rounded-[2.25rem] overflow-hidden relative">
-            <div className="flex items-center h-[70px] px-2 gap-1 relative">
-              {/* Ліва кнопка - Звіт */}
-              <button
-                onClick={() => navigate("/dashboard")}
-                className="flex-1 flex flex-col items-center justify-center gap-[2px] h-[56px] rounded-full transition-colors duration-150 active:bg-black/[0.08]"
-                style={{ backgroundColor: isDashboard ? 'rgba(0, 0, 0, 0.045)' : 'transparent' }}
-              >
-                <ChartBar
-                  size={27}
-                  weight="fill"
-                  color={isDashboard ? "#007AFF" : "#3C3C43"}
-                />
-                <span
-                  className="text-[10.5px] font-medium tracking-[-0.01em]"
-                  style={{ color: isDashboard ? '#007AFF' : '#3C3C43' }}
-                >
-                  Звіт
-                </span>
-              </button>
-
-              {/* Центральна кнопка - Створити запис (завжди) */}
-              <button
-                onClick={() => navigate("/select-client")}
-                className="flex-1 flex flex-col items-center justify-center gap-[2px] h-[56px] rounded-full transition-colors duration-150 active:bg-black/[0.08]"
-                style={{ backgroundColor: (isSelectClient || isCreateReport) ? 'rgba(0, 0, 0, 0.045)' : 'transparent' }}
-              >
-                <PlusCircle
-                  size={27}
-                  weight="fill"
-                  color={(isSelectClient || isCreateReport) ? "#007AFF" : "#3C3C43"}
-                />
-                <span
-                  className="text-[10.5px] font-medium tracking-[-0.01em]"
-                  style={{ color: (isSelectClient || isCreateReport) ? '#007AFF' : '#3C3C43' }}
-                >
-                  Створити
-                </span>
-              </button>
-
-              {/* Права кнопка - Очікую */}
-              <button
-                onClick={() => navigate("/reports-status")}
-                className="flex-1 flex flex-col items-center justify-center gap-[2px] h-[56px] rounded-full transition-colors duration-150 active:bg-black/[0.08]"
-                style={{ backgroundColor: isReportsStatus ? 'rgba(0, 0, 0, 0.045)' : 'transparent' }}
-              >
-                <ClockIcon
-                  size={27}
-                  weight="fill"
-                  color={isReportsStatus ? "#007AFF" : "#3C3C43"}
-                />
-                <span
-                  className="text-[10.5px] font-medium tracking-[-0.01em]"
-                  style={{ color: isReportsStatus ? '#007AFF' : '#3C3C43' }}
-                >
-                  Очікую
-                </span>
-              </button>
-            </div>
-          </div>
-        </div>
+        <nav className="flex items-center gap-1 rounded-[1.6rem] border border-border bg-card px-2 py-2">
+          <NavItem
+            icon={ChartColumnBig}
+            label="Звіт"
+            active={p === "/dashboard"}
+            onClick={() => go("/dashboard")}
+          />
+          <button
+            type="button"
+            onClick={() => go("/select-client")}
+            aria-label="Створити запис"
+            className="press mx-1 flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground"
+          >
+            <Plus size={26} strokeWidth={2.6} />
+          </button>
+          <NavItem
+            icon={Clock}
+            label="Очікую"
+            active={p === "/reports-status"}
+            onClick={() => go("/reports-status")}
+          />
+        </nav>
       </div>
     </div>
   );

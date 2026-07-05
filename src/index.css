@@ -4,91 +4,90 @@
 @custom-variant dark (&:is(.dark *));
 
 /* ============================================================
-   «Чистий Світанок» — еволюція (Evo)
-   Той самий дизайн, піднятий до сучасного преміального крафту:
-   багатошарові м'які тіні · вивірена типографіка · мікровідгук ·
-   spring-анімації (Motion) · анімовані числа (NumberFlow)
+   Home v2 — нова візуальна база
+   Світло-біле полотно · ПЛАСКО (без тіней/скла) ·
+   яскраві кольорові підтінки · Onest (UI) + Unbounded (display)
+   Глибина = межі + колірні заливки, а не тіні.
    ============================================================ */
 
 :root {
-  --background: 220 33% 99%;        /* ледь тепліше за чисто-біле — м'якше */
-  --foreground: 218 39% 15%;        /* глибший синьо-графіт для контрасту */
+  --background: 220 40% 99%;         /* майже біле, ледь прохолодне */
+  --foreground: 224 33% 12%;         /* глибоке чорнило */
 
   --card: 0 0% 100%;
-  --card-foreground: 218 39% 15%;
+  --card-foreground: 224 33% 12%;
 
   --popover: 0 0% 100%;
-  --popover-foreground: 218 39% 15%;
+  --popover-foreground: 224 33% 12%;
 
-  --primary: 217 91% 60%;           /* #3B82F6 */
+  --primary: 243 82% 62%;            /* яскравий індиго */
   --primary-foreground: 0 0% 100%;
 
-  --secondary: 214 20% 96%;
-  --secondary-foreground: 218 39% 15%;
+  --secondary: 220 24% 96%;
+  --secondary-foreground: 224 33% 12%;
 
-  --accent: 160 84% 39%;            /* #10B981 */
+  --accent: 158 84% 39%;             /* смарагд */
   --accent-foreground: 0 0% 100%;
 
-  --muted: 214 18% 93%;
-  --muted-foreground: 216 12% 47%;
+  --muted: 220 20% 95%;
+  --muted-foreground: 222 12% 46%;
 
-  --success: 160 84% 33%;
+  --success: 158 84% 36%;
   --success-foreground: 0 0% 100%;
 
-  --warning: 33 95% 52%;
+  --warning: 35 95% 50%;
   --warning-foreground: 0 0% 100%;
 
-  --destructive: 0 84% 60%;
+  --destructive: 349 82% 58%;
   --destructive-foreground: 0 0% 100%;
 
-  --border: 214 20% 90%;            /* м'якша hairline */
-  --input: 214 20% 90%;
-  --ring: 217 91% 60%;
+  --border: 220 20% 91%;
+  --input: 220 20% 91%;
+  --ring: 243 82% 62%;
 
-  --radius: 0.875rem;               /* трохи округліше — сучасніше */
+  --radius: 1.25rem;                 /* більші, сучасні форми */
 
-  /* Градієнти (той самий синьо-зелений, чистіші стопи) */
-  --gradient-primary: linear-gradient(135deg, hsl(217 92% 62%), hsl(199 89% 52%) 45%, hsl(160 84% 42%));
-  --gradient-secondary: linear-gradient(180deg, hsl(0 0% 100%), hsl(214 20% 97%));
-  --gradient-success: linear-gradient(135deg, hsl(160 84% 36%), hsl(160 84% 44%));
-  --gradient-violet: linear-gradient(135deg, hsl(255 92% 76%), hsl(268 84% 66%));
+  /* Немає тіней — усе пласко */
+  --shadow-none: 0 0 #0000;
 
-  /* Багатошарові м'які тіні з синім підтоном (замість пласких чорних) */
-  --shadow-xs: 0 1px 2px hsl(218 40% 30% / 0.05);
-  --shadow-sm: 0 1px 2px hsl(218 40% 30% / 0.05), 0 2px 6px -1px hsl(218 40% 30% / 0.06);
-  --shadow-md: 0 2px 4px hsl(218 40% 30% / 0.05), 0 6px 16px -3px hsl(218 40% 30% / 0.09);
-  --shadow-lg: 0 4px 8px -2px hsl(218 40% 30% / 0.06), 0 14px 32px -8px hsl(218 40% 30% / 0.13);
-  --shadow-xl: 0 8px 20px -4px hsl(218 40% 30% / 0.09), 0 28px 56px -14px hsl(218 40% 30% / 0.18);
-  --shadow-primary: 0 6px 16px -4px hsl(217 91% 60% / 0.4), 0 2px 6px -2px hsl(217 91% 60% / 0.3);
-
-  --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   --ease-spring: cubic-bezier(0.22, 1, 0.36, 1);
+  --transition-smooth: all 0.24s cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Яскраві підтінки (bg / fg) для плиток та іконок */
+  --t-violet-bg: 262 90% 96%;   --t-violet-fg: 262 83% 58%;
+  --t-indigo-bg: 243 96% 96%;   --t-indigo-fg: 243 82% 62%;
+  --t-blue-bg:   214 100% 96%;  --t-blue-fg:   217 91% 55%;
+  --t-sky-bg:    198 100% 95%;  --t-sky-fg:    199 92% 44%;
+  --t-teal-bg:   172 76% 93%;   --t-teal-fg:   174 84% 33%;
+  --t-emerald-bg:152 74% 93%;   --t-emerald-fg:158 84% 34%;
+  --t-amber-bg:  43 100% 92%;   --t-amber-fg:  33 95% 46%;
+  --t-rose-bg:   350 100% 96%;  --t-rose-fg:   349 82% 58%;
 }
 
 .dark {
-  --background: 218 32% 9%;
-  --foreground: 0 0% 92%;
-  --card: 218 30% 13%;
-  --card-foreground: 0 0% 92%;
-  --popover: 218 30% 13%;
-  --popover-foreground: 0 0% 92%;
-  --primary: 217 91% 62%;
+  --background: 224 32% 8%;
+  --foreground: 0 0% 94%;
+  --card: 224 28% 12%;
+  --card-foreground: 0 0% 94%;
+  --popover: 224 28% 12%;
+  --popover-foreground: 0 0% 94%;
+  --primary: 243 82% 68%;
   --primary-foreground: 0 0% 100%;
-  --secondary: 218 26% 18%;
-  --secondary-foreground: 0 0% 92%;
-  --muted: 218 22% 24%;
-  --muted-foreground: 216 14% 68%;
-  --accent: 160 84% 42%;
+  --secondary: 224 22% 18%;
+  --secondary-foreground: 0 0% 94%;
+  --muted: 224 20% 22%;
+  --muted-foreground: 222 12% 68%;
+  --accent: 158 84% 44%;
   --accent-foreground: 0 0% 100%;
-  --destructive: 0 84% 62%;
+  --destructive: 349 82% 62%;
   --destructive-foreground: 0 0% 100%;
-  --success: 160 84% 40%;
+  --success: 158 84% 42%;
   --success-foreground: 0 0% 100%;
-  --warning: 33 95% 55%;
+  --warning: 35 95% 55%;
   --warning-foreground: 0 0% 100%;
-  --border: 218 22% 22%;
-  --input: 218 22% 22%;
-  --ring: 217 91% 62%;
+  --border: 224 20% 22%;
+  --input: 224 20% 22%;
+  --ring: 243 82% 68%;
 }
 
 @theme inline {
@@ -116,72 +115,74 @@
   --color-input: hsl(var(--input));
   --color-ring: hsl(var(--ring));
 
-  --radius-sm: calc(var(--radius) - 5px);
-  --radius-md: calc(var(--radius) - 3px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 5px);
-  --radius-2xl: calc(var(--radius) + 10px);
+  --radius-sm: calc(var(--radius) - 10px);
+  --radius-md: calc(var(--radius) - 6px);
+  --radius-lg: calc(var(--radius) - 2px);
+  --radius-xl: var(--radius);
+  --radius-2xl: calc(var(--radius) + 6px);
 
-  --shadow-xs: var(--shadow-xs);
-  --shadow-sm: var(--shadow-sm);
-  --shadow-md: var(--shadow-md);
-  --shadow-lg: var(--shadow-lg);
-  --shadow-xl: var(--shadow-xl);
+  /* Прибираємо тіні Tailwind повністю */
+  --shadow-2xs: 0 0 #0000;
+  --shadow-xs: 0 0 #0000;
+  --shadow-sm: 0 0 #0000;
+  --shadow: 0 0 #0000;
+  --shadow-md: 0 0 #0000;
+  --shadow-lg: 0 0 #0000;
+  --shadow-xl: 0 0 #0000;
+  --shadow-2xl: 0 0 #0000;
 
-  --font-sans: "Inter Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-sans: "Onest Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-display: "Unbounded Variable", "Onest Variable", ui-sans-serif, system-ui, sans-serif;
 
   --animate-rise: rise 0.5s var(--ease-spring) both;
-  --animate-pop: pop 0.35s var(--ease-spring) both;
+  --animate-pop: pop 0.34s var(--ease-spring) both;
 
   @keyframes rise {
     from { opacity: 0; transform: translateY(10px); }
     to   { opacity: 1; transform: translateY(0); }
   }
   @keyframes pop {
-    0%   { transform: scale(0.8); opacity: 0; }
-    60%  { transform: scale(1.06); }
+    0%   { transform: scale(0.82); opacity: 0; }
+    60%  { transform: scale(1.05); }
     100% { transform: scale(1); opacity: 1; }
   }
-  @keyframes shimmer {
-    100% { transform: translateX(100%); }
-  }
+  @keyframes shimmer { 100% { transform: translateX(100%); } }
 }
 
 @layer base {
-  * {
-    border-color: hsl(var(--border));
-  }
-  html {
-    -webkit-tap-highlight-color: transparent;
-  }
+  * { border-color: hsl(var(--border)); }
+  html { -webkit-tap-highlight-color: transparent; }
   body {
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
     font-family: var(--font-sans);
-    font-feature-settings: "cv11", "ss01", "ss03";
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
   }
   button { touch-action: manipulation; }
 
-  /* Числа — табличні всюди, де важлива вертикаль */
+  .font-display { font-family: var(--font-display); }
   .tabular, [data-tabular] { font-variant-numeric: tabular-nums; }
-
-  /* Дисплейні числа */
   .num-display {
+    font-family: var(--font-display);
     font-variant-numeric: tabular-nums;
-    letter-spacing: -0.02em;
-    font-weight: 700;
+    letter-spacing: -0.01em;
+    font-weight: 600;
   }
 
-  ::selection { background: hsl(var(--primary) / 0.18); }
+  ::selection { background: hsl(var(--primary) / 0.16); }
 
-  /* Плавніший фокус */
   :focus-visible {
     outline: none;
-    box-shadow: 0 0 0 3px hsl(var(--ring) / 0.35);
-    border-radius: calc(var(--radius) - 4px);
+    box-shadow: 0 0 0 3px hsl(var(--ring) / 0.28);
+  }
+
+  /* View Transitions — плавні переходи між екранами */
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation-duration: 0.28s;
+    animation-timing-function: var(--ease-spring);
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -189,43 +190,35 @@
       animation-duration: 0.01ms !important;
       transition-duration: 0.01ms !important;
     }
+    ::view-transition-group(*),
+    ::view-transition-old(*),
+    ::view-transition-new(*) { animation: none !important; }
   }
 }
 
-/* Зошитова сітка (тонша, м'якша) */
-@utility notebook-bg {
-  background-color: hsl(var(--background));
-  background-image:
-    linear-gradient(hsl(214 20% 92%) 1px, transparent 1px),
-    linear-gradient(90deg, hsl(214 20% 92%) 1px, transparent 1px);
-  background-size: 22px 22px;
+/* Пласка картка: папір + hairline, БЕЗ тіні */
+@utility card-flat {
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius);
 }
 
-@utility glass-effect {
-  background: hsl(var(--card));
-  border: 1px solid hsl(var(--border) / 0.8);
-  box-shadow: var(--shadow-md);
+/* Кольорові icon-badge (заливка підтінком + насичена іконка) */
+@utility ibadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: 999px;
 }
-@utility glass-card {
-  background: hsl(var(--card));
-  border: 1px solid hsl(var(--border) / 0.8);
-  box-shadow: var(--shadow-md);
-  transition: box-shadow 0.28s var(--ease-spring), transform 0.28s var(--ease-spring), border-color 0.28s var(--ease-spring);
-  &:hover {
-    box-shadow: var(--shadow-lg);
-    border-color: hsl(var(--primary) / 0.25);
-    transform: translateY(-2px);
-  }
-  &:active { transform: translateY(0) scale(0.995); }
-}
-@utility gradient-primary { background: var(--gradient-primary); }
-@utility gradient-secondary { background: var(--gradient-secondary); }
-@utility gradient-success { background: var(--gradient-success); }
-@utility gradient-violet { background: var(--gradient-violet); }
-@utility shadow-glow { box-shadow: var(--shadow-xl); }
-@utility shadow-glow-hover { &:hover { box-shadow: var(--shadow-xl); } }
-@utility shadow-primary { box-shadow: var(--shadow-primary); }
-@utility transition-smooth { transition: var(--transition-smooth); }
+@utility tint-violet  { background: hsl(var(--t-violet-bg));  color: hsl(var(--t-violet-fg)); }
+@utility tint-indigo  { background: hsl(var(--t-indigo-bg));  color: hsl(var(--t-indigo-fg)); }
+@utility tint-blue    { background: hsl(var(--t-blue-bg));    color: hsl(var(--t-blue-fg)); }
+@utility tint-sky     { background: hsl(var(--t-sky-bg));     color: hsl(var(--t-sky-fg)); }
+@utility tint-teal    { background: hsl(var(--t-teal-bg));    color: hsl(var(--t-teal-fg)); }
+@utility tint-emerald { background: hsl(var(--t-emerald-bg)); color: hsl(var(--t-emerald-fg)); }
+@utility tint-amber   { background: hsl(var(--t-amber-bg));   color: hsl(var(--t-amber-fg)); }
+@utility tint-rose    { background: hsl(var(--t-rose-bg));    color: hsl(var(--t-rose-fg)); }
 
 /* Мікровідгук натиску */
 @utility press {
@@ -243,7 +236,7 @@
     position: absolute;
     inset: 0;
     transform: translateX(-100%);
-    background: linear-gradient(90deg, transparent, hsl(0 0% 100% / 0.55), transparent);
+    background: linear-gradient(90deg, transparent, hsl(0 0% 100% / 0.6), transparent);
     animation: shimmer 1.6s infinite;
   }
 }
@@ -251,6 +244,7 @@
 @utility scrollbar-hide {
   -ms-overflow-style: none;
   scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
   &::-webkit-scrollbar { display: none; }
 }
 
@@ -258,9 +252,17 @@
   padding-bottom: calc(6.5rem + env(safe-area-inset-bottom, 0px));
 }
 
-@utility rise-in {
-  animation: var(--animate-rise);
-}
-@utility pop-in {
-  animation: var(--animate-pop);
-}
+@utility rise-in { animation: var(--animate-rise); }
+@utility pop-in { animation: var(--animate-pop); }
+@utility transition-smooth { transition: var(--transition-smooth); }
+
+/* Легасі-класи старих екранів → нейтралізовано під пласку базу
+   (щоб решта сторінок не ламались до їхнього редизайну) */
+@utility glass-card { background: hsl(var(--card)); border: 1px solid hsl(var(--border)); border-radius: var(--radius-lg); }
+@utility glass-effect { background: hsl(var(--card)); border: 1px solid hsl(var(--border)); }
+@utility gradient-primary { background: linear-gradient(135deg, hsl(var(--primary)), hsl(243 82% 70%)); }
+@utility gradient-secondary { background: linear-gradient(180deg, hsl(0 0% 100%), hsl(220 24% 97%)); }
+@utility gradient-success { background: linear-gradient(135deg, hsl(158 84% 38%), hsl(158 84% 46%)); }
+@utility shadow-glow { box-shadow: none; }
+@utility shadow-glow-hover { box-shadow: none; }
+@utility notebook-bg { background-color: hsl(var(--background)); }

@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { isDemo } from '@/data';
 import { Worker } from '@/types/report';
 import { api } from '@/lib/api';
 import { useAuth } from './AuthContext';
@@ -36,8 +37,8 @@ export const WorkerProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   const loadWorkers = async () => {
-    if (!user) return;
-    
+    if (!user && !isDemo) return;
+
     try {
       setLoading(true);
       
@@ -81,7 +82,7 @@ export const WorkerProvider = ({ children }: { children: ReactNode }) => {
     : workers.find(w => w.id === selectedWorkerId) || null;
 
   useEffect(() => {
-    if (user) {
+    if (user || isDemo) {
       loadWorkers();
     }
   }, [user]);
