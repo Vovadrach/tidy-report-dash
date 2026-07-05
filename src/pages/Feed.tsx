@@ -57,6 +57,8 @@ export default function Feed() {
       (days ?? [])
         .filter((d) => inRange(d.date, range))
         .sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0)),
+    // range — похідне від anchor; range.from/to стабільні рядки
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [days, range.from, range.to],
   );
 
