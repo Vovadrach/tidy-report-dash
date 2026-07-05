@@ -123,7 +123,10 @@ export default function ReportsStatus() {
                   style={{ animationDelay: `${Math.min(i * 0.04, 0.25)}s` }}
                   className="press rise-in card-flat flex w-full items-center gap-3 rounded-2xl p-3.5 text-left"
                 >
-                  <span className="ibadge tint-indigo h-11 w-11 font-display text-base font-semibold">
+                  <span
+                    className="ibadge tint-indigo h-11 w-11 font-display text-base font-semibold"
+                    style={{ viewTransitionName: `avatar-${d.clientId}` }}
+                  >
                     {d.name.charAt(0).toUpperCase()}
                   </span>
                   <div className="min-w-0 flex-1">

@@ -42,9 +42,12 @@ export const BottomNavigation = ({ above }: { above?: ReactNode }) => {
   const isHome = p === "/";
 
   return (
-    <div className="fixed inset-x-0 bottom-0 z-50 bg-gradient-to-t from-background via-background to-transparent pt-6" data-no-swipe>
-      <div className="mx-auto max-w-md px-4 pb-[calc(0.7rem+env(safe-area-inset-bottom))]">
-        {above && <div className="mb-2">{above}</div>}
+    <div className="pointer-events-none fixed inset-x-0 bottom-0 z-50" data-no-swipe>
+      {/* Плавний градієнт-fade НАД усім блоком (над воркер-баром) */}
+      <div className="h-24 bg-gradient-to-t from-background to-transparent" />
+      <div className="pointer-events-auto bg-background">
+        <div className="mx-auto max-w-md px-4 pb-[calc(0.7rem+env(safe-area-inset-bottom))]">
+          {above && <div className="mb-2">{above}</div>}
         {!isHome && (
           <div className="mb-2 flex justify-center">
             <button
@@ -79,6 +82,7 @@ export const BottomNavigation = ({ above }: { above?: ReactNode }) => {
             onClick={() => go("/reports-status")}
           />
         </nav>
+        </div>
       </div>
     </div>
   );

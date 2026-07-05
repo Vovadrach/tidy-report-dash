@@ -93,7 +93,10 @@ export default function SelectClient() {
                 onClick={() => pick(c.id)}
                 className="press flex w-full items-center gap-3 p-3.5 text-left"
               >
-                <span className="ibadge tint-indigo h-11 w-11 font-display text-base font-semibold">
+                <span
+                  className="ibadge tint-indigo h-11 w-11 font-display text-base font-semibold"
+                  style={{ viewTransitionName: `avatar-${c.id}` }}
+                >
                   {c.name.charAt(0).toUpperCase()}
                 </span>
                 <span className="flex-1 truncate font-semibold text-foreground">{c.name}</span>

@@ -133,7 +133,10 @@ export default function ClientReports() {
           <ArrowLeft size={20} strokeWidth={2.3} />
         </button>
         <div className="flex min-w-0 flex-1 items-center gap-2.5">
-          <span className="ibadge tint-indigo h-10 w-10 font-display text-base font-semibold">
+          <span
+            className="ibadge tint-indigo h-10 w-10 font-display text-base font-semibold"
+            style={{ viewTransitionName: `avatar-${clientId}` }}
+          >
             {(client?.name || "?").charAt(0).toUpperCase()}
           </span>
           <h1 className="truncate text-lg font-bold text-foreground">{client?.name || "Клієнт"}</h1>

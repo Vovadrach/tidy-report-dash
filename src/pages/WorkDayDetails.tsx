@@ -9,7 +9,6 @@ import {
 import { toast } from "sonner";
 import NumberFlow from "@number-flow/react";
 import { motion } from "motion/react";
-import { TimePickerWheel } from "@/components/TimePickerWheel";
 import { decimalToHours } from "@/utils/timeFormat";
 
 const hoursToDecimal = (s: string): number => {
@@ -41,7 +40,6 @@ export default function WorkDayDetails() {
   const [loading, setLoading] = useState(true);
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [timeOpen, setTimeOpen] = useState(false);
 
   useEffect(() => {
     if (reportId && dayId) loadData();
@@ -215,17 +213,22 @@ export default function WorkDayDetails() {
       <main className="mx-auto max-w-md space-y-4 px-4 pb-32 pt-4">
         {/* Hero tiles: Години (tap → picker) + Сума */}
         <div className="grid grid-cols-2 gap-3">
-          <button
-            type="button"
-            onClick={() => setTimeOpen(true)}
-            className="press tint-violet rounded-2xl p-4 text-left"
-          >
+          <label className="press tint-violet relative block rounded-2xl p-4">
             <div className="mb-2.5 flex items-center gap-2">
               <span className="ibadge h-8 w-8 bg-white/70"><Clock size={16} strokeWidth={2.4} /></span>
               <span className="text-[0.7rem] font-bold uppercase tracking-wider opacity-90">Години</span>
             </div>
             <div className="num-display text-[1.7rem] leading-none text-foreground">{decimalToHours(currentHours)}</div>
-          </button>
+            <input
+              type="time"
+              aria-label="Години"
+              value={`${String(Math.floor(currentHours)).padStart(2, "0")}:${String(
+                Math.round((currentHours - Math.floor(currentHours)) * 60),
+              ).padStart(2, "0")}`}
+              onChange={(e) => { setEditHours(e.target.value); setDirty(true); }}
+              className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+            />
+          </label>
           <div className="tint-indigo rounded-2xl p-4">
             <div className="mb-2.5 flex items-center gap-2">
               <span className="ibadge h-8 w-8 bg-white/70"><Wallet size={16} strokeWidth={2.4} /></span>
@@ -383,18 +386,6 @@ export default function WorkDayDetails() {
         </div>
       </div>
 
-      {timeOpen && (
-        <TimePickerWheel
-          value={editHours}
-          onChange={(v) => {
-            setEditHours(v);
-            setDirty(true);
-            setTimeOpen(false);
-          }}
-          placeholder="0:00"
-          hourlyRate={rate}
-        />
-      )}
     </div>
   );
 }

@@ -8,7 +8,6 @@ import {
 import { toast } from "sonner";
 import NumberFlow from "@number-flow/react";
 import { motion } from "motion/react";
-import { TimePickerWheel } from "@/components/TimePickerWheel";
 import { WorkerAssignmentDialog } from "@/components/WorkerAssignmentDialog";
 import { useWorker } from "@/contexts/WorkerContext";
 
@@ -56,7 +55,6 @@ export default function CreateReport() {
   const [workNote, setWorkNote] = useState("");
   const [editingWorkDayId, setEditingWorkDayId] = useState<string | null>(null);
   const [editingReportId, setEditingReportId] = useState<string | null>(null);
-  const [timeOpen, setTimeOpen] = useState(false);
 
   useEffect(() => { loadClients(); }, []);
 
@@ -127,14 +125,11 @@ export default function CreateReport() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hours, minutes, customHourlyRate, selectedClientId, isAmountFocused]);
 
-  const onTimePick = (v: string) => {
-    const dec = hoursToDecimal(v);
-    const h = Math.floor(dec);
-    const rm = Math.round(((dec - h) * 60) / 10) * 10;
-    setHours(rm >= 60 ? h + 1 : h);
-    setMinutes(rm >= 60 ? 0 : rm);
+  const onTimeInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const [h, m] = e.target.value.split(":").map(Number);
+    setHours(h || 0);
+    setMinutes(m || 0);
     setAmountManuallyEntered(false);
-    setTimeOpen(false);
   };
   const handleAmountChange = (v: string) => {
     setAmountInput(v);
@@ -250,7 +245,10 @@ export default function CreateReport() {
           <ArrowLeft size={20} strokeWidth={2.3} />
         </button>
         <div className="flex min-w-0 flex-1 items-center gap-2.5">
-          <span className="ibadge tint-indigo h-10 w-10 font-display text-base font-semibold">
+          <span
+            className="ibadge tint-indigo h-10 w-10 font-display text-base font-semibold"
+            style={selectedClientId ? { viewTransitionName: `avatar-${selectedClientId}` } : undefined}
+          >
             {(selectedClient?.name || "?").charAt(0).toUpperCase()}
           </span>
           <div className="min-w-0">
@@ -272,13 +270,20 @@ export default function CreateReport() {
 
         {/* Години + Сума */}
         <div className="grid grid-cols-2 gap-3">
-          <button type="button" onClick={() => setTimeOpen(true)} className="press tint-violet rounded-2xl p-4 text-left">
+          <label className="press tint-violet relative block rounded-2xl p-4">
             <div className="mb-2.5 flex items-center gap-2">
               <span className="ibadge h-8 w-8 bg-white/70"><Clock size={16} strokeWidth={2.4} /></span>
               <span className="text-[0.7rem] font-bold uppercase tracking-wider opacity-90">Години</span>
             </div>
             <div className="num-display text-[1.7rem] leading-none text-foreground">{timeStr}</div>
-          </button>
+            <input
+              type="time"
+              aria-label="Години"
+              value={`${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`}
+              onChange={onTimeInput}
+              className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+            />
+          </label>
           <div className="tint-indigo rounded-2xl p-4">
             <div className="mb-2.5 flex items-center gap-2">
               <span className="ibadge h-8 w-8 bg-white/70"><Wallet size={16} strokeWidth={2.4} /></span>
@@ -412,9 +417,6 @@ export default function CreateReport() {
         </div>
       </div>
 
-      {timeOpen && (
-        <TimePickerWheel value={decimalToHours(hours + minutes / 60)} onChange={onTimePick} placeholder="0:00" hourlyRate={rate} />
-      )}
     </div>
   );
 }
