@@ -26,7 +26,12 @@ export const ConfirmSheet = ({
       <AlertDialogFooter>
         <AlertDialogCancel>Скасувати</AlertDialogCancel>
         <AlertDialogAction
-          onClick={onConfirm}
+          onClick={event => {
+            // Let the owner close this controlled dialog. Radix's automatic close
+            // would reset a navigation blocker immediately after proceed().
+            event.preventDefault();
+            onConfirm();
+          }}
           disabled={confirmDisabled}
           className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
         >

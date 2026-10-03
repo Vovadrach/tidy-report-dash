@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { createMemoryRouter, RouterProvider, useNavigate } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import CreateReport from './CreateReport';
@@ -81,6 +81,25 @@ describe('дата нового запису', () => {
 });
 
 describe('точність і стійкість створення', () => {
+  it('після скасування виходу дозволяє підтвердити повернення без створення запису', async () => {
+    const router = createMemoryRouter([
+      { path: '/select-client', element: <h1>Оберіть клієнта</h1> },
+      { path: '/create-report', element: <CreateReport /> },
+    ], {
+      initialEntries: ['/select-client', '/create-report?clientId=c1'],
+      initialIndex: 1,
+    });
+    render(<LanguageProvider><RouterProvider router={router} /></LanguageProvider>);
+    fireEvent.change(screen.getByLabelText('Нотатка'), { target: { value: 'Незбережена нотатка' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Назад' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Скасувати' }));
+    expect((screen.getByLabelText('Нотатка') as HTMLTextAreaElement).value).toBe('Незбережена нотатка');
+    fireEvent.click(screen.getByRole('button', { name: 'Назад' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Залишити' }));
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Оберіть клієнта' })).toBeTruthy());
+    expect(screen.queryByText('Залишити незбережений запис?')).toBeNull();
+    expect(data.mutate).not.toHaveBeenCalled();
+  });
   it('захищає введені дані від випадкового переходу', () => {
     open('/create-report?clientId=c1&date=2026-09-25');
     fireEvent.change(screen.getByLabelText('Сума запису'), { target: { value: '14.25' } });
