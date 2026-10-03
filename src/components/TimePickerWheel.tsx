@@ -1,392 +1,112 @@
-import { useEffect, useRef, useState, useCallback } from "react";
-import { Clock, Euro } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { Clock, Euro as CurrencyEur } from "lucide-react";
+import { Input } from '@/components/ui/input';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { calculateAmount, parseNumber, round2 } from '@/domain/money';
+import { hoursToDecimal } from '@/domain/time';
 
 interface TimePickerWheelProps {
-  value: string; // Format: "8:30"
-  onChange: (value: string) => void;
+  value: string;
+  onChange: (value: string, exact?: { hours: number; amount: number; manual: boolean }) => void;
   placeholder?: string;
-  hourlyRate?: number; // Hourly rate for amount calculation
+  hourlyRate?: number;
+  exactHours?: number;
+  currentAmount?: number;
+  children?: ReactNode;
+  triggerClassName?: string;
 }
+const HOURS = Array.from({ length: 101 }, (_, i) => i);
+const MINUTES = [0, 10, 20, 30, 40, 50];
+const ITEM_HEIGHT = 48;
 
-export const TimePickerWheel = ({ value, onChange, placeholder = "0:00", hourlyRate = 0 }: TimePickerWheelProps) => {
-  const [isOpen, setIsOpen] = useState(false);
+export const TimePickerWheel = ({ value, onChange, placeholder = '0:00', hourlyRate = 0, exactHours, currentAmount, children, triggerClassName }: TimePickerWheelProps) => {
+  const [open, setOpen] = useState(false);
   const [hours, setHours] = useState(0);
   const [minutes, setMinutes] = useState(0);
-  const [amountInput, setAmountInput] = useState("");
-  const [isUpdatingFromAmount, setIsUpdatingFromAmount] = useState(false);
-  const [isAmountFocused, setIsAmountFocused] = useState(false);
-  const [amountManuallyEntered, setAmountManuallyEntered] = useState(false);
+  const [manualAmount, setManualAmount] = useState<string | null>(null);
   const hoursRef = useRef<HTMLDivElement>(null);
   const minutesRef = useRef<HTMLDivElement>(null);
-  const modalRef = useRef<HTMLDivElement>(null);
-
-  // Refs for scroll timeout management
-  const hoursScrollTimeout = useRef<NodeJS.Timeout | null>(null);
-  const minutesScrollTimeout = useRef<NodeJS.Timeout | null>(null);
-  const isScrolling = useRef({ hours: false, minutes: false });
-
-  // Parse initial value
+  const starting = useRef({ hours: 0, minutes: 0 });
+  const original = useRef({ hours: 0, amount: 0 });
+  const untouched = useRef(true);
+  const positioning = useRef(false);
+  const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const wheelHours = untouched.current ? original.current.hours : hours + minutes / 60;
+  const amount = manualAmount === null ? (untouched.current ? original.current.amount : calculateAmount(wheelHours, hourlyRate)) : parseNumber(manualAmount);
+  const finalHours = manualAmount === null || hourlyRate <= 0 ? wheelHours : amount / hourlyRate;
+  const valid = Number.isFinite(finalHours) && finalHours > 0 && finalHours <= 100.999999 &&
+    (hourlyRate <= 0 || Number.isFinite(amount) && amount > 0);
+  const openPicker = () => {
+    const actualHours = exactHours ?? hoursToDecimal(value);
+    original.current = { hours: actualHours, amount: currentAmount ?? calculateAmount(actualHours, hourlyRate) };
+    untouched.current = true; positioning.current = true;
+    const totalMinutes = Math.round(actualHours * 60 / 10) * 10;
+    const next = { hours: Math.min(100, Math.floor(totalMinutes / 60)), minutes: totalMinutes % 60 };
+    starting.current = next; setHours(next.hours); setMinutes(next.minutes); setManualAmount(null); setOpen(true);
+  };
   useEffect(() => {
-    if (value && value.includes(':')) {
-      const [h, m] = value.split(':').map(s => parseInt(s) || 0);
-      setHours(h);
-      // Round minutes to nearest 10
-      setMinutes(Math.round(m / 10) * 10);
-    }
-  }, [value]);
-
-  // Generate arrays for hours and minutes
-  const hoursArray = Array.from({ length: 101 }, (_, i) => i); // 0-100 годин
-  const minutesArray = [0, 10, 20, 30, 40, 50];
-
-  const handleOpen = () => {
-    setIsOpen(true);
-    // Calculate initial amount
-    if (hourlyRate > 0) {
-      const totalHours = hours + (minutes / 60);
-      const calculatedAmount = Math.round(totalHours * hourlyRate);
-      setAmountInput(calculatedAmount.toString());
-    }
+    if (!open) return;
+    const frame = requestAnimationFrame(() => {
+      if (hoursRef.current) hoursRef.current.scrollTop = starting.current.hours * ITEM_HEIGHT;
+      if (minutesRef.current) minutesRef.current.scrollTop = MINUTES.indexOf(starting.current.minutes) * ITEM_HEIGHT;
+      timers.current.push(setTimeout(() => { positioning.current = false; }, 50));
+    });
+    return () => { cancelAnimationFrame(frame); timers.current.forEach(clearTimeout); timers.current = []; };
+  }, [open]);
+  const scroll = (element: HTMLDivElement, values: number[], setter: (value: number) => void, index: number) => {
+    if (positioning.current) return;
+    const target = Math.max(0, Math.min(values.length - 1, Math.round(element.scrollTop / ITEM_HEIGHT)));
+    if (values[target] === (index === 0 ? hours : minutes)) return;
+    untouched.current = false;
+    setter(values[target]); setManualAmount(null);
+    clearTimeout(timers.current[index]);
+    timers.current[index] = setTimeout(() => {
+      if (Math.abs(element.scrollTop - target * ITEM_HEIGHT) > 2) element.scrollTo({ top: target * ITEM_HEIGHT, behavior: 'smooth' });
+    }, 150);
   };
-
-  const handleClose = () => {
-    setIsOpen(false);
-    setAmountInput("");
-    setIsAmountFocused(false);
-    setAmountManuallyEntered(false);
+  const confirm = () => {
+    if (!valid) return;
+    const totalMinutes = Math.round(finalHours * 60);
+    onChange(`${Math.floor(totalMinutes / 60)}:${String(totalMinutes % 60).padStart(2, '0')}`,
+      { hours: finalHours, amount: hourlyRate > 0 ? round2(amount) : 0, manual: manualAmount !== null });
+    setOpen(false);
   };
-
-  const handleConfirm = () => {
-    let finalTime: string;
-
-    // If user entered an amount, calculate time from it (exact, no rounding)
-    if (amountInput && hourlyRate > 0 && amountManuallyEntered) {
-      const amount = parseFloat(amountInput);
-      if (!isNaN(amount)) {
-        const totalHours = amount / hourlyRate;
-
-        // Don't round - keep exact time to preserve the amount
-        const h = Math.floor(totalHours);
-        const m = Math.round((totalHours - h) * 60);
-
-        // Handle edge case where minutes round to 60
-        const adjustedHours = m >= 60 ? h + 1 : h;
-        const adjustedMinutes = m >= 60 ? 0 : m;
-
-        finalTime = `${adjustedHours}:${adjustedMinutes.toString().padStart(2, '0')}`;
-      } else {
-        finalTime = `${hours}:${minutes.toString().padStart(2, '0')}`;
-      }
-    } else {
-      finalTime = `${hours}:${minutes.toString().padStart(2, '0')}`;
-    }
-
-    onChange(finalTime);
-    handleClose();
-  };
-
-  // Update amount when time changes (only if user is not editing the amount field)
-  useEffect(() => {
-    if (isOpen && hourlyRate > 0 && !isUpdatingFromAmount && !isAmountFocused) {
-      const totalHours = hours + (minutes / 60);
-      const calculatedAmount = Math.round(totalHours * hourlyRate);
-      setAmountInput(calculatedAmount.toString());
-    }
-  }, [hours, minutes, hourlyRate, isOpen, isUpdatingFromAmount, isAmountFocused]);
-
-  // Update time when amount changes - only update visually, don't auto-update
-  const handleAmountChange = (newAmount: string) => {
-    setAmountInput(newAmount);
-    if (newAmount) {
-      setAmountManuallyEntered(true);
-    }
-  };
-
-  // Handle focus on amount input - clear the field
-  const handleAmountFocus = () => {
-    setIsAmountFocused(true);
-    setAmountInput("");
-  };
-
-  // Handle blur on amount input
-  const handleAmountBlur = () => {
-    setIsAmountFocused(false);
-    // If field is empty, recalculate from current time
-    if (!amountInput && hourlyRate > 0) {
-      const totalHours = hours + (minutes / 60);
-      const calculatedAmount = Math.round(totalHours * hourlyRate);
-      setAmountInput(calculatedAmount.toString());
-    }
-  };
-
-  // Optimized scroll handler with debouncing
-  const handleScroll = useCallback((
-    ref: React.RefObject<HTMLDivElement>,
-    items: number[],
-    setter: (value: number) => void,
-    timeoutRef: React.MutableRefObject<NodeJS.Timeout | null>,
-    scrollingFlag: 'hours' | 'minutes'
-  ) => {
-    if (!ref.current) return;
-
-    const container = ref.current;
-    const itemHeight = 48;
-    const scrollTop = container.scrollTop;
-    const centerIndex = Math.round(scrollTop / itemHeight);
-    const clampedIndex = Math.max(0, Math.min(centerIndex, items.length - 1));
-
-    // Update value immediately for visual feedback
-    setter(items[clampedIndex]);
-
-    // Reset manual amount entry flag when user scrolls time wheels
-    setAmountManuallyEntered(false);
-
-    // Clear previous timeout
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-    }
-
-    // Set flag that we're scrolling
-    isScrolling.current[scrollingFlag] = true;
-
-    // Debounce the smooth scroll to center
-    timeoutRef.current = setTimeout(() => {
-      if (!ref.current) return;
-
-      const targetScroll = clampedIndex * itemHeight;
-      const currentScroll = ref.current.scrollTop;
-
-      // Only snap if not already centered
-      if (Math.abs(currentScroll - targetScroll) > 3) {
-        // Use requestAnimationFrame for smoother scroll
-        requestAnimationFrame(() => {
-          if (!ref.current) return;
-          ref.current.scrollTo({
-            top: targetScroll,
-            behavior: 'smooth'
-          });
-        });
-      }
-
-      // Reset scrolling flag after animation
-      setTimeout(() => {
-        isScrolling.current[scrollingFlag] = false;
-      }, 200);
-    }, 100);
-  }, []);
-
-  // Initialize scroll positions
-  useEffect(() => {
-    if (isOpen && hoursRef.current && minutesRef.current) {
-      const itemHeight = 48;
-      const hoursIndex = hoursArray.indexOf(hours);
-      const minutesIndex = minutesArray.indexOf(minutes);
-
-      // Use requestAnimationFrame for smooth initialization
-      requestAnimationFrame(() => {
-        if (hoursRef.current) {
-          hoursRef.current.scrollTop = hoursIndex * itemHeight;
-        }
-        if (minutesRef.current) {
-          minutesRef.current.scrollTop = minutesIndex * itemHeight;
-        }
-      });
-    }
-  }, [isOpen, hours, minutes, hoursArray, minutesArray]);
-
-  // Cleanup timeouts on unmount
-  useEffect(() => {
-    return () => {
-      if (hoursScrollTimeout.current) {
-        clearTimeout(hoursScrollTimeout.current);
-      }
-      if (minutesScrollTimeout.current) {
-        clearTimeout(minutesScrollTimeout.current);
-      }
-    };
-  }, []);
-
-  // Click outside to close
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
-        handleClose();
-      }
-    };
-
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [isOpen]);
-
-  const displayValue = value || placeholder;
-
-  return (
-    <>
-      {/* Input Display */}
-      <div
-        onClick={handleOpen}
-        className="flex items-center gap-1.5 px-2 py-2 rounded-lg border-2 border-purple-200/60 dark:border-purple-700/60 bg-transparent cursor-pointer hover:border-purple-400/60 dark:hover:border-purple-500/60 transition-all overflow-hidden"
-        style={{ width: '100%', boxSizing: 'border-box' }}
-      >
-        <Clock className="w-4 h-4 text-purple-600 dark:text-purple-400 flex-shrink-0" />
-        <span className="text-sm font-semibold text-foreground truncate flex-1 text-center">{displayValue}</span>
-      </div>
-
-      {/* Modal Overlay */}
-      {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div
-            ref={modalRef}
-            className="bg-card rounded-2xl shadow-2xl p-6 w-[340px] max-h-[90vh] overflow-y-auto border border-border"
-          >
-            <h3 className="text-xl font-bold text-center text-foreground mb-6">
-              Виберіть час
-            </h3>
-
-            {/* Wheel Pickers */}
-            <div className="space-y-6">
-              <div className="flex gap-4 justify-center">
-                  {/* Hours Wheel */}
-                  <div className="relative flex-1">
-                    <div className="text-xs font-bold text-center text-muted-foreground mb-3">
-                      Години
-                    </div>
-                    <div className="relative h-[144px] w-full">
-                      {/* Selection indicator */}
-                      <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-[48px] border-y-2 border-primary/40 bg-primary/10 pointer-events-none z-10 rounded-lg" />
-
-                      {/* Scrollable list */}
-                      <div
-                        ref={hoursRef}
-                        className="h-full overflow-y-auto scrollbar-hide"
-                        onScroll={() => handleScroll(hoursRef, hoursArray, setHours, hoursScrollTimeout, 'hours')}
-                        style={{
-                          paddingTop: '48px',
-                          paddingBottom: '48px',
-                          scrollBehavior: 'auto'
-                        }}
-                      >
-                        {hoursArray.map((hour) => (
-                          <div
-                            key={hour}
-                            className="h-[48px] flex items-center justify-center text-xl font-bold transition-all duration-200"
-                            style={{
-                              opacity: hour === hours ? 1 : 0.3,
-                              transform: hour === hours ? 'scale(1.1)' : 'scale(0.9)',
-                              willChange: 'transform, opacity'
-                            }}
-                          >
-                            {hour}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Separator */}
-                  <div className="flex items-center text-3xl font-bold text-primary pt-10">
-                    :
-                  </div>
-
-                  {/* Minutes Wheel */}
-                  <div className="relative flex-1">
-                    <div className="text-xs font-bold text-center text-muted-foreground mb-3">
-                      Хвилини
-                    </div>
-                    <div className="relative h-[144px] w-full">
-                      {/* Selection indicator */}
-                      <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-[48px] border-y-2 border-primary/40 bg-primary/10 pointer-events-none z-10 rounded-lg" />
-
-                      {/* Scrollable list */}
-                      <div
-                        ref={minutesRef}
-                        className="h-full overflow-y-auto scrollbar-hide"
-                        onScroll={() => handleScroll(minutesRef, minutesArray, setMinutes, minutesScrollTimeout, 'minutes')}
-                        style={{
-                          paddingTop: '48px',
-                          paddingBottom: '48px',
-                          scrollBehavior: 'auto'
-                        }}
-                      >
-                        {minutesArray.map((minute) => (
-                          <div
-                            key={minute}
-                            className="h-[48px] flex items-center justify-center text-xl font-bold transition-all duration-200"
-                            style={{
-                              opacity: minute === minutes ? 1 : 0.3,
-                              transform: minute === minutes ? 'scale(1.1)' : 'scale(0.9)',
-                              willChange: 'transform, opacity'
-                            }}
-                          >
-                            {minute.toString().padStart(2, '0')}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
+  return <>
+    <button type="button" aria-label="Змінити години" onClick={openPicker}
+      className={triggerClassName ?? "press flex w-full items-center justify-center gap-2 rounded-xl border border-border px-2 py-2 font-semibold"}>
+      {children ?? <><Clock className="w-4 h-4 text-primary" />{value || placeholder}</>}
+    </button>
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogContent className="max-w-[340px] rounded-3xl p-6" data-no-swipe>
+        <DialogHeader><DialogTitle className="text-center">Виберіть час</DialogTitle></DialogHeader>
+        <div className="flex gap-4 items-center">
+          {([['Години', HOURS, hours, setHours, hoursRef], ['Хвилини', MINUTES, minutes, setMinutes, minutesRef]] as const).map(([label, values, selected, setter, ref], index) => (
+            <div className="flex-1" key={label}>
+              <label className="block text-xs font-bold text-center text-muted-foreground mb-3">{label}</label>
+              <div className="relative h-[144px]">
+                <div className="absolute inset-x-0 top-[48px] h-[48px] border-y-2 border-primary/40 bg-primary/10 pointer-events-none rounded-lg" />
+                <div ref={ref} className="h-full overflow-y-auto scrollbar-hide" style={{ paddingBlock: ITEM_HEIGHT }}
+                  onScroll={event => scroll(event.currentTarget, values, setter, index)}>
+                  {values.map(number => <div key={number} className="h-[48px] flex items-center justify-center text-xl font-bold" style={{ opacity: selected === number ? 1 : 0.3 }}>
+                    {index === 1 ? String(number).padStart(2, '0') : number}
+                  </div>)}
                 </div>
-
-              {/* Amount Input - always visible if hourlyRate provided */}
-              {hourlyRate > 0 && (
-                <div className="bg-gradient-to-br from-blue-50/50 to-indigo-50/50 dark:from-blue-950/30 dark:to-indigo-950/30 rounded-xl p-4 border border-blue-200/50 dark:border-blue-800/50">
-                  <label className="block text-sm font-bold text-center text-muted-foreground mb-3">
-                    або введіть суму
-                  </label>
-                  <div className="flex items-center justify-center gap-2">
-                    <Input
-                      type="number"
-                      value={amountInput}
-                      onChange={(e) => handleAmountChange(e.target.value)}
-                      onFocus={handleAmountFocus}
-                      onBlur={handleAmountBlur}
-                      placeholder=""
-                      className="flex-1 px-4 py-3 text-center text-xl font-bold rounded-lg border-2 border-blue-300 dark:border-blue-700 focus-visible:ring-blue-500"
-                    />
-                    <div className="flex items-center justify-center w-12 h-12 flex-shrink-0 rounded-lg bg-blue-100 dark:bg-blue-900 border border-blue-300 dark:border-blue-700">
-                      <Euro className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                    </div>
-                  </div>
-                </div>
-              )}
+              </div>
             </div>
-
-            {/* Buttons */}
-            <div className="flex gap-3 mt-6">
-              <button
-                onClick={handleClose}
-                className="flex-1 px-6 py-3 rounded-xl bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-900 text-gray-700 dark:text-gray-300 font-bold hover:from-gray-200 hover:to-gray-300 dark:hover:from-gray-700 dark:hover:to-gray-800 transition-all shadow-md hover:shadow-lg"
-              >
-                Скасувати
-              </button>
-              <button
-                onClick={handleConfirm}
-                className="flex-1 px-6 py-3 rounded-xl bg-gradient-to-br from-primary to-primary/90 text-primary-foreground font-bold hover:from-primary/90 hover:to-primary/80 transition-all shadow-md hover:shadow-lg"
-              >
-                Підтвердити
-              </button>
-            </div>
-          </div>
+          ))}
         </div>
-      )}
-
-      {/* Hide scrollbar and optimize scrolling CSS */}
-      <style>{`
-        .scrollbar-hide::-webkit-scrollbar {
-          display: none;
-        }
-        .scrollbar-hide {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-          -webkit-overflow-scrolling: touch;
-          touch-action: pan-y;
-        }
-      `}</style>
-    </>
-  );
+        {hourlyRate > 0 && <label className="block text-sm font-bold text-center">або введіть суму
+          <div className="flex items-center gap-2 mt-3">
+            <Input type="number" min="0.01" step="0.01" aria-label="Сума за роботу" value={manualAmount ?? amount}
+              onChange={event => { untouched.current = false; setManualAmount(event.target.value); }} className="text-center text-xl font-bold" />
+            <CurrencyEur className="w-5 h-5" />
+          </div>
+        </label>}
+        <div className="flex gap-3">
+          <button className="flex-1 rounded-2xl bg-secondary p-3 font-bold" onClick={() => setOpen(false)}>Скасувати</button>
+          <button disabled={!valid} className="flex-1 rounded-2xl bg-primary text-primary-foreground p-3 font-bold disabled:opacity-50" onClick={confirm}>Підтвердити</button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  </>;
 };

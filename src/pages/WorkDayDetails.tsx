@@ -1,194 +1,112 @@
-import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { api } from "@/lib/api";
-import { Report, WorkDay, Client, PaymentStatus } from "@/types/report";
-import {
-  Clock, Wallet, Trash2, ArrowLeft, Check, CircleCheck, CircleDashed, Circle,
-  Users, StickyNote, CalendarDays,
-} from "lucide-react";
-import { toast } from "sonner";
-import NumberFlow from "@number-flow/react";
-import { motion } from "motion/react";
-import { decimalToHours } from "@/utils/timeFormat";
-import { useI18n } from "@/i18n";
-
-const hoursToDecimal = (s: string): number => {
-  if (!s) return 0;
-  if (s.includes(":")) {
-    const [h, m] = s.split(":").map((x) => parseInt(x) || 0);
-    return h + m / 60;
-  }
-  return parseFloat(s) || 0;
-};
-
+import { useMemo, useState, useRef, useEffect } from 'react';
+import { Navigate, useParams, useNavigate } from 'react-router-dom';
+import { Clock, Wallet, Trash2, ArrowLeft, Check, CircleCheck, CircleDashed, Circle, Users, StickyNote, CalendarDays } from 'lucide-react';
+import { MoneyNumber } from '@/ui/MoneyNumber';
+import { motion } from 'motion/react';
+import { toast } from 'sonner';
+import { useI18n } from '@/i18n';
+import { useAuth } from '@/contexts/AuthContext';
+import { useAddPayment, useClients, useDeleteWorkDay, useSetPayment, useUpdateWorkDayFields, useWorkDays } from '@/data/queries';
+import { calculateAmount, parseNumber, applyPartialPayment } from '@/domain/money';
+import { decimalToHours, hoursToDecimal } from '@/domain/time';
+import type { WorkDay, PaymentStatus } from '@/domain/types';
+import { ScreenSkeleton } from '@/ui/Skeleton';
+import { QueryError, StaleDataNotice } from '@/ui/QueryError';
+import { useAutosaveDraft } from '@/ui/useAutosaveDraft';
+import { ConfirmSheet } from '@/ui/ConfirmSheet';
+import { TimePickerWheel } from '@/components/TimePickerWheel';
 const STATUS = [
   { key: "paid", label: "status.paid", icon: CircleCheck, tint: "tint-emerald", ring: "ring-[hsl(var(--t-emerald-fg))]" },
   { key: "partial", label: "status.partial", icon: CircleDashed, tint: "tint-amber", ring: "ring-[hsl(var(--t-amber-fg))]" },
   { key: "unpaid", label: "status.unpaid", icon: Circle, tint: "tint-rose", ring: "ring-[hsl(var(--t-rose-fg))]" },
 ] as const;
 
-export default function WorkDayDetails() {
-  const { reportId, dayId } = useParams();
+const WorkDayDetails = () => {
+  const { dayId } = useParams();
+  const query = useWorkDays();
+  const day = query.data?.find(d => d.id === dayId);
+  if (query.isLoading) return <ScreenSkeleton />;
+  if (query.isError && !query.data) return <QueryError onRetry={() => void query.refetch()} />;
+  if (!day) return <QueryError message="Запис не знайдено" onRetry={() => void query.refetch()} />;
+  if (day.isPlanned) return <Navigate to={`/create-report?clientId=${day.clientId}&workDayId=${day.id}`} replace />;
+  return <Details key={day.id} workDay={day} stale={query.isError} refresh={() => void query.refetch()} />;
+};
+const Details = ({ workDay, stale, refresh }: { workDay: WorkDay; stale: boolean; refresh: () => void }) => {
   const navigate = useNavigate();
   const { t } = useI18n();
-  const [report, setReport] = useState<Report | null>(null);
-  const [workDay, setWorkDay] = useState<WorkDay | null>(null);
-  const [client, setClient] = useState<Client | null>(null);
-  const [editDate, setEditDate] = useState("");
-  const [editHours, setEditHours] = useState("");
-  const [editNote, setEditNote] = useState("");
-  const [partialAmount, setPartialAmount] = useState("");
-  const [dayPaidAmount, setDayPaidAmount] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [dirty, setDirty] = useState(false);
-  const [saving, setSaving] = useState(false);
-
+  const { user } = useAuth();
+  const { data: clients = [] } = useClients();
+  const clientRate = clients.find(client => client.id === workDay.clientId)?.hourlyRate ?? 0;
+  const updateFields = useUpdateWorkDayFields();
+  const setPayment = useSetPayment();
+  const addPayment = useAddPayment();
+  const deleteDay = useDeleteWorkDay();
+  // The record's historical rate survives a later change to the client price.
+  const hourlyRate = useMemo(() => workDay.hourlyRate ?? (workDay.hours > 0 ? workDay.amount / workDay.hours : clientRate), [workDay.hourlyRate, workDay.amount, workDay.hours, clientRate]);
+  const serverDraft = useMemo(() => ({ date: workDay.date, hours: workDay.hours, amount: workDay.amount, note: workDay.note ?? '' }), [workDay]);
+  const baseline = useRef(serverDraft);
+  const autosave = useAutosaveDraft(`aria-draft:${user?.id ?? 'demo'}:${workDay.id}`, serverDraft, async draft => {
+    const old = baseline.current;
+    const patch = {
+      ...(draft.date !== old.date ? { date: draft.date } : {}),
+      ...(draft.note !== old.note ? { note: draft.note || null } : {}),
+      ...(draft.hours !== old.hours || draft.amount !== old.amount ? { hours: draft.hours, amount: draft.amount } : {}),
+    };
+    if (Object.keys(patch).length) await updateFields.mutateAsync({ dayId: workDay.id, patch });
+    baseline.current = draft;
+  });
+  const rebase = autosave.rebase;
   useEffect(() => {
-    if (reportId && dayId) loadData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [reportId, dayId]);
-
-  const loadData = async () => {
-    try {
-      setLoading(true);
-      const reports = await api.getReports();
-      const r = reports.find((x) => x.id === reportId);
-      if (r) {
-        setReport(r);
-        const d = r.workDays.find((x) => x.id === dayId);
-        if (d) {
-          setWorkDay(d);
-          setEditDate(d.date);
-          setEditHours(decimalToHours(d.hours));
-          setEditNote(d.note || "");
-          setDayPaidAmount(d.day_paid_amount || 0);
-        }
-        const clients = await api.getClients();
-        setClient(clients.find((c) => c.id === (r.clientId || r.client_id)) || null);
-      }
-      setDirty(false);
-    } catch (e) {
-      toast.error(t("toast.loadError"));
-      console.error(e);
-    } finally {
-      setLoading(false);
-    }
+    if (!autosave.dirty && !autosave.saving) { baseline.current = serverDraft; rebase(serverDraft); }
+  }, [serverDraft, rebase, autosave.dirty, autosave.saving]);
+  const { date: editDate, note: editNote, hours: currentHours, amount: currentAmount } = autosave.draft;
+  const editHours = decimalToHours(currentHours);
+  const setEditDate = (date: string) => autosave.update({ ...autosave.draft, date });
+  const setEditNote = (note: string) => autosave.update({ ...autosave.draft, note });
+  const [partialAmount, setPartialAmount] = useState('');
+  const [showPartial, setShowPartial] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const busy = useRef(false);
+  const paymentOperation = useRef<{ amount: number; id: string } | null>(null);
+  const isPending = setPayment.isPending || addPayment.isPending || deleteDay.isPending;
+  const status = workDay.status;
+  const perform = async (operation: () => Promise<unknown>) => {
+    if (busy.current || isPending) return;
+    busy.current = true;
+    try { await autosave.saveNow(); await operation(); } catch { /* The mutation shows the actionable error. */ }
+    finally { busy.current = false; }
+  };
+  const handleSetStatus = (next: PaymentStatus) => {
+    if (next === 'partial') { setShowPartial(true); return; }
+    void perform(async () => {
+      await setPayment.mutateAsync({ dayId: workDay.id, status: next, paidAmount: next === 'paid' ? currentAmount : 0 });
+      setShowPartial(false); setPartialAmount('');
+    });
+  };
+  const handleApplyPartial = () => {
+    const amount = parseNumber(partialAmount);
+    const result = applyPartialPayment({ amount: currentAmount, paidAmount: workDay.paidAmount }, amount);
+    if (!result.ok) { toast.error(result.error === 'exceeds' ? 'Сума перевищує залишок' : 'Введіть коректну суму'); return; }
+    if (paymentOperation.current?.amount !== amount) paymentOperation.current = { amount, id: crypto.randomUUID() };
+    void perform(async () => {
+      await addPayment.mutateAsync({ dayId: workDay.id, amount, operationId: paymentOperation.current!.id });
+      paymentOperation.current = null; setPartialAmount(''); setShowPartial(false); toast.success('Оплату додано');
+    });
+  };
+  const handleDelete = () => {
+    void perform(async () => { await deleteDay.mutateAsync(workDay.id); autosave.discard(); navigate('/'); });
   };
 
-  const rate = client?.hourlyRate || client?.hourly_rate || 0;
-  const currentHours = editHours ? hoursToDecimal(editHours) : workDay?.hours || 0;
-  const currentAmount = Math.round(currentHours * rate);
-  const status = (workDay?.paymentStatus || workDay?.payment_status || "unpaid") as PaymentStatus;
-
-  const save = async () => {
-    if (!workDay || !client) return;
-    try {
-      setSaving(true);
-      await api.updateWorkDay(workDay.id, {
-        date: editDate,
-        hours: currentHours,
-        amount: currentHours * rate,
-        note: editNote,
-        is_planned: currentHours > 0 ? false : workDay.is_planned,
-      });
-      setWorkDay({ ...workDay, date: editDate, hours: currentHours, amount: currentHours * rate, note: editNote });
-      setDirty(false);
-      toast.success(t("toast.saved"));
-    } catch (e) {
-      toast.error(t("toast.saveError"));
-      console.error(e);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  // Оптимістично й локально (без loadData) — щоб анімація статусу була плавною,
-  // без блимання скелетона.
-  const setStatus = async (next: PaymentStatus) => {
-    if (!workDay) return;
-    const paid = next === "paid" ? currentAmount : next === "unpaid" ? 0 : dayPaidAmount || 0;
-    setWorkDay({ ...workDay, payment_status: next, paymentStatus: next, day_paid_amount: paid });
-    setDayPaidAmount(paid);
-    if (next !== "partial") setPartialAmount("");
-    try {
-      await api.updateWorkDay(
-        workDay.id,
-        next === "paid"
-          ? { payment_status: "paid" }
-          : next === "unpaid"
-            ? { payment_status: "unpaid", day_paid_amount: 0 }
-            : { payment_status: "partial", day_paid_amount: paid },
-      );
-    } catch (e) {
-      toast.error(t("toast.statusError"));
-      console.error(e);
-    }
-  };
-
-  const applyPartial = async () => {
-    if (!workDay) return;
-    const add = parseFloat(partialAmount.replace(",", "."));
-    if (!add || add <= 0) return;
-    const total = dayPaidAmount + add;
-    if (total > currentAmount + 0.01) {
-      toast.error(t("toast.overAmount"));
-      return;
-    }
-    const nextStatus: PaymentStatus = total >= currentAmount ? "paid" : "partial";
-    setDayPaidAmount(total);
-    setWorkDay({ ...workDay, payment_status: nextStatus, paymentStatus: nextStatus, day_paid_amount: total });
-    setPartialAmount("");
-    try {
-      await api.updateWorkDay(workDay.id, { payment_status: nextStatus, day_paid_amount: total });
-      toast.success(t("toast.paymentAdded"));
-    } catch (e) {
-      toast.error(t("toast.paymentError"));
-      console.error(e);
-    }
-  };
-
-  const remove = async () => {
-    if (!report) return;
-    if (!confirm(t("day.deleteRecord") + "?")) return;
-    try {
-      await api.deleteReport(report.id);
-      toast.success(t("toast.deleted"));
-      navigate("/", { viewTransition: true });
-    } catch (e) {
-      toast.error(t("toast.deleteError"));
-      console.error(e);
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-dvh bg-background p-4">
-        <div className="skeleton mb-3 h-10 w-40 rounded-xl" />
-        <div className="grid grid-cols-2 gap-3">
-          <div className="skeleton h-24 rounded-2xl" />
-          <div className="skeleton h-24 rounded-2xl" />
-        </div>
-      </div>
-    );
-  }
-  if (!report || !workDay || !client) {
-    return (
-      <div className="flex min-h-dvh items-center justify-center bg-background">
-        <p className="text-muted-foreground">{t("day.notFound")}</p>
-      </div>
-    );
-  }
-
-  const assignments = workDay.assignments && workDay.assignments.length > 0
-    ? workDay.assignments.map((a) => ({
-        id: a.id,
-        name: a.worker?.name || a.deleted_worker_name || t("day.worker"),
-        color: a.worker?.color || "#94a3b8",
-        hours: a.hours || 0,
-        amount: Math.round(a.amount || 0),
-      }))
-    : [{ id: "solo", name: client.name, color: "hsl(var(--primary))", hours: currentHours, amount: currentAmount }];
-
+  const rate = hourlyRate;
+  const client = { name: workDay.clientName };
+  const dayPaidAmount = workDay.paidAmount;
+  const saving = isPending || autosave.saving;
+  const dirty = autosave.dirty;
+  const setStatus = handleSetStatus;
+  const applyPartial = handleApplyPartial;
+  const remove = () => setIsDeleteDialogOpen(true);
+  const save = () => { void autosave.saveNow().then(() => toast.success(t('toast.saved'))).catch(() => {}); };
+  const assignments = workDay.assignments.map(a => ({ id: a.id, name: a.workerName, color: a.workerColor, hours: a.hours, amount: a.amount }));
   return (
     <div className="min-h-dvh bg-background">
       {/* Header */}
@@ -212,31 +130,34 @@ export default function WorkDayDetails() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-md space-y-4 px-4 pb-32 pt-4">
+      <main className="mx-auto max-w-md space-y-4 px-4 pb-[calc(8rem+env(safe-area-inset-bottom))] pt-4">
+        {stale && <StaleDataNotice onRetry={refresh} />}
+        {autosave.error && <div role="alert" className="card-flat p-3 text-sm text-destructive">
+          <p>Зміни не збережено. Введені дані залишилися у формі.</p>
+          <button className="underline font-bold" onClick={save}>Зберегти ще раз</button>
+          {autosave.blocker.state === 'blocked' && <button className="ml-3 underline" onClick={() => autosave.blocker.reset?.()}>Залишитися</button>}
+        </div>}
+        <fieldset disabled={saving} className="space-y-4">
         {/* Hero tiles: Години (tap → picker) + Сума */}
         <div className="grid grid-cols-2 gap-3">
-          <label className="press tint-violet relative block rounded-2xl p-4">
+          <TimePickerWheel value={editHours} hourlyRate={rate} exactHours={currentHours} currentAmount={currentAmount}
+            triggerClassName="press tint-violet relative block rounded-2xl p-4 text-left"
+            onChange={(value, exact) => {
+              const hours = exact?.hours ?? hoursToDecimal(value);
+              autosave.update({ ...autosave.draft, hours, amount: exact?.amount ?? calculateAmount(hours, rate) });
+            }}>
             <div className="mb-2.5 flex items-center gap-2">
               <span className="ibadge h-8 w-8 bg-white/70"><Clock size={16} strokeWidth={2.4} /></span>
-              <span className="text-[0.7rem] font-bold uppercase tracking-wider opacity-90">{t("common.hours")}</span>
+              <span className="text-[0.7rem] font-bold uppercase tracking-wider opacity-90">{t('common.hours')}</span>
             </div>
             <div className="num-display text-[1.7rem] leading-none text-foreground">{decimalToHours(currentHours)}</div>
-            <input
-              type="time"
-              aria-label={t("common.hours")}
-              value={`${String(Math.floor(currentHours)).padStart(2, "0")}:${String(
-                Math.round((currentHours - Math.floor(currentHours)) * 60),
-              ).padStart(2, "0")}`}
-              onChange={(e) => { setEditHours(e.target.value); setDirty(true); }}
-              className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-            />
-          </label>
+          </TimePickerWheel>
           <div className="tint-indigo rounded-2xl p-4">
             <div className="mb-2.5 flex items-center gap-2">
               <span className="ibadge h-8 w-8 bg-white/70"><Wallet size={16} strokeWidth={2.4} /></span>
               <span className="text-[0.7rem] font-bold uppercase tracking-wider opacity-90">{t("common.amount")}</span>
             </div>
-            <div className="num-display text-[1.7rem] leading-none text-foreground"><NumberFlow value={currentAmount} />€</div>
+            <div className="num-display text-[1.7rem] leading-none text-foreground"><MoneyNumber value={currentAmount} />€</div>
           </div>
         </div>
 
@@ -251,7 +172,7 @@ export default function WorkDayDetails() {
                 <button
                   key={s.key}
                   type="button"
-                  onClick={() => setStatus(s.key)}
+                  disabled={saving} onClick={() => setStatus(s.key)}
                   className="press relative flex flex-col items-center gap-1.5 rounded-xl bg-muted py-3 text-xs font-bold"
                 >
                   {active && (
@@ -281,7 +202,7 @@ export default function WorkDayDetails() {
             })}
           </div>
 
-          {status === "partial" && (
+          {(showPartial || status === "partial") && (
             <div className="mt-3 space-y-2.5">
               <div className="flex gap-2">
                 <input
@@ -289,12 +210,12 @@ export default function WorkDayDetails() {
                   value={partialAmount}
                   onChange={(e) => setPartialAmount(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && applyPartial()}
-                  placeholder={t("common.received")}
+                  aria-label={t("common.received")} placeholder={t("common.received")}
                   className="min-w-0 flex-1 rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm outline-none focus:border-primary"
                 />
                 <button
                   type="button"
-                  onClick={applyPartial}
+                  disabled={saving || !partialAmount} onClick={applyPartial}
                   className="press rounded-xl bg-primary px-5 text-sm font-bold text-primary-foreground"
                 >
                   Додати
@@ -303,11 +224,11 @@ export default function WorkDayDetails() {
               <div className="grid grid-cols-2 gap-2.5">
                 <div className="tint-emerald rounded-xl px-3 py-2.5">
                   <p className="text-[0.7rem] font-semibold uppercase opacity-80">{t("common.paid")}</p>
-                  <p className="num-display text-base text-foreground"><NumberFlow value={Math.round(dayPaidAmount)} />€</p>
+                  <p className="num-display text-base text-foreground"><MoneyNumber value={dayPaidAmount} />€</p>
                 </div>
                 <div className="tint-rose rounded-xl px-3 py-2.5">
                   <p className="text-[0.7rem] font-semibold uppercase opacity-80">{t("common.due")}</p>
-                  <p className="num-display text-base text-foreground"><NumberFlow value={Math.max(0, currentAmount - Math.round(dayPaidAmount))} />€</p>
+                  <p className="num-display text-base text-foreground"><MoneyNumber value={Math.max(0, currentAmount - dayPaidAmount)} />€</p>
                 </div>
               </div>
             </div>
@@ -339,10 +260,10 @@ export default function WorkDayDetails() {
           </label>
           <input
             type="date"
+            aria-label={t("common.date")}
             value={editDate}
             onChange={(e) => {
               setEditDate(e.target.value);
-              setDirty(true);
             }}
             className="w-full rounded-2xl border border-border bg-card px-4 py-3.5 text-base font-medium text-foreground outline-none focus:border-primary"
           />
@@ -353,11 +274,10 @@ export default function WorkDayDetails() {
           <label className="flex items-center gap-1.5 px-1 text-sm font-semibold text-foreground">
             <StickyNote size={15} strokeWidth={2.3} className="text-muted-foreground" /> {t("common.note")}
           </label>
-          <textarea
+          <textarea aria-label={t("common.note")}
             value={editNote}
             onChange={(e) => {
               setEditNote(e.target.value);
-              setDirty(true);
             }}
             placeholder={t("create.whatDidYouDo")}
             className="min-h-24 w-full resize-none rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground outline-none focus:border-primary"
@@ -366,28 +286,33 @@ export default function WorkDayDetails() {
 
         <button
           type="button"
-          onClick={remove}
-          className="press flex w-full items-center justify-center gap-1.5 py-2 text-sm font-semibold text-destructive"
+          disabled={saving} onClick={remove}
+          className="press flex w-full scroll-mb-32 items-center justify-center gap-1.5 py-2 text-sm font-semibold text-destructive"
         >
           <Trash2 size={16} strokeWidth={2.3} /> {t("day.deleteRecord")}
         </button>
+        </fieldset>
       </main>
 
       {/* Sticky Save */}
-      <div className="fixed inset-x-0 bottom-0 z-40 bg-gradient-to-t from-background via-background to-transparent pt-6">
+      <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40 bg-gradient-to-t from-background via-background to-transparent pt-6">
         <div className="mx-auto max-w-md px-4 pb-[calc(0.9rem+env(safe-area-inset-bottom))]">
           <button
             type="button"
             onClick={save}
             disabled={saving}
-            className="press flex w-full items-center justify-center gap-2 rounded-2xl bg-primary py-4 text-base font-bold text-primary-foreground disabled:opacity-60"
+            className="press pointer-events-auto flex w-full items-center justify-center gap-2 rounded-2xl bg-primary py-4 text-base font-bold text-primary-foreground disabled:opacity-60"
           >
             <Check size={20} strokeWidth={2.6} />
-            {dirty ? t("common.saveChanges") : t("common.saved")}
+            {autosave.error ? t("common.saveChanges") : saving ? t("common.saving") : dirty ? t("common.saveChanges") : t("common.saved")}
           </button>
         </div>
       </div>
 
+      <ConfirmSheet open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}
+        title={t('day.deleteRecord') + '?'} description="Буде видалено лише цей день. Інші записи залишаться."
+        onConfirm={handleDelete} confirmDisabled={saving} />
     </div>
   );
-}
+};
+export default WorkDayDetails;

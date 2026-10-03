@@ -1,4 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
+import { safeStorage } from './storage';
+import { fetchWithTimeout } from './fetchWithTimeout';
 
 const FALLBACK_SUPABASE_URL = 'https://mtvhfmvlfgespkiorxvg.supabase.co';
 const FALLBACK_SUPABASE_ANON_KEY = 'sb_publishable_d78hpHRGXeNsCaKOj6WkRw_OGBp0LTt';
@@ -6,7 +8,10 @@ const FALLBACK_SUPABASE_ANON_KEY = 'sb_publishable_d78hpHRGXeNsCaKOj6WkRw_OGBp0L
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || FALLBACK_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || FALLBACK_SUPABASE_ANON_KEY;
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  global: { fetch: fetchWithTimeout },
+  auth: { storage: safeStorage },
+});
 
 export type Database = {
   public: {

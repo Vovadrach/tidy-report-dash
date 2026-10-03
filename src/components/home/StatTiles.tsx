@@ -1,4 +1,4 @@
-import NumberFlow from "@number-flow/react";
+import { MoneyNumber } from '@/ui/MoneyNumber';
 import { Clock, Wallet } from "lucide-react";
 import { decimalToHours } from "@/utils/timeFormat";
 import { useI18n } from "@/i18n";
@@ -37,7 +37,7 @@ export const StatTiles = ({ hours, earned }: { hours: number; earned: number }) 
         {decimalToHours(hours)}
       </Tile>
       <Tile tint="tint-indigo" icon={Wallet} label={t("common.earned")}>
-        <NumberFlow value={Math.round(earned)} />€
+        <MoneyNumber value={earned} />€
       </Tile>
     </div>
   );

@@ -1,7 +1,8 @@
-import { defineConfig } from "vite";
+import { defineConfig, searchForWorkspaceRoot } from "vite";
 import pkg from "./package.json";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
+import { realpathSync } from "node:fs";
 import tailwindcss from "@tailwindcss/vite";
 import { VitePWA } from 'vite-plugin-pwa';
 
@@ -13,6 +14,7 @@ export default defineConfig(() => ({
   server: {
     host: "::",
     port: 8080,
+    fs: { allow: [searchForWorkspaceRoot(process.cwd()), realpathSync(path.resolve(__dirname, 'node_modules'))] },
   },
   plugins: [
     react(),
@@ -23,9 +25,10 @@ export default defineConfig(() => ({
       manifest: {
         name: 'Ясно — облік прибирання',
         short_name: 'Ясно',
-        description: 'Легкий облік прибирання: години, заробіток і хто скільки винен.',
+        start_url: '/',
+        description: 'Застосунок для обліку звітів по прибиранню апартаментів',
         theme_color: '#ffffff',
-        background_color: '#ffffff',
+        background_color: '#fafbfe',
         display: 'standalone',
         orientation: 'portrait',
         icons: [
@@ -45,19 +48,8 @@ export default defineConfig(() => ({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
-        runtimeCaching: [
-          {
-            urlPattern: /^https:\/\/[a-z0-9-]+\.supabase\.co\/.*/i,
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'supabase-cache',
-              expiration: {
-                maxEntries: 50,
-                maxAgeSeconds: 60 * 60 * 24
-              }
-            }
-          }
-        ]
+        // Authenticated API data is cached only by the account-scoped query provider.
+        runtimeCaching: [],
       }
     })
   ].filter(Boolean),
@@ -71,7 +63,7 @@ export default defineConfig(() => ({
     rollupOptions: {
       output: {
         manualChunks: {
-          react: ["react", "react-dom", "react-router-dom"],
+          react: ["react", "react-dom", "react-dom/client", "react/jsx-runtime", "react-router-dom"],
           supabase: ["@supabase/supabase-js"],
           query: ["@tanstack/react-query", "@tanstack/react-query-persist-client"],
           motion: ["motion"],

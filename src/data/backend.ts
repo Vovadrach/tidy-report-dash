@@ -1,32 +1,20 @@
-import type {
-  Client, NewAssignment, NewWorkEntry, PaymentStatus, WorkDay, Worker,
-} from "@/domain/types";
+import type { Client, NewAssignment, NewWorkEntry, PaymentStatus, WorkDay, WorkDayPatch, Worker } from '@/domain/types';
 
-/**
- * Контракт бекенда. Дві реалізації:
- *  - backend.supabase.ts — прод (стара схема, один вкладений запит);
- *  - demo/fixture.ts — VITE_DEMO=1, in-memory (розробка/скриншоти/smoke).
- */
 export interface Backend {
-  fetchWorkDays(): Promise<WorkDay[]>;
-  fetchClients(): Promise<Client[]>;
-  fetchWorkers(): Promise<Worker[]>;
-
-  createWorkEntry(entry: NewWorkEntry): Promise<void>;
-  updateWorkDayFields(
-    dayId: string,
-    patch: { date?: string; hours?: number; amount?: number; note?: string | null; isPlanned?: boolean },
-  ): Promise<void>;
-  setPayment(dayId: string, payment: { status: PaymentStatus; paidAmount: number }): Promise<void>;
-  replaceAssignments(dayId: string, assignments: NewAssignment[]): Promise<void>;
+  fetchWorkDays(signal?: AbortSignal): Promise<WorkDay[]>;
+  fetchClients(signal?: AbortSignal): Promise<Client[]>;
+  fetchWorkers(signal?: AbortSignal): Promise<Worker[]>;
+  createWorkEntry(entry: NewWorkEntry): Promise<WorkDay>;
+  saveWorkEntry(dayId: string, entry: NewWorkEntry): Promise<WorkDay>;
+  updateWorkDayFields(dayId: string, patch: WorkDayPatch): Promise<WorkDay>;
+  setPayment(dayId: string, payment: { status: PaymentStatus; paidAmount: number }): Promise<WorkDay>;
+  addPayment(dayId: string, amount: number, operationId: string): Promise<WorkDay>;
+  markAllPaid(days: Array<Pick<WorkDay, 'id' | 'amount'>>): Promise<WorkDay[]>;
+  replaceAssignments(dayId: string, assignments: NewAssignment[]): Promise<WorkDay>;
   deleteWorkDay(dayId: string): Promise<void>;
-  /** Перехідне (стара схема): видалення запису = видалення report-обгортки */
-  deleteReport(reportId: string): Promise<void>;
-
   addClient(input: { name: string; hourlyRate: number }): Promise<void>;
   updateClient(id: string, input: { name: string; hourlyRate: number }): Promise<void>;
   deleteClient(id: string): Promise<void>;
-
   addWorker(input: { name: string; color: string; isPrimary: boolean }): Promise<Worker>;
   deleteWorker(id: string): Promise<void>;
 }

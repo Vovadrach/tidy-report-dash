@@ -1,159 +1,66 @@
-import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
-import { CalendarPlus } from "lucide-react";
-import { useI18n } from "@/i18n";
-import { api } from "@/lib/api";
-import { useWorker } from "@/contexts/WorkerContext";
-import { BottomNavigation } from "@/components/BottomNavigation";
-import { MonthHeader } from "@/components/home/MonthHeader";
-import { WorkerChips } from "@/components/home/WorkerChips";
-import { StatTiles } from "@/components/home/StatTiles";
-import { DayCard, type DayItem } from "@/components/home/DayCard";
+import { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
-const iso = (d: Date) =>
-  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+import { useI18n } from '@/i18n';
+import { useWorkerFilter } from '@/contexts/WorkerContext';
+import { useWorkDays, useWorkers, useSetPayment, useAddPayment } from '@/data/queries';
+import { workerView, involvesWorker, resolveStatus } from '@/domain/money';
+import { periodStats } from '@/domain/stats';
+import { monthRange, toISODate } from '@/domain/dates';
 
-type AnyReport = {
-  id: string;
-  clientId?: string;
-  client_id?: string;
-  clientName?: string;
-  client_name?: string;
-  workDays?: AnyDay[];
-};
-type AnyDay = {
-  id: string;
-  date: string;
-  hours?: number;
-  amount?: number;
-  paymentStatus?: string;
-  payment_status?: string;
-  day_paid_amount?: number;
-  is_planned?: boolean;
-  note?: string;
-  assignments?: {
-    worker_id?: string | null;
-    workerId?: string | null;
-    hours?: number;
-    amount?: number;
-    deleted_worker_name?: string | null;
-    worker?: { name?: string; color?: string } | null;
-  }[];
-};
-
-const buildDays = (reports: AnyReport[], wid: string, monthPrefix: string, noName: string): DayItem[] => {
-  const out: DayItem[] = [];
-  for (const r of reports) {
-    const clientName = r.clientName || r.client_name || noName;
-    const clientId = r.clientId || r.client_id || "";
-    for (const d of r.workDays || []) {
-      if (!d.date?.startsWith(monthPrefix)) continue;
-      const assigns = d.assignments || [];
-      const status = (d.paymentStatus || d.payment_status || "unpaid") as DayItem["status"];
-      const base = {
-        reportId: r.id,
-        id: d.id,
-        clientId,
-        clientName,
-        date: d.date,
-        paidAmount: d.day_paid_amount || 0,
-        status,
-        isPlanned: !!d.is_planned,
-        note: d.note,
-      };
-      if (wid === "all") {
-        out.push({
-          ...base,
-          hours: d.hours || 0,
-          amount: d.amount || 0,
-          workers: assigns.map((a) => ({
-            name: a.worker?.name ?? a.deleted_worker_name ?? "?",
-            color: a.worker?.color ?? "#94a3b8",
-          })),
-        });
-      } else {
-        const mine = assigns.filter((a) => (a.worker_id || a.workerId) === wid);
-        if (mine.length === 0) continue;
-        out.push({
-          ...base,
-          hours: mine.reduce((s, a) => s + (a.hours || 0), 0),
-          amount: mine.reduce((s, a) => s + (a.amount || 0), 0),
-          workers: [{ name: mine[0].worker?.name ?? "?", color: mine[0].worker?.color ?? "#94a3b8" }],
-        });
-      }
-    }
-  }
-  return out;
-};
+import type { PaymentStatus } from '@/domain/types';
+import { useToday } from '@/ui/useToday';
+import { usePullToRefresh } from '@/ui/usePullToRefresh';
+import { QueryError, StaleDataNotice } from '@/ui/QueryError';
+import { BottomNavigation } from '@/components/BottomNavigation';
+import { CalendarPlus } from 'lucide-react';
+import { MonthHeader } from '@/components/home/MonthHeader';
+import { WorkerChips } from '@/components/home/WorkerChips';
+import { StatTiles } from '@/components/home/StatTiles';
+import { DayCard, type DayItem } from '@/components/home/DayCard';
 
 export default function Index() {
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
-  const { selectedWorkerId } = useWorker();
+  const { selectedWorkerId } = useWorkerFilter();
   const { t, weekdays } = useI18n();
-
-  const now = useMemo(() => new Date(), []);
+  const today = useToday();
+  const now = useMemo(() => new Date(today + 'T12:00:00'), [today]);
   const [anchor, setAnchor] = useState(() => new Date(now.getFullYear(), now.getMonth(), 1));
-
-  const { data: reports = [], isLoading } = useQuery<AnyReport[]>({
-    queryKey: ["reports"],
-    queryFn: api.getReports,
-  });
-
-  const setStatus = useMutation({
-    mutationFn: (v: { dayId: string; status: DayItem["status"]; paidAmount: number }) =>
-      api.updateWorkDay(v.dayId, { payment_status: v.status, day_paid_amount: v.paidAmount }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["reports"] }),
-    onError: () => toast.error(t("toast.statusError")),
-  });
-
-  const monthPrefix = `${anchor.getFullYear()}-${String(anchor.getMonth() + 1).padStart(2, "0")}`;
+  const query = useWorkDays();
+  const workersQuery = useWorkers();
+  const { pulling, refreshing } = usePullToRefresh(() => Promise.all([query.refetch(), workersQuery.refetch()]));
+  const { data: workDays = [], isLoading } = query;
+  const setStatus = useSetPayment();
+  const addPayment = useAddPayment();
+  const pending = setStatus.isPending || addPayment.isPending;
+  const changeStatus = async (dayId: string, status: PaymentStatus, paidAmount: number) => {
+    await setStatus.mutateAsync({ dayId, status, paidAmount });
+  };
+  const addPartial = async (dayId: string, amount: number, operationId: string) => {
+    await addPayment.mutateAsync({ dayId, amount, operationId });
+  };
+  const monthPrefix = `${anchor.getFullYear()}-${String(anchor.getMonth() + 1).padStart(2, '0')}`;
   const isCurrent = anchor.getFullYear() === now.getFullYear() && anchor.getMonth() === now.getMonth();
-
-  const days = useMemo(
-    () => buildDays(reports, selectedWorkerId, monthPrefix, t("common.noName")),
-    [reports, selectedWorkerId, monthPrefix, t],
-  );
-
-  const stats = useMemo(() => {
-    let hours = 0, earned = 0, paid = 0;
-    for (const d of days) {
-      if (d.isPlanned) continue;
-      hours += d.hours;
-      earned += d.amount;
-      paid += Math.min(d.paidAmount, d.amount);
-    }
-    return { hours, earned, paid };
-  }, [days]);
-
+  const days = useMemo<DayItem[]>(() => workDays.filter(d => d.date.startsWith(monthPrefix) && involvesWorker(d, selectedWorkerId)).map(d => {
+    const view = workerView(d, selectedWorkerId);
+    return { ...d, hours: view.hours, amount: view.amount, paidAmount: view.paid,
+      status: resolveStatus(view.paid, view.amount), workers: d.assignments.filter(a => selectedWorkerId === 'all' || a.workerId === selectedWorkerId).map(a => ({ name: a.workerName, color: a.workerColor })) };
+  }), [workDays, selectedWorkerId, monthPrefix]);
+  const stats = useMemo(() => periodStats(workDays, monthRange(anchor), selectedWorkerId), [workDays, anchor, selectedWorkerId]);
   const groups = useMemo(() => {
     const map = new Map<string, DayItem[]>();
-    for (const d of [...days].sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0))) {
-      const arr = map.get(d.date) ?? [];
-      arr.push(d);
-      map.set(d.date, arr);
+    for (const d of [...days].sort((a,b) => b.date.localeCompare(a.date) || a.id.localeCompare(b.id))) {
+      const group = map.get(d.date) ?? []; group.push(d); map.set(d.date, group);
     }
     return [...map.entries()];
   }, [days]);
-
-  const openDay = (d: DayItem) => {
-    if (d.isPlanned) {
-      navigate(`/create-report?clientId=${d.clientId}&date=${d.date}&workDayId=${d.id}&reportId=${d.reportId}`, {
-        viewTransition: true,
-      });
-    } else {
-      navigate(`/report/${d.reportId}/day/${d.id}`, { viewTransition: true });
-    }
-  };
-
-  const addOnDate = (date: string) =>
-    navigate(`/select-client?date=${date}`, { viewTransition: true });
-
+  const openDay = (day: DayItem) => navigate(day.isPlanned ? `/create-report?clientId=${day.clientId}&date=${day.date}&workDayId=${day.id}` : `/day/${day.id}`, { viewTransition: true });
+  const addOnDate = (date: string) => navigate(`/select-client?date=${date}`, { viewTransition: true });
+  if (query.isError && !query.data) return <QueryError onRetry={() => void query.refetch()} />;
   return (
     <div className="min-h-dvh bg-background">
       <header className="mx-auto max-w-md space-y-3.5 px-4 pt-3">
+        {(pulling > 0 || refreshing) && <p role="status" className="text-center text-xs font-semibold text-primary">{t('common.refreshing')}</p>}
         <MonthHeader
           date={anchor}
           isCurrent={isCurrent}
@@ -165,6 +72,7 @@ export default function Index() {
       </header>
 
       <main className="mx-auto max-w-md space-y-5 px-4 pb-[calc(10.5rem+env(safe-area-inset-bottom))] pt-5">
+        {query.isError && query.data && <StaleDataNotice onRetry={() => void query.refetch()} />}
         {isLoading ? (
           <div className="space-y-3">
             {[0, 1, 2].map((i) => (
@@ -183,7 +91,7 @@ export default function Index() {
           groups.map(([date, items]) => {
             const [y, m, dd] = date.split("-").map(Number);
             const dow = weekdays[new Date(y, m - 1, dd).getDay()];
-            const today = iso(now) === date;
+            const today = toISODate(now) === date;
             return (
               <section key={date} className="space-y-2.5">
                 <div className="flex items-center gap-3">
@@ -215,9 +123,10 @@ export default function Index() {
                       day={d}
                       index={i}
                       onOpen={() => openDay(d)}
-                      onStatus={(dayId, status, paidAmount) =>
-                        setStatus.mutate({ dayId, status, paidAmount })
-                      }
+                      onStatus={changeStatus}
+                      onAddPartial={addPartial}
+                      pending={pending}
+                      canEdit={selectedWorkerId === "all"}
                     />
                   ))}
                 </div>

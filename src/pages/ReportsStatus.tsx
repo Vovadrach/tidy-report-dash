@@ -1,84 +1,29 @@
-import { useState, useEffect, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
-import { api } from "@/lib/api";
-import { Report, Client } from "@/types/report";
-import { Clock, ChevronRight, PartyPopper, HandCoins } from "lucide-react";
-import { toast } from "sonner";
-import NumberFlow from "@number-flow/react";
-import { BottomNavigation } from "@/components/BottomNavigation";
-import { decimalToHours } from "@/utils/timeFormat";
-import { useWorker } from "@/contexts/WorkerContext";
-import { useI18n } from "@/i18n";
+import { useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 
+import { MoneyNumber } from '@/ui/MoneyNumber';
+import { useI18n } from '@/i18n';
+import { useWorkerFilter } from '@/contexts/WorkerContext';
+import { useWorkDays } from '@/data/queries';
+import { round2 } from '@/domain/money';
+import { debtors as findDebtors } from '@/domain/stats';
+
+import { decimalToHours } from '@/domain/time';
+
+import { StaleDataNotice } from '@/ui/QueryError';
+import { BottomNavigation } from '@/components/BottomNavigation';
+import { Clock, ChevronRight, PartyPopper, HandCoins } from 'lucide-react';
 export default function ReportsStatus() {
   const navigate = useNavigate();
-  const { selectedWorkerId } = useWorker();
+  const { selectedWorkerId } = useWorkerFilter();
   const { t } = useI18n();
-  const [reports, setReports] = useState<Report[]>([]);
-  const [clients, setClients] = useState<Client[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    loadData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedWorkerId]);
-
-  const loadData = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const [reportsData, clientsData] = await Promise.all([api.getReports(), api.getClients()]);
-      const recalculated = reportsData.map((report) => {
-        let totalHours = 0, totalEarned = 0, paidAmount = 0;
-        (report.workDays || []).forEach((day) => {
-          if (day.is_planned) return;
-          const dayStatus = day.paymentStatus || day.payment_status;
-          const dayPaid = day.day_paid_amount || 0;
-          if (selectedWorkerId !== "all") {
-            const a = day.assignments?.find((x) => x.worker_id === selectedWorkerId || x.workerId === selectedWorkerId);
-            if (!a) return;
-            const wA = a.amount || 0, wH = a.hours || 0;
-            totalHours += wH; totalEarned += wA;
-            if (dayStatus === "paid") paidAmount += wA;
-            else if (dayStatus === "partial") paidAmount += day.amount > 0 ? (wA / day.amount) * dayPaid : 0;
-          } else {
-            totalHours += day.hours || 0; totalEarned += day.amount || 0;
-            if (dayStatus === "paid") paidAmount += day.amount || 0;
-            else if (dayStatus === "partial") paidAmount += dayPaid;
-          }
-        });
-        const remainingAmount = totalEarned - paidAmount;
-        const paymentStatus = paidAmount >= totalEarned && totalEarned > 0 ? "paid" : paidAmount > 0 ? "partial" : "unpaid";
-        return { ...report, totalHours, totalEarned, paidAmount, remainingAmount, paymentStatus };
-      });
-      setReports(recalculated);
-      setClients(clientsData);
-    } catch (e) {
-      setError(t("waiting.loadError"));
-      toast.error(t("toast.loadError"));
-      console.error(e);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const debtors = useMemo(() => {
-    const unpaid = reports.filter((r) => (r.paymentStatus === "unpaid" || r.paymentStatus === "partial") && r.remainingAmount > 0);
-    const byClient = new Map<string, { clientId: string; name: string; hours: number; remaining: number }>();
-    for (const r of unpaid) {
-      const cid = r.clientId || r.client_id || "";
-      const e = byClient.get(cid) || { clientId: cid, name: r.clientName || r.client_name || t("common.noName"), hours: 0, remaining: 0 };
-      e.hours += r.totalHours || 0;
-      e.remaining += r.remainingAmount || 0;
-      byClient.set(cid, e);
-    }
-    return [...byClient.values()].filter((d) => d.remaining > 0.5).sort((a, b) => b.remaining - a.remaining);
-  }, [reports]);
-
-  const totalDue = debtors.reduce((s, d) => s + d.remaining, 0);
-  const totalHours = debtors.reduce((s, d) => s + d.hours, 0);
-
+  const query = useWorkDays();
+  const loading = query.isLoading;
+  const error = query.isError && !query.data ? t('waiting.loadError') : null;
+  const loadData = () => { void query.refetch(); };
+  const debtors = useMemo(() => findDebtors(query.data ?? [],selectedWorkerId).map(b => ({ clientId: b.clientId,name: b.clientName,hours: b.unpaidHours,remaining: b.totalDue })), [query.data,selectedWorkerId]);
+  const totalDue = round2(debtors.reduce((n,d) => n + d.remaining,0));
+  const totalHours = debtors.reduce((n,d) => n + d.hours,0);
   return (
     <div className="min-h-dvh bg-background">
       <header className="mx-auto max-w-md px-4 pt-4">
@@ -89,6 +34,7 @@ export default function ReportsStatus() {
       </header>
 
       <main className="mx-auto max-w-md space-y-4 px-4 pb-[calc(7rem+env(safe-area-inset-bottom))] pt-4">
+        {query.isError && query.data && <StaleDataNotice onRetry={loadData} />}
         {loading ? (
           <>
             <div className="skeleton h-28 rounded-2xl" />
@@ -112,7 +58,7 @@ export default function ReportsStatus() {
           <>
             <div className="rise-in tint-rose rounded-2xl p-5 text-center">
               <p className="text-[0.72rem] font-bold uppercase tracking-wider opacity-80">{t("waiting.owed")}</p>
-              <p className="num-display mt-1 text-4xl text-foreground"><NumberFlow value={Math.round(totalDue)} />€</p>
+              <p className="num-display mt-1 text-4xl text-foreground"><MoneyNumber value={totalDue} />€</p>
               <p className="mt-1 text-sm font-medium opacity-80">{t("waiting.forHours", { h: decimalToHours(totalHours) })}</p>
             </div>
 
@@ -138,7 +84,7 @@ export default function ReportsStatus() {
                     </p>
                   </div>
                   <span className="tint-rose num-display rounded-xl px-3 py-1.5 text-sm">
-                    <NumberFlow value={Math.round(d.remaining)} />€
+                    <MoneyNumber value={d.remaining} />€
                   </span>
                   <ChevronRight size={18} className="text-muted-foreground" />
                 </button>

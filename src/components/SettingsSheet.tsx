@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from "motion/react";
 import { Check, Languages } from "lucide-react";
 import { useI18n, type Lang } from "@/i18n";
+import * as Dialog from "@radix-ui/react-dialog";
 
 const LANGS: { code: Lang; label: string; flag: string }[] = [
   { code: "uk", label: "Українська", flag: "🇺🇦" },
@@ -10,19 +11,17 @@ const LANGS: { code: Lang; label: string; flag: string }[] = [
 export function SettingsSheet({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
   const { t, lang, setLang } = useI18n();
   return (
-    <AnimatePresence>
+    <Dialog.Root open={open} onOpenChange={onOpenChange}>
+    <Dialog.Portal forceMount><AnimatePresence>
       {open && (
         <>
-          <motion.div
+          <Dialog.Overlay asChild forceMount><motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={() => onOpenChange(false)}
             className="fixed inset-0 z-40 bg-foreground/15"
-          />
-          <motion.div
-            role="dialog"
-            aria-modal="true"
+          /></Dialog.Overlay>
+          <Dialog.Content asChild forceMount><motion.div
             initial={{ y: "100%" }}
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
@@ -31,7 +30,8 @@ export function SettingsSheet({ open, onOpenChange }: { open: boolean; onOpenCha
           >
             <div className="mx-auto mt-3 h-1 w-10 rounded-full bg-border" />
             <div className="px-5 pb-[calc(1.6rem+env(safe-area-inset-bottom))] pt-3">
-              <h2 className="mb-4 text-lg font-bold text-foreground">{t("settings.title")}</h2>
+              <Dialog.Title asChild><h2 className="mb-4 text-lg font-bold text-foreground">{t("settings.title")}</h2></Dialog.Title>
+              <Dialog.Description className="sr-only">{t("settings.language")}</Dialog.Description>
               <p className="mb-2 flex items-center gap-1.5 px-1 text-sm font-semibold text-muted-foreground">
                 <Languages size={16} strokeWidth={2.2} /> {t("settings.language")}
               </p>
@@ -55,9 +55,10 @@ export function SettingsSheet({ open, onOpenChange }: { open: boolean; onOpenCha
                 })}
               </div>
             </div>
-          </motion.div>
+          </motion.div></Dialog.Content>
         </>
       )}
-    </AnimatePresence>
+    </AnimatePresence></Dialog.Portal>
+    </Dialog.Root>
   );
 }

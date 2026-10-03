@@ -35,6 +35,8 @@ export interface WorkDay {
   hours: number;
   amount: number;
   paidAmount: number;
+  /** Agreed rate at creation; legacy records may lack a snapshot. */
+  hourlyRate?: number;
   status: PaymentStatus;
   isPlanned: boolean;
   note?: string;
@@ -54,14 +56,24 @@ export interface NewAssignment {
 }
 
 export interface NewWorkEntry {
+  requestId?: string;
   clientId: string;
   clientName: string;
   date: ISODate;
   hours: number;
   amount: number;
+  hourlyRate?: number;
   status: PaymentStatus;
   paidAmount: number;
   isPlanned: boolean;
   note?: string;
   assignments: NewAssignment[];
+}
+
+export interface WorkDayPatch {
+  date?: ISODate;
+  hours?: number;
+  amount?: number;
+  note?: string | null;
+  isPlanned?: boolean;
 }

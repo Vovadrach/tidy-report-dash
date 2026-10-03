@@ -15,12 +15,14 @@ export default function Login() {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loading) return;
     if (!email || !password) { toast.error(t("auth.fillAll")); return; }
     setLoading(true);
-    const { error } = await signIn(email, password);
-    setLoading(false);
-    if (error) toast.error(error.message);
-    else navigate("/");
+    try {
+      const { error } = await signIn(email.trim(),password);
+      if (error) toast.error(error.message);
+      else { navigate("/"); }
+    } catch { toast.error(t('toast.loadError')); } finally { setLoading(false); }
   };
 
   return (
@@ -36,12 +38,12 @@ export default function Login() {
         <form onSubmit={submit} className="space-y-3">
           <div className="space-y-1.5">
             <label className="px-1 text-sm font-semibold text-foreground">{t("auth.email")}</label>
-            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="your@email.com" disabled={loading}
+            <input type="email" aria-label={t("auth.email")} value={email} onChange={(e) => setEmail(e.target.value)} placeholder="your@email.com" disabled={loading}
               autoComplete="email" className="w-full rounded-2xl border border-border bg-card px-4 py-3.5 text-base outline-none focus:border-primary" />
           </div>
           <div className="space-y-1.5">
             <label className="px-1 text-sm font-semibold text-foreground">{t("auth.password")}</label>
-            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" disabled={loading}
+            <input type="password" aria-label={t("auth.password")} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" disabled={loading}
               autoComplete="current-password" className="w-full rounded-2xl border border-border bg-card px-4 py-3.5 text-base outline-none focus:border-primary" />
           </div>
           <button type="submit" disabled={loading} className="press w-full rounded-2xl bg-primary py-4 text-base font-bold text-primary-foreground disabled:opacity-60">

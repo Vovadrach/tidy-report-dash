@@ -1,18 +1,21 @@
+import { AccountDataProvider } from "@/data/AccountDataProvider";
 import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { lazy, Suspense } from "react";
+import { createBrowserRouter, RouterProvider, createRoutesFromElements, Route, Navigate, Outlet, useParams } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { WorkerProvider } from "@/contexts/WorkerContext";
-import { LanguageProvider } from "@/i18n";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
-import Index from "./pages/Index";
+import { ErrorBoundary } from "@/ui/ErrorBoundary";
+import { OfflineBanner } from "@/ui/OfflineBanner";
+import { lazy, Suspense } from "react";
+import { ScreenSkeleton } from "@/ui/Skeleton";
+import { RouteError } from "@/ui/RouteError";
+import { LanguageProvider } from "@/i18n";
+import { TooltipProvider } from "@/components/ui/tooltip";
+const Index = lazy(() => import("./pages/Index"));
 
 const ReportsStatus = lazy(() => import("./pages/ReportsStatus"));
 const SelectClient = lazy(() => import("./pages/SelectClient"));
 const CreateReport = lazy(() => import("./pages/CreateReport"));
-const ReportDetails = lazy(() => import("./pages/ReportDetails"));
 const WorkDayDetails = lazy(() => import("./pages/WorkDayDetails"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const ClientManagement = lazy(() => import("./pages/ClientManagement"));
@@ -20,47 +23,44 @@ const ClientReports = lazy(() => import("./pages/ClientReports"));
 const Login = lazy(() => import("./pages/Login"));
 const Register = lazy(() => import("./pages/Register"));
 const NotFound = lazy(() => import("./pages/NotFound"));
+const ReportDetails = lazy(() => import("./pages/ReportDetails"));
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: { staleTime: 60_000, retry: 1, refetchOnWindowFocus: true },
-  },
-});
+const LegacyDayRedirect = () => {
+  const { dayId } = useParams();
+  return <Navigate to={`/day/${dayId}`} replace />;
+};
 
-const RouteFallback = () => (
-  <div className="min-h-dvh bg-background" />
-);
-
+const router = createBrowserRouter(createRoutesFromElements(<Route element={<Outlet />} errorElement={<RouteError />}>
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+              <Route path="/reports-status" element={<ProtectedRoute><ReportsStatus /></ProtectedRoute>} />
+              <Route path="/select-client" element={<ProtectedRoute><SelectClient /></ProtectedRoute>} />
+              <Route path="/create-report" element={<ProtectedRoute><CreateReport /></ProtectedRoute>} />
+              <Route path="/day/:dayId" element={<ProtectedRoute><WorkDayDetails /></ProtectedRoute>} />
+              {/* Спадкові маршрути 2.x */}
+              <Route path="/report/:reportId/day/:dayId" element={<LegacyDayRedirect />} />
+              <Route path="/report/:id" element={<ProtectedRoute><ReportDetails /></ProtectedRoute>} />
+              <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+              <Route path="/client-management" element={<ProtectedRoute><ClientManagement /></ProtectedRoute>} />
+              <Route path="/client-reports/:clientId" element={<ProtectedRoute><ClientReports /></ProtectedRoute>} />
+              <Route path="*" element={<NotFound />} />
+</Route>));
 const App = () => (
-  <QueryClientProvider client={queryClient}>
+  <ErrorBoundary>
     <LanguageProvider>
     <AuthProvider>
-      <WorkerProvider>
-        <TooltipProvider delayDuration={200}>
-          <Sonner position="top-center" />
-          <BrowserRouter>
-            <Suspense fallback={<RouteFallback />}>
-              <Routes>
-                <Route path="/login" element={<Login />} />
-                <Route path="/register" element={<Register />} />
-                <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
-                <Route path="/reports-status" element={<ProtectedRoute><ReportsStatus /></ProtectedRoute>} />
-                <Route path="/select-client" element={<ProtectedRoute><SelectClient /></ProtectedRoute>} />
-                <Route path="/create-report" element={<ProtectedRoute><CreateReport /></ProtectedRoute>} />
-                <Route path="/report/:id" element={<ProtectedRoute><ReportDetails /></ProtectedRoute>} />
-                <Route path="/report/:reportId/day/:dayId" element={<ProtectedRoute><WorkDayDetails /></ProtectedRoute>} />
-                <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-                <Route path="/client-management" element={<ProtectedRoute><ClientManagement /></ProtectedRoute>} />
-                <Route path="/client-reports/:clientId" element={<ProtectedRoute><ClientReports /></ProtectedRoute>} />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </Suspense>
-          </BrowserRouter>
-        </TooltipProvider>
-      </WorkerProvider>
+      <AccountDataProvider>
+          <WorkerProvider>
+            <TooltipProvider delayDuration={200}>
+            <Sonner position="top-center" />
+            <OfflineBanner />
+            <Suspense fallback={<ScreenSkeleton />}><RouterProvider router={router} /></Suspense>
+            </TooltipProvider>
+          </WorkerProvider>
+      </AccountDataProvider>
     </AuthProvider>
     </LanguageProvider>
-  </QueryClientProvider>
+  </ErrorBoundary>
 );
-
 export default App;

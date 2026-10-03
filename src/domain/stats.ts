@@ -1,6 +1,6 @@
 import type { DateRange } from "./dates";
 import { inRange } from "./dates";
-import { involvesWorker, workerView } from "./money";
+import { involvesWorker, workerView, toCents, round2 } from "./money";
 import type { ISODate, WorkDay } from "./types";
 
 /**
@@ -32,15 +32,15 @@ export const periodStats = (
     if (!involvesWorker(day, workerId)) continue;
     const v = workerView(day, workerId);
     minutes += Math.round(v.hours * 60);
-    earned += v.amount;
-    paid += v.paid;
+    earned += toCents(v.amount);
+    paid += toCents(v.paid);
   }
   const hours = minutes / 60;
   return {
     hours,
-    earned,
-    paid,
-    due: earned - paid,
+    earned: earned / 100,
+    paid: paid / 100,
+    due: (earned - paid) / 100,
     progress: earned > 0 ? Math.min(paid / earned, 1) : 0,
   };
 };
@@ -84,7 +84,7 @@ export const clientBalances = (
     }
     map.set(day.clientId, b);
   }
-  return [...map.values()];
+  return [...map.values()].map(b => ({ ...b, totalEarned: round2(b.totalEarned), totalPaid: round2(b.totalPaid), totalDue: round2(b.totalDue), totalHours: Math.round(b.totalHours * 60) / 60 }));
 };
 
 /** Клієнти з боргом, за спаданням боргу. */
@@ -108,23 +108,23 @@ export const monthlySummary = (
   now: Date,
   workerId: string | "all" = "all",
 ): MonthSummary[] => {
-  const result: MonthSummary[] = [];
-  for (let i = count - 1; i >= 0; i--) {
+  if (!Number.isFinite(count) || count > 1200) throw new RangeError('Некоректна кількість місяців');
+  const months = new Map<string, { minutes: number; earned: number; paid: number }>();
+  for (let i = Math.max(0, Math.floor(count)) - 1; i >= 0; i--) {
     const anchor = new Date(now.getFullYear(), now.getMonth() - i, 1);
     const key = `${anchor.getFullYear()}-${String(anchor.getMonth() + 1).padStart(2, "0")}`;
-    let minutes = 0;
-    let earned = 0;
-    let paid = 0;
-    for (const day of days) {
-      if (day.isPlanned) continue;
-      if (!day.date.startsWith(key)) continue;
-      if (!involvesWorker(day, workerId)) continue;
-      const v = workerView(day, workerId);
-      minutes += Math.round(v.hours * 60);
-      earned += v.amount;
-      paid += v.paid;
-    }
-    result.push({ month: `${key}-01`, hours: minutes / 60, earned, paid });
+    months.set(key, { minutes: 0, earned: 0, paid: 0 });
   }
-  return result;
+  for (const day of days) {
+    if (day.isPlanned || !involvesWorker(day, workerId)) continue;
+    const bucket = months.get(day.date.slice(0, 7));
+    if (!bucket) continue;
+    const view = workerView(day, workerId);
+    bucket.minutes += Math.round(view.hours * 60);
+    bucket.earned += toCents(view.amount);
+    bucket.paid += toCents(view.paid);
+  }
+  return [...months.entries()].map(([month, value]) => ({
+    month: `${month}-01`, hours: value.minutes / 60, earned: value.earned / 100, paid: value.paid / 100,
+  }));
 };

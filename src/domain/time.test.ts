@@ -14,7 +14,7 @@ describe("hoursToDecimal", () => {
     ["23:45", 23.75],
     ["100:30", 100.5], // колесо годин у деталях дня дозволяє до 100
     ["abc", 0],
-    ["8:xx", 8],
+    ["8:xx", 0],
   ])("%s → %d", (input, expected) => {
     expect(hoursToDecimal(input)).toBeCloseTo(expected, 10);
   });

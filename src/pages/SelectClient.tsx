@@ -1,7 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { api } from "@/lib/api";
-import { Client } from "@/types/report";
+import { useClients } from "@/data/queries";
+import { QueryError, StaleDataNotice } from "@/ui/QueryError";
+import { isISODate } from "@/domain/dates";
+import { formatMoney } from "@/domain/money";
 import { UserPlus, ArrowLeft, ChevronRight, Search, Users, LogOut, SlidersHorizontal } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
@@ -14,30 +16,18 @@ export default function SelectClient() {
   const dateParam = params.get("date");
   const { signOut } = useAuth();
   const { t } = useI18n();
-  const [clients, setClients] = useState<Client[]>([]);
+  const query = useClients();
+  const clients = query.data ?? [];
   const [q, setQ] = useState("");
-  const [loading, setLoading] = useState(true);
+  const loading = query.isLoading;
   const [settingsOpen, setSettingsOpen] = useState(false);
 
-  useEffect(() => {
-    (async () => {
-      try {
-        setLoading(true);
-        setClients(await api.getClients());
-      } catch (e) {
-        toast.error(t("toast.loadClientsError"));
-        console.error(e);
-      } finally {
-        setLoading(false);
-      }
-    })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   const pick = (id: string) =>
-    navigate(`/create-report?clientId=${id}${dateParam ? `&date=${dateParam}` : ""}`, { viewTransition: true });
+    navigate(`/create-report?clientId=${id}${dateParam && isISODate(dateParam) ? `&date=${dateParam}` : ""}`, { viewTransition: true });
 
   const filtered = clients.filter((c) => c.name.toLowerCase().includes(q.toLowerCase()));
+
+  if (query.isError && !query.data) return <QueryError onRetry={() => void query.refetch()} />;
 
   return (
     <div className="min-h-dvh bg-background">
@@ -64,6 +54,7 @@ export default function SelectClient() {
             className="w-full rounded-2xl border border-border bg-card py-3 pl-11 pr-4 text-base outline-none focus:border-primary" />
         </div>
 
+        {query.isError && query.data && <StaleDataNotice onRetry={() => void query.refetch()} />}
         {loading ? (
           <div className="space-y-2.5">{[0, 1, 2].map((i) => <div key={i} className="skeleton h-16 rounded-2xl" />)}</div>
         ) : filtered.length === 0 ? (
@@ -88,7 +79,7 @@ export default function SelectClient() {
                 </span>
                 <span className="flex-1 truncate font-semibold text-foreground">{c.name}</span>
                 <span className="text-sm font-semibold text-primary">
-                  {c.hourlyRate || c.hourly_rate || 0}{t("common.perHour")}
+                  {formatMoney(c.hourlyRate)}{t("common.perHour")}
                 </span>
                 <ChevronRight size={18} className="text-muted-foreground" />
               </button>
@@ -96,7 +87,7 @@ export default function SelectClient() {
           </div>
         )}
 
-        <button onClick={async () => { await signOut(); navigate("/login"); }}
+        <button onClick={async () => { try { await signOut(); navigate("/login"); } catch { toast.error(t("common.error")); } }}
           className="press mx-auto mt-6 flex items-center gap-1.5 py-2 text-sm font-medium text-muted-foreground">
           <LogOut size={15} /> {t("select.signOut")}
         </button>

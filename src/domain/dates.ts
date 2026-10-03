@@ -76,3 +76,12 @@ export const formatFullDate = (iso: ISODate): string =>
     month: "2-digit",
     year: "numeric",
   });
+
+/** Rejects impossible calendar dates instead of rolling them into another month. */
+export const isISODate = (value: string): boolean => {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const year = Number(value.slice(0, 4));
+  if (year < 1000 || year > 9999) return false;
+  const date = fromISODate(value);
+  return !Number.isNaN(date.getTime()) && toISODate(date) === value;
+};

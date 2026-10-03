@@ -1,8 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { api } from "@/lib/api";
-import { Client } from "@/types/report";
+import { useClients, useAddClient, useUpdateClient, useDeleteClient } from "@/data/queries";
+import { QueryError, StaleDataNotice } from "@/ui/QueryError";
+import { parseNumber, formatMoney } from "@/domain/money";
+import { Client } from "@/domain/types";
 import { Pencil, Trash2, Plus, Users, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { useI18n } from "@/i18n";
@@ -10,27 +12,16 @@ import { useI18n } from "@/i18n";
 export default function ClientManagement() {
   const navigate = useNavigate();
   const { t } = useI18n();
-  const [clients, setClients] = useState<Client[]>([]);
-  const [loading, setLoading] = useState(true);
+  const query = useClients();
+  const clients = query.data ?? [];
+  const loading = query.isLoading;
+  const add = useAddClient(); const update = useUpdateClient(); const removeClient = useDeleteClient();
+  const pending = add.isPending || update.isPending || removeClient.isPending;
+  const busy = useRef(false);
   const [dialog, setDialog] = useState<null | "add" | "edit">(null);
   const [editing, setEditing] = useState<Client | null>(null);
   const [name, setName] = useState("");
   const [rate, setRate] = useState("");
-
-  useEffect(() => {
-    loadClients();
-  }, []);
-
-  const loadClients = async () => {
-    try {
-      setClients(await api.getClients());
-    } catch (e) {
-      toast.error(t("toast.loadClientsError"));
-      console.error(e);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const openAdd = () => {
     setName("");
@@ -41,43 +32,27 @@ export default function ClientManagement() {
   const openEdit = (c: Client) => {
     setEditing(c);
     setName(c.name);
-    setRate(String(c.hourlyRate || c.hourly_rate || 0));
+    setRate(String(c.hourlyRate));
     setDialog("edit");
   };
 
   const save = async () => {
-    if (!name.trim() || !rate) {
-      toast.error(t("toast.fillAll"));
-      return;
-    }
-    const hourlyRate = parseFloat(rate.replace(",", ".")) || 0;
+    if (busy.current || pending) return;
+    const hourlyRate = parseNumber(rate);
+    if (!name.trim() || !Number.isFinite(hourlyRate) || hourlyRate <= 0) { toast.error(t('toast.fillAll')); return; }
+    busy.current=true;
     try {
-      if (dialog === "edit" && editing) {
-        await api.updateClient(editing.id, { name: name.trim(), hourlyRate });
-        toast.success(t("toast.clientUpdated"));
-      } else {
-        await api.addClient({ name: name.trim(), hourlyRate });
-        toast.success(t("toast.clientAdded"));
-      }
+      if (dialog === 'edit' && editing) await update.mutateAsync({ id: editing.id,name: name.trim(),hourlyRate });
+      else await add.mutateAsync({ name: name.trim(),hourlyRate });
       setDialog(null);
-      await loadClients();
-    } catch (e) {
-      toast.error(t("toast.saveError"));
-      console.error(e);
-    }
+    } catch { /* Mutation provides a message; preserve the form. */ } finally { busy.current=false; }
   };
-
   const remove = async (id: string) => {
-    if (!confirm(t("clients.confirmDelete"))) return;
-    try {
-      await api.deleteClient(id);
-      await loadClients();
-      toast.success(t("toast.clientDeleted"));
-    } catch (e) {
-      toast.error(t("toast.deleteError"));
-      console.error(e);
-    }
+    if (busy.current || pending || !confirm(t('clients.confirmDelete'))) return;
+    busy.current=true;
+    try { await removeClient.mutateAsync(id); } catch { /* Mutation provides a message. */ } finally { busy.current=false; }
   };
+  if (query.isError && !query.data) return <QueryError onRetry={() => void query.refetch()} />;
 
   return (
     <div className="min-h-dvh bg-background">
@@ -102,6 +77,7 @@ export default function ClientManagement() {
       </header>
 
       <main className="mx-auto max-w-md space-y-2.5 px-4 pb-10 pt-4">
+        {query.isError && query.data && <StaleDataNotice onRetry={() => void query.refetch()} />}
         {loading ? (
           [0, 1, 2].map((i) => <div key={i} className="skeleton h-16 rounded-2xl" />)
         ) : clients.length === 0 ? (
@@ -120,12 +96,12 @@ export default function ClientManagement() {
               </span>
               <div className="min-w-0 flex-1">
                 <p className="truncate font-semibold text-foreground">{c.name}</p>
-                <p className="text-sm text-primary">{c.hourlyRate || c.hourly_rate || 0}{t("common.perHour")}</p>
+                <p className="text-sm text-primary">{formatMoney(c.hourlyRate)}{t("common.perHour")}</p>
               </div>
               <button onClick={() => openEdit(c)} aria-label={t("common.edit")} className="press ibadge tint-blue h-9 w-9">
                 <Pencil size={16} strokeWidth={2.3} />
               </button>
-              <button onClick={() => remove(c.id)} aria-label={t("common.delete")} className="press ibadge tint-rose h-9 w-9">
+              <button disabled={pending} onClick={() => void remove(c.id)} aria-label={t("common.delete")} className="press ibadge tint-rose h-9 w-9">
                 <Trash2 size={16} strokeWidth={2.3} />
               </button>
             </div>
@@ -133,7 +109,7 @@ export default function ClientManagement() {
         )}
       </main>
 
-      <Dialog open={dialog !== null} onOpenChange={(o) => !o && setDialog(null)}>
+      <Dialog open={dialog !== null} onOpenChange={(o) => { if (!o && !pending) setDialog(null); }}>
         <DialogContent className="max-w-[calc(100%-2rem)] rounded-2xl border border-border sm:max-w-sm">
           <DialogHeader>
             <DialogTitle className="text-lg font-bold">
@@ -143,8 +119,8 @@ export default function ClientManagement() {
           <div className="space-y-3 pt-1">
             <div className="space-y-1.5">
               <label className="text-sm font-semibold">{t("clients.name")}</label>
-              <input
-                value={name}
+              <input disabled={pending}
+                aria-label={t("clients.name")} value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder={t("clients.namePlaceholder")}
                 className="w-full rounded-xl border border-border bg-background px-3.5 py-2.5 text-base outline-none focus:border-primary"
@@ -154,9 +130,9 @@ export default function ClientManagement() {
             <div className="space-y-1.5">
               <label className="text-sm font-semibold">{t("common.rate.hour")}</label>
               <div className="relative">
-                <input
+                <input disabled={pending}
                   inputMode="decimal"
-                  value={rate}
+                  aria-label={t("common.rate.hour")} value={rate}
                   onChange={(e) => setRate(e.target.value)}
                   placeholder="0"
                   className="w-full rounded-xl border border-border bg-background px-3.5 py-2.5 pr-14 text-base outline-none focus:border-primary"
@@ -167,7 +143,7 @@ export default function ClientManagement() {
               </div>
             </div>
             <button
-              onClick={save}
+              disabled={pending} onClick={() => void save()}
               className="press mt-1 w-full rounded-xl bg-primary py-3 text-base font-bold text-primary-foreground"
             >
               {t("common.save")}

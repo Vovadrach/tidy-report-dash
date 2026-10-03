@@ -1,4 +1,5 @@
-import { createContext, useContext, useState, useCallback, useMemo, type ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, useMemo, useEffect, type ReactNode } from "react";
+import { safeStorage } from "@/lib/storage";
 import { dict, MONTHS, WEEKDAYS, LOCALE, type Lang } from "./dict";
 
 interface I18n {
@@ -14,16 +15,17 @@ const Ctx = createContext<I18n | null>(null);
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const [lang, setLangState] = useState<Lang>(() => {
-    const saved = localStorage.getItem("lang");
+    const saved = safeStorage.getItem("lang");
     if (saved === "uk" || saved === "it") return saved;
     return typeof navigator !== "undefined" && navigator.language.startsWith("it") ? "it" : "uk";
   });
 
   const setLang = useCallback((l: Lang) => {
-    localStorage.setItem("lang", l);
+    safeStorage.setItem("lang", l);
     document.documentElement.lang = l;
     setLangState(l);
   }, []);
+  useEffect(() => { document.documentElement.lang = lang; }, [lang]);
 
   const t = useCallback(
     (key: string, params?: Record<string, string | number>) => {

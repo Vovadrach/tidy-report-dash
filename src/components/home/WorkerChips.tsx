@@ -1,4 +1,6 @@
-import { useWorker } from "@/contexts/WorkerContext";
+import { useWorkerFilter } from "@/contexts/WorkerContext";
+import { useWorkers } from "@/data/queries";
+import { useEffect } from "react";
 import { Users } from "lucide-react";
 import { useI18n } from "@/i18n";
 
@@ -7,8 +9,13 @@ import { useI18n } from "@/i18n";
  * hairline, усередині горизонтальний скрол бейджів (вправо-вліво), вибір напряму.
  */
 export const WorkerChips = () => {
-  const { workers, selectedWorkerId, setSelectedWorkerId } = useWorker();
+  const { selectedWorkerId, setSelectedWorkerId } = useWorkerFilter();
+  const query = useWorkers();
+  const workers = query.data ?? [];
   const { t } = useI18n();
+  useEffect(() => {
+    if (query.isSuccess && selectedWorkerId !== 'all' && !query.data?.some(w => w.id === selectedWorkerId)) setSelectedWorkerId('all');
+  }, [query.isSuccess, query.data, selectedWorkerId, setSelectedWorkerId]);
 
   if (!workers || workers.length <= 1) return null;
 

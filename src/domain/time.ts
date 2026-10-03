@@ -6,14 +6,15 @@
 
 /** "8:30" | "8" | "8.5" → десяткові години. Порожньо/сміття → 0. */
 export const hoursToDecimal = (hoursStr: string): number => {
-  if (!hoursStr) return 0;
-
-  if (hoursStr.includes(":")) {
-    const [hours, minutes] = hoursStr.split(":").map((s) => parseInt(s) || 0);
-    return (hours * 60 + minutes) / 60;
+  const value = hoursStr.trim().replace(",", ".");
+  if (!value) return 0;
+  if (/^\d+:\d{1,2}$/.test(value)) {
+    const [hours, minutes] = value.split(":").map(Number);
+    return minutes < 60 ? hours + minutes / 60 : 0;
   }
-
-  return parseFloat(hoursStr) || 0;
+  if (!/^\d+(?:\.\d+)?$/.test(value)) return 0;
+  const result = Number(value);
+  return Number.isFinite(result) ? result : 0;
 };
 
 /**
@@ -21,7 +22,7 @@ export const hoursToDecimal = (hoursStr: string): number => {
  * Хвилини округлюються до цілої хвилини. 0/NaN → "0".
  */
 export const decimalToHours = (decimal: number): string => {
-  if (!decimal || Number.isNaN(decimal)) return "0";
+  if (!Number.isFinite(decimal) || decimal <= 0) return "0";
   const totalMinutes = Math.round(decimal * 60);
   const hours = Math.floor(totalMinutes / 60);
   const minutes = totalMinutes % 60;
