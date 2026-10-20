@@ -43,7 +43,7 @@ export default function Index() {
   const isCurrent = anchor.getFullYear() === now.getFullYear() && anchor.getMonth() === now.getMonth();
   const days = useMemo<DayItem[]>(() => workDays.filter(d => d.date.startsWith(monthPrefix) && involvesWorker(d, selectedWorkerId)).map(d => {
     const view = workerView(d, selectedWorkerId);
-    return { ...d, hours: view.hours, amount: view.amount, paidAmount: view.paid,
+    return { ...d, hours: view.hours, amount: view.amount, paidAmount: view.paid, paymentBalance: { amount: d.amount, paidAmount: d.paidAmount },
       status: resolveStatus(view.paid, view.amount), workers: d.assignments.filter(a => selectedWorkerId === 'all' || a.workerId === selectedWorkerId).map(a => ({ name: a.workerName, color: a.workerColor })) };
   }), [workDays, selectedWorkerId, monthPrefix]);
   const stats = useMemo(() => periodStats(workDays, monthRange(anchor), selectedWorkerId), [workDays, anchor, selectedWorkerId]);

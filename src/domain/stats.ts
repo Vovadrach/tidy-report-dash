@@ -4,8 +4,8 @@ import { involvesWorker, workerView, toCents, round2 } from "./money";
 import type { ISODate, WorkDay } from "./types";
 
 /**
- * Агрегати над робочими днями. До застосування міграцій v3 заміщують
- * Postgres-в'ю client_balances/monthly_summary (той самий контракт).
+ * Агрегати над робочими днями з єдиними правилами цілих євро.
+ * Історичні суми в БД залишаються точними до цента.
  */
 
 export interface PeriodStats {
@@ -52,6 +52,7 @@ export interface ClientBalance {
   totalHours: number;
   totalPaid: number;
   totalDue: number;
+  /** Повний час робіт із ненульовим боргом, як у рядках клієнта. */
   unpaidHours: number;
 }
 
@@ -76,12 +77,10 @@ export const clientBalances = (
       unpaidHours: 0,
     };
     b.totalEarned += v.amount;
-    b.totalHours += v.hours;
+    b.totalHours += Math.round(v.hours * 60) / 60;
     b.totalPaid += v.paid;
     b.totalDue += v.due;
-    if (v.amount > 0) {
-      b.unpaidHours += v.hours * (v.due / v.amount);
-    }
+    if (v.due > 0) b.unpaidHours += Math.round(v.hours * 60) / 60;
     map.set(day.clientId, b);
   }
   return [...map.values()].map(b => ({ ...b, totalEarned: round2(b.totalEarned), totalPaid: round2(b.totalPaid), totalDue: round2(b.totalDue), totalHours: Math.round(b.totalHours * 60) / 60 }));
@@ -90,7 +89,7 @@ export const clientBalances = (
 /** Клієнти з боргом, за спаданням боргу. */
 export const debtors = (days: WorkDay[], workerId: string | "all" = "all"): ClientBalance[] =>
   clientBalances(days, workerId)
-    .filter((b) => b.totalDue > 0.005)
+    .filter((b) => b.totalDue > 0)
     .sort((a, b) => b.totalDue - a.totalDue);
 
 export interface MonthSummary {

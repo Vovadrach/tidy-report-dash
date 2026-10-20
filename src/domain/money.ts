@@ -2,13 +2,15 @@ import type { PaymentStatus, WorkDay } from "./types";
 
 export const toCents = (amount: number): number => Math.sign(amount) * Math.round((Math.abs(amount) + Number.EPSILON * Math.max(1, Math.abs(amount))) * 100);
 export const round2 = (amount: number): number => toCents(amount) / 100;
+/** Account in whole euros, rounding each work entry before adding totals. */
+export const toWholeEuros = (amount: number): number => Math.sign(amount) * Math.round(Math.abs(amount) + Number.EPSILON * Math.max(1, Math.abs(amount)));
 export const parseNumber = (value: string): number => {
   const normalized = value.trim().replace(",", ".");
   return /^(?:\d+(?:\.\d*)?|\.\d+)$/.test(normalized) ? Number(normalized) : NaN;
 };
-const moneyFormatter = new Intl.NumberFormat("uk-UA", { minimumFractionDigits: 0, maximumFractionDigits: 2 });
-export const formatMoney = (amount: number): string => moneyFormatter.format(round2(amount));
-export const calculateAmount = (hours: number, rate: number): number => round2(hours * rate);
+const moneyFormatter = new Intl.NumberFormat("uk-UA", { maximumFractionDigits: 0 });
+export const formatMoney = (amount: number): string => moneyFormatter.format(toWholeEuros(amount));
+export const calculateAmount = (hours: number, rate: number): number => toWholeEuros(hours * rate);
 
 export const resolveStatus = (paidAmount: number, amount: number): PaymentStatus => {
   if (!Number.isFinite(paidAmount) || toCents(paidAmount) <= 0) return "unpaid";
@@ -45,17 +47,32 @@ export const allocateUnits = (total: number, weights: number[]): number[] => {
   return result;
 };
 
+/** Historical cents stay in storage; sub-euro residuals do not create debt. */
+export const paymentView = (amount: number, paidAmount: number): { amount: number; paid: number; due: number } => {
+  const amountCents = toCents(amount);
+  const paidCents = Math.max(0, Math.min(toCents(paidAmount), amountCents));
+  const total = toWholeEuros(amount);
+  const paid = amountCents - paidCents < 100 ? total : Math.min(total, toWholeEuros(paidCents / 100));
+  return { amount: total, paid, due: total - paid };
+};
+
 export interface WorkerView { hours: number; amount: number; paid: number; due: number }
+export const assignmentViews = (day: WorkDay): WorkerView[] => {
+  const total = paymentView(day.amount, day.paidAmount);
+  const weights = day.assignments.map(a => toCents(a.amount));
+  // Include any unassigned money so assigned workers cannot receive its share.
+  weights.push(Math.max(0, toCents(day.amount) - weights.reduce((sum, amount) => sum + amount, 0)));
+  const amounts = allocateUnits(total.amount, weights);
+  const payments = allocateUnits(total.paid, amounts);
+  return day.assignments.map((assignment, index) => ({
+    hours: assignment.hours, amount: amounts[index], paid: payments[index], due: amounts[index] - payments[index],
+  }));
+};
 export const workerView = (day: WorkDay, workerId: string | "all"): WorkerView => {
-  const paid = Math.max(0, Math.min(toCents(day.paidAmount), toCents(day.amount)));
-  if (workerId === "all") return { hours: day.hours, amount: day.amount, paid: paid / 100, due: (toCents(day.amount) - paid) / 100 };
+  if (workerId === "all") return { hours: day.hours, ...paymentView(day.amount, day.paidAmount) };
   const index = day.assignments.findIndex(a => a.workerId === workerId);
   if (index < 0) return { hours: 0, amount: 0, paid: 0, due: 0 };
-  const assignment = day.assignments[index];
-  const assigned = day.assignments.reduce((sum, a) => sum + toCents(a.amount), 0);
-  const budget = day.amount > 0 ? Math.min(paid, Math.round(paid * assigned / toCents(day.amount))) : 0;
-  const share = Math.min(allocateUnits(budget, day.assignments.map(a => toCents(a.amount)))[index], toCents(assignment.amount));
-  return { hours: assignment.hours, amount: assignment.amount, paid: share / 100, due: (toCents(assignment.amount) - share) / 100 };
+  return assignmentViews(day)[index];
 };
 export const involvesWorker = (day: WorkDay, workerId: string | "all"): boolean =>
   workerId === "all" || day.assignments.some(a => a.workerId === workerId);

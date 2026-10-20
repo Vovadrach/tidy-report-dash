@@ -5,7 +5,6 @@ import { MoneyNumber } from '@/ui/MoneyNumber';
 import { useI18n } from '@/i18n';
 import { useWorkerFilter } from '@/contexts/WorkerContext';
 import { useWorkDays } from '@/data/queries';
-import { round2 } from '@/domain/money';
 import { debtors as findDebtors } from '@/domain/stats';
 
 import { decimalToHours } from '@/domain/time';
@@ -22,7 +21,7 @@ export default function ReportsStatus() {
   const error = query.isError && !query.data ? t('waiting.loadError') : null;
   const loadData = () => { void query.refetch(); };
   const debtors = useMemo(() => findDebtors(query.data ?? [],selectedWorkerId).map(b => ({ clientId: b.clientId,name: b.clientName,hours: b.unpaidHours,remaining: b.totalDue })), [query.data,selectedWorkerId]);
-  const totalDue = round2(debtors.reduce((n,d) => n + d.remaining,0));
+  const totalDue = debtors.reduce((n,d) => n + d.remaining,0);
   const totalHours = debtors.reduce((n,d) => n + d.hours,0);
   return (
     <div className="min-h-dvh bg-background">

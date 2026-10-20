@@ -79,14 +79,14 @@ await step("деталі дня: кнопка видалення не перек
   if (!hit.includes("Видалити")) throw new Error(`перекрито: ${hit}`);
 });
 
-await step("часткова оплата з копійками", async () => {
+await step("часткова оплата у звітах без центів", async () => {
   await page.getByRole('button', { name: 'Не оплачено', exact: true }).click();
   await page.waitForTimeout(200);
   await page.getByRole('button', { name: 'Частково', exact: true }).click();
   await page.getByLabel('Отримано, €').fill('1.25');
   await page.getByRole('button', { name: 'Додати', exact: true }).click();
   await page.waitForSelector('text=Оплату додано');
-  await page.waitForSelector('main number-flow-react[aria-label="1,25"]');
+  await page.waitForSelector('main number-flow-react[aria-label="1"]');
 });
 
 await step("швидке збереження нотатки перед навігацією", async () => {

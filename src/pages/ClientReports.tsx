@@ -5,7 +5,7 @@ import { MoneyNumber } from '@/ui/MoneyNumber';
 import { useI18n } from '@/i18n';
 import { useWorkerFilter } from '@/contexts/WorkerContext';
 import { useWorkDays, useClients, useSetPayment, useMarkAllPaid } from '@/data/queries';
-import { workerView, involvesWorker, round2 } from '@/domain/money';
+import { workerView, involvesWorker, resolveStatus } from '@/domain/money';
 
 import { decimalToHours } from '@/domain/time';
 import type { WorkDay, PaymentStatus } from '@/domain/types';
@@ -30,8 +30,8 @@ export default function ClientReports() {
   const pending = setPayment.isPending || bulk.isPending;
   const days = useMemo(() => (query.data ?? []).filter(d => d.clientId === clientId && !d.isPlanned && involvesWorker(d,selectedWorkerId) && workerView(d,selectedWorkerId).due > 0).sort((a,b) => b.date.localeCompare(a.date)), [query.data,clientId,selectedWorkerId]);
   const remainingOf = (day: WorkDay) => workerView(day,selectedWorkerId).due;
-  const totalDue = round2(days.reduce((n,d) => n+remainingOf(d),0));
-  const totalHours = days.reduce((n,d) => { const v=workerView(d,selectedWorkerId); return n+(v.amount > 0 ? v.hours*v.due/v.amount : 0); },0);
+  const totalDue = days.reduce((n,d) => n+remainingOf(d),0);
+  const totalHours = days.reduce((minutes,d) => minutes + Math.round(workerView(d,selectedWorkerId).hours * 60),0) / 60;
   const changeStatus = async (dayId: string,status: PaymentStatus,paidAmount: number) => {
     if (busy.current || pending || selectedWorkerId !== 'all') return;
     busy.current=true;
@@ -103,8 +103,8 @@ export default function ClientReports() {
 
             <div className="space-y-2.5">
               {days.map((day, i) => {
-                const status = day.status;
                 const wd = workerView(day, selectedWorkerId);
+                const status = resolveStatus(wd.paid, wd.amount);
                 const meta = STATUS_META[status];
                 const Icon = meta.icon;
                 const rem = remainingOf(day);
@@ -153,7 +153,7 @@ export default function ClientReports() {
                       <span className="tint-violet inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-sm font-semibold">
                         <Clock size={13} strokeWidth={2.4} />{decimalToHours(wd.hours)}
                       </span>
-                      <span className="tint-rose num-display rounded-lg px-2.5 py-1.5 text-sm">{rem}€</span>
+                      <span className="tint-rose num-display rounded-lg px-2.5 py-1.5 text-sm"><MoneyNumber value={rem} />€</span>
                     </div>
                   </div>
                 );

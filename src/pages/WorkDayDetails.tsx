@@ -7,7 +7,7 @@ import { toast } from 'sonner';
 import { useI18n } from '@/i18n';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAddPayment, useClients, useDeleteWorkDay, useSetPayment, useUpdateWorkDayFields, useWorkDays } from '@/data/queries';
-import { calculateAmount, parseNumber, applyPartialPayment } from '@/domain/money';
+import { calculateAmount, parseNumber, applyPartialPayment, paymentView, resolveStatus, assignmentViews, formatMoney, round2 } from '@/domain/money';
 import { decimalToHours, hoursToDecimal } from '@/domain/time';
 import type { WorkDay, PaymentStatus } from '@/domain/types';
 import { ScreenSkeleton } from '@/ui/Skeleton';
@@ -69,7 +69,8 @@ const Details = ({ workDay, stale, refresh }: { workDay: WorkDay; stale: boolean
   const busy = useRef(false);
   const paymentOperation = useRef<{ amount: number; id: string } | null>(null);
   const isPending = setPayment.isPending || addPayment.isPending || deleteDay.isPending;
-  const status = workDay.status;
+  const payment = paymentView(currentAmount, workDay.paidAmount);
+  const status = resolveStatus(payment.paid, payment.amount);
   const perform = async (operation: () => Promise<unknown>) => {
     if (busy.current || isPending) return;
     busy.current = true;
@@ -84,7 +85,8 @@ const Details = ({ workDay, stale, refresh }: { workDay: WorkDay; stale: boolean
     });
   };
   const handleApplyPartial = () => {
-    const amount = parseNumber(partialAmount);
+    const entered = parseNumber(partialAmount);
+    const amount = payment.due > 0 && entered === payment.due ? round2(currentAmount - workDay.paidAmount) : entered;
     const result = applyPartialPayment({ amount: currentAmount, paidAmount: workDay.paidAmount }, amount);
     if (!result.ok) { toast.error(result.error === 'exceeds' ? 'Сума перевищує залишок' : 'Введіть коректну суму'); return; }
     if (paymentOperation.current?.amount !== amount) paymentOperation.current = { amount, id: crypto.randomUUID() };
@@ -99,14 +101,15 @@ const Details = ({ workDay, stale, refresh }: { workDay: WorkDay; stale: boolean
 
   const rate = hourlyRate;
   const client = { name: workDay.clientName };
-  const dayPaidAmount = workDay.paidAmount;
+  const dayPaidAmount = payment.paid;
   const saving = isPending || autosave.saving;
   const dirty = autosave.dirty;
   const setStatus = handleSetStatus;
   const applyPartial = handleApplyPartial;
   const remove = () => setIsDeleteDialogOpen(true);
   const save = () => { void autosave.saveNow().then(() => toast.success(t('toast.saved'))).catch(() => {}); };
-  const assignments = workDay.assignments.map(a => ({ id: a.id, name: a.workerName, color: a.workerColor, hours: a.hours, amount: a.amount }));
+  const shares = assignmentViews(workDay);
+  const assignments = workDay.assignments.map((a, index) => ({ id: a.id, name: a.workerName, color: a.workerColor, hours: a.hours, amount: shares[index].amount }));
   return (
     <div className="min-h-dvh bg-background">
       {/* Header */}
@@ -125,7 +128,7 @@ const Details = ({ workDay, stale, refresh }: { workDay: WorkDay; stale: boolean
           </span>
           <div className="min-w-0">
             <h1 className="truncate text-lg font-bold leading-tight text-foreground">{client.name}</h1>
-            <p className="text-xs text-muted-foreground">{rate} {t("common.perHour")}</p>
+            <p className="text-xs text-muted-foreground">{formatMoney(rate)} {t("common.perHour")}</p>
           </div>
         </div>
       </header>
@@ -228,7 +231,7 @@ const Details = ({ workDay, stale, refresh }: { workDay: WorkDay; stale: boolean
                 </div>
                 <div className="tint-rose rounded-xl px-3 py-2.5">
                   <p className="text-[0.7rem] font-semibold uppercase opacity-80">{t("common.due")}</p>
-                  <p className="num-display text-base text-foreground"><MoneyNumber value={Math.max(0, currentAmount - dayPaidAmount)} />€</p>
+                  <p className="num-display text-base text-foreground"><MoneyNumber value={payment.due} />€</p>
                 </div>
               </div>
             </div>

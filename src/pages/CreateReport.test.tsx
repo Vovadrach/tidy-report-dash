@@ -109,15 +109,15 @@ describe('точність і стійкість створення', () => {
     expect((screen.getByLabelText('Сума запису') as HTMLInputElement).value).toBe('14.25');
     expect(dateInput().value).toBe('2026-09-25');
   });
-  it('зберігає вручну введені копійки після втрати фокусу', () => {
+  it('округлює вручну введену суму та зберігає цілі євро', () => {
     open();
     const amount = screen.getByLabelText('Сума запису');
     fireEvent.focus(amount);
     fireEvent.change(amount, { target: { value: '14.25' } });
     fireEvent.blur(amount);
-    expect((amount as HTMLInputElement).value).toBe("14.25");
+    expect((amount as HTMLInputElement).value).toBe("14");
     fireEvent.click(screen.getByRole('button', { name: 'Створити запис' }));
-    expect(data.mutate).toHaveBeenCalledWith(expect.objectContaining({ amount: 14.25, hours: 14.25 / 12 }), expect.anything());
+    expect(data.mutate).toHaveBeenCalledWith(expect.objectContaining({ amount: 14, hours: 14 / 12 }), expect.anything());
   });
   it('не створює два записи при подвійному натисканні', () => {
     open();
@@ -145,7 +145,7 @@ describe('точність і стійкість створення', () => {
     fireEvent.change(screen.getByLabelText('Сума запису'), { target: { value: '24.75' } });
     fireEvent.click(screen.getByRole('button', { name: 'Оплачено' }));
     fireEvent.click(screen.getByRole('button', { name: 'Зберегти запис' }));
-    expect(data.mutate).toHaveBeenCalledWith(expect.objectContaining({ dayId: 'p1',entry: expect.objectContaining({ amount: 24.75,paidAmount: 24.75,status: 'paid',isPlanned: false }) }), expect.anything());
+    expect(data.mutate).toHaveBeenCalledWith(expect.objectContaining({ dayId: 'p1',entry: expect.objectContaining({ amount: 25,paidAmount: 25,status: 'paid',isPlanned: false }) }), expect.anything());
   });
   it('оновлення кешу після завершення плану не змінює маршрут перед відповіддю форми', () => {
     data.workDays = [{ id: 'p1',reportId: 'r1',clientId: 'c1',clientName: 'Клієнт',date: '2026-10-05',hours: 0,amount: 0,paidAmount: 0,status: 'unpaid',isPlanned: true,assignments: [] }];

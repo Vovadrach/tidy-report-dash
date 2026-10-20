@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyPartialPayment, resolveStatus, validateSplit, workerView } from "./money";
+import { allocateUnits, applyPartialPayment, assignmentViews, calculateAmount, paymentView, resolveStatus, toWholeEuros, validateSplit, workerView } from "./money";
 import type { WorkDay } from "./types";
 
 const day = (over: Partial<WorkDay> = {}): WorkDay => ({
@@ -71,6 +71,45 @@ describe("workerView", () => {
   it("переплата не дає paid > amount", () => {
     const over = day({ paidAmount: 60, amount: 48 });
     expect(workerView(over, "all").paid).toBe(48);
+  });
+});
+
+describe("облік у цілих євро", () => {
+  it.each([[24.75, 25], [24.25, 24], [1.5, 2], [1.499, 1]])("округлює %s до %s без подвійного округлення", (input, expected) => {
+    expect(toWholeEuros(input)).toBe(expected);
+  });
+
+  it("округлює вартість роботи один раз до цілого євро", () => {
+    expect(calculateAmount(10 / 60, 12.5)).toBe(2);
+    expect(calculateAmount(1 / 60, 29.99)).toBe(0);
+  });
+
+  it.each([0.18, 0.2, 0.37, 0.5, 0.99])("не вважає залишок %s євро боргом", remainder => {
+    expect(paymentView(30, 30 - remainder)).toEqual({ amount: 30, paid: 30, due: 0 });
+  });
+
+  it("зберігає борг від одного євро і не довіряє застарілому статусу", () => {
+    expect(workerView(day({ amount: 30.25, paidAmount: 20, status: 'paid' }), 'all'))
+      .toEqual({ hours: 4, amount: 30, paid: 20, due: 10 });
+    expect(paymentView(30, 29)).toEqual({ amount: 30, paid: 29, due: 1 });
+  });
+
+  it("розподіляє цілі євро між працівницями без втрати підсумків", () => {
+    const shared = day({ amount: 100, paidAmount: 50, assignments: [33.33, 33.33, 33.34].map((amount, i) => ({
+      id: `a${i}`, workerId: `w${i}`, workerName: 'Працівниця', workerColor: '#000', hours: 1, amount,
+    })) });
+    const shares = assignmentViews(shared);
+    expect(shares.map(share => share.amount)).toEqual([33, 33, 34]);
+    expect(shares.reduce((sum, share) => sum + share.paid, 0)).toBe(50);
+    expect(shares.reduce((sum, share) => sum + share.due, 0)).toBe(50);
+    expect(allocateUnits(100, [1, 1, 1])).toEqual([34, 33, 33]);
+  });
+
+  it("не розподіляє непризначені суми між працівницями", () => {
+    const shared = day({ amount: 30, paidAmount: 15, assignments: [
+      { id: 'a', workerId: 'w', workerName: 'Працівниця', workerColor: '#000', hours: 1, amount: 10 },
+    ] });
+    expect(workerView(shared, 'w')).toEqual({ hours: 1, amount: 10, paid: 5, due: 5 });
   });
 });
 

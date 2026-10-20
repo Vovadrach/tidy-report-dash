@@ -14,16 +14,16 @@ vi.mock('@/components/ui/dropdown-menu', () => ({
 }));
 afterEach(cleanup);
 const day: DayItem = { id: 'd1',reportId: 'r1',clientId: 'c1',clientName: 'Клієнт',date: '2026-10-03',hours: 2,amount: 24.75,paidAmount: 4.25,status: 'partial',isPlanned: false,workers: [] };
-const open = (onAddPartial = vi.fn().mockResolvedValue(undefined),canEdit = true) => {
+const open = (onAddPartial = vi.fn().mockResolvedValue(undefined),canEdit = true, entry = day) => {
   const onStatus = vi.fn().mockResolvedValue(undefined);
-  render(<LanguageProvider><DayCard day={day} index={0} onOpen={() => {}} onStatus={onStatus} onAddPartial={onAddPartial} canEdit={canEdit} /></LanguageProvider>);
+  render(<LanguageProvider><DayCard day={entry} index={0} onOpen={() => {}} onStatus={onStatus} onAddPartial={onAddPartial} canEdit={canEdit} /></LanguageProvider>);
   return { onStatus,onAddPartial };
 };
 const partial = () => fireEvent.click(screen.getByRole('button',{ name: 'Частково…' }));
 
 describe('картка GitHub UI з новими правилами оплат', () => {
-  it('показує копійки без округлення до євро', () => {
-    open(); expect(screen.getByText('24.75')).toBeTruthy();
+  it('показує суми у цілих євро', () => {
+    open(); expect(screen.getByText('25')).toBeTruthy();
   });
   it('додає нову оплату, а не замінює вже отриману суму', async () => {
     const { onStatus,onAddPartial } = open(); partial();
@@ -45,9 +45,16 @@ describe('картка GitHub UI з новими правилами оплат',
   });
   it('не приймає більше залишку', () => {
     const { onAddPartial } = open(); partial();
-    fireEvent.change(screen.getByLabelText('Отримано, €'),{ target: { value: '21' } });
+    fireEvent.change(screen.getByLabelText('Отримано, €'),{ target: { value: '22' } });
     fireEvent.click(screen.getByRole('button',{ name: 'Додати' }));
     expect(onAddPartial).not.toHaveBeenCalled();
+  });
+  it('оплата всього показаного залишку завершує історичний запис із центами', async () => {
+    const { onStatus, onAddPartial } = open(undefined, true, { ...day, amount: 25, paidAmount: 4, paymentBalance: { amount: 24.75, paidAmount: 4.25 } }); partial();
+    fireEvent.change(screen.getByLabelText('Отримано, €'), { target: { value: '21' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Додати' }));
+    await waitFor(() => expect(onAddPartial).toHaveBeenCalledWith('d1', 20.5, expect.any(String)));
+    expect(onStatus).not.toHaveBeenCalled();
   });
   it('фільтр працівниці не дозволяє змінювати оплату всього дня', () => {
     const { onStatus } = open(undefined,false);

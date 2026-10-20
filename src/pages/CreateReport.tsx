@@ -14,7 +14,7 @@ import { QueryError } from '@/ui/QueryError';
 import { useClients, useWorkers, useWorkDays, useCreateWorkEntry, useSaveWorkEntry, useUpdateWorkDayFields, useDeleteWorkDay } from '@/data/queries';
 import { isISODate, todayLocal } from '@/domain/dates';
 import { decimalToHours } from '@/domain/time';
-import { allocateUnits, calculateAmount, formatMoney, parseNumber, round2, validateSplit } from '@/domain/money';
+import { allocateUnits, calculateAmount, formatMoney, parseNumber, round2, toWholeEuros, validateSplit } from '@/domain/money';
 import type { NewAssignment, NewWorkEntry, PaymentStatus } from '@/domain/types';
 const STATUS = [
   { key: "paid", label: "status.paid", icon: CircleCheck, tint: "tint-emerald", ring: "ring-[hsl(var(--t-emerald-fg))]" },
@@ -104,7 +104,7 @@ const CreateReport = () => {
 
   const calculateEarnings = useCallback(() => {
     if (!selectedClientId) return 0;
-    return amountManuallyEntered ? round2(parseNumber(amountInput)) : calculateAmount(hours + minutes / 60, getRate());
+    return amountManuallyEntered ? toWholeEuros(parseNumber(amountInput)) : calculateAmount(hours + minutes / 60, getRate());
   }, [selectedClientId, hours, minutes, getRate, amountManuallyEntered, amountInput]);
 
   const buildAssignments = (totalAmount: number, totalHours: number): NewAssignment[] => {
@@ -126,7 +126,7 @@ const CreateReport = () => {
     updateFields.mutate({ dayId: editingWorkDayId, patch: { date: reportDate, note: workNote || null } },
       { onSuccess: () => toast.success("Нотатку збережено") });
   };
-  const resolveFinalHours = () => amountManuallyEntered ? parseNumber(amountInput) / getRate() : hours + minutes / 60;
+  const resolveFinalHours = () => amountManuallyEntered ? calculateEarnings() / getRate() : hours + minutes / 60;
 
   const submit = (planned: boolean) => {
     if (submitting.current || isPending || !selectedClient) return;
@@ -179,7 +179,7 @@ const CreateReport = () => {
     if (newAmount && !isNaN(parseNumber(newAmount))) {
       const rate = getRate();
       if (rate > 0) {
-        const totalHours = parseNumber(newAmount) / rate;
+        const totalHours = toWholeEuros(parseNumber(newAmount)) / rate;
         const h = Math.floor(totalHours);
         setHours(h);
         setMinutes((totalHours - h) * 60);
@@ -261,7 +261,10 @@ const CreateReport = () => {
               inputMode="decimal"
               aria-label="Сума запису" value={amountInput}
               onFocus={(event) => { setIsAmountFocused(true); event.target.select(); }}
-              onBlur={() => setIsAmountFocused(false)}
+              onBlur={() => {
+                setIsAmountFocused(false);
+                if (amountManuallyEntered && Number.isFinite(parseNumber(amountInput))) setAmountInput(String(toWholeEuros(parseNumber(amountInput))));
+              }}
               onChange={(e) => handleAmountChange(e.target.value)}
               placeholder="0"
               className="num-display w-full bg-transparent text-[1.7rem] leading-none text-foreground outline-none"

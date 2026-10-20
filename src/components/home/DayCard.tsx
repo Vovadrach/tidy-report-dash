@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { applyPartialPayment, parseNumber } from "@/domain/money";
+import { applyPartialPayment, parseNumber, paymentView, round2 } from "@/domain/money";
 import { toast } from "sonner";
 import { Clock, CalendarClock, Check, CircleCheck, CircleDashed, Circle } from "lucide-react";
 import { MoneyNumber } from '@/ui/MoneyNumber';
@@ -17,6 +17,8 @@ export type DayItem = {
   hours: number;
   amount: number;
   paidAmount: number;
+  /** Original amounts for idempotent payments against historical cent balances. */
+  paymentBalance?: { amount: number; paidAmount: number };
   status: "paid" | "partial" | "unpaid";
   isPlanned: boolean;
   note?: string;
@@ -78,14 +80,20 @@ export const DayCard = ({
   const commitStatus = async (status: DayItem['status'], paidAmount: number) => {
     if (busy.current || pending || !canEdit) return;
     busy.current = true;
-    try { await onStatus(day.id,status,paidAmount); }
+    try {
+      await onStatus(day.id,status,paidAmount);
+      if (status !== 'partial') { request.current = null; setPartialMode(false); setAmt(''); }
+    }
     catch { /* The mutation reports the error and leaves the card unchanged. */ }
     finally { busy.current = false; }
   };
   const applyPartial = async () => {
     if (busy.current || pending || !canEdit) return;
-    const amount = parseNumber(amt);
-    const result = applyPartialPayment({ amount: day.amount,paidAmount: day.paidAmount },amount);
+    const entered = parseNumber(amt);
+    const balance = day.paymentBalance ?? day;
+    const payment = paymentView(balance.amount, balance.paidAmount);
+    const amount = payment.due > 0 && entered === payment.due ? round2(balance.amount - balance.paidAmount) : entered;
+    const result = applyPartialPayment(balance,amount);
     if (!result.ok) { toast.error(result.error === 'exceeds' ? t('toast.overAmount') : t('common.error')); return; }
     if (request.current?.amount !== amount) request.current = { amount,id: crypto.randomUUID() };
     busy.current = true;

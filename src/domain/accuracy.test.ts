@@ -11,13 +11,13 @@ const day = (over: Partial<WorkDay> = {}): WorkDay => ({ ...entry(),id: 'd',repo
 
 describe('копійки і коректні значення', () => {
   it.each([[10.075,10.08],[1.005,1.01],[12.345,12.35],[14.25,14.25]])('округлення %s до %s', (input,output) => expect(round2(input)).toBe(output));
-  it('десять хвилин не округлюються до цілих євро', () => expect(calculateAmount(10/60,12.5)).toBe(2.08));
+  it('десять хвилин рахуються у цілих євро', () => expect(calculateAmount(10/60,12.5)).toBe(2));
   it('сума 0.10 + 0.20 точно завершує оплату 0.30', () => expect(applyPartialPayment(day({ amount: 0.3,paidAmount: 0.1 }),0.2)).toMatchObject({ ok: true,paidAmount: 0.3,status: 'paid' }));
   it.each(['-1','12abc','Infinity','NaN','','1.2.3'])('відхиляє %s', input => expect(Number.isNaN(parseNumber(input))).toBe(true));
   it('приймає кому', () => expect(parseNumber(' 12,75 ')).toBe(12.75));
-  it('розподіляє останню копійку без втрати або подвоєння', () => {
+  it('зберігає точний розподіл у сховищі та ігнорує дрібні суми у звітах', () => {
     const shared = day({ amount: 0.03,paidAmount: 0.01,assignments: [0,1,2].map(i => ({ id: `a${i}`,workerId: `w${i}`,workerName: 'Ім’я',workerColor: '#000000',hours: 1/3,amount: 0.01 })) });
-    expect([0,1,2].reduce((sum,i) => sum + toCents(workerView(shared,`w${i}`).paid),0)).toBe(1);
+    expect([0,1,2].reduce((sum,i) => sum + workerView(shared,`w${i}`).paid,0)).toBe(0);
     expect(allocateUnits(100,[1,1,1])).toEqual([34,33,33]);
   });
   it('не дозволяє одну працівницю двічі', () => expect(validateSplit(10,[{ workerId: 'w',amount: 5 },{ workerId: 'w',amount: 5 }]).valid).toBe(false));
@@ -39,9 +39,9 @@ describe('інваріанти записів і історії', () => {
     expect(next.assignments.reduce((sum,a) => sum + toCents(a.amount),0)).toBe(1000);
     expect(next.assignments.reduce((sum,a) => sum + Math.round(a.hours*60),0)).toBe(60);
   });
-  it('агрегує довгу історію без втрати копійок', () => {
-    const rows = Array.from({ length: 1001 },(_,i) => day({ id: `d${i}`,amount: 0.1,paidAmount: 0.1 }));
-    expect(periodStats(rows,{ from: '2026-10-01',to: '2026-10-31' })).toMatchObject({ earned: 100.1,paid: 100.1,due: 0 });
-    expect(monthlySummary(rows,6,new Date(2026,9,3))[5]).toMatchObject({ earned: 100.1,paid: 100.1 });
+  it('агрегує довгу історію у цілих євро без накопичення центів', () => {
+    const rows = Array.from({ length: 1001 },(_,i) => day({ id: `d${i}`,amount: 10.1,paidAmount: 10.1 }));
+    expect(periodStats(rows,{ from: '2026-10-01',to: '2026-10-31' })).toMatchObject({ earned: 10010,paid: 10010,due: 0 });
+    expect(monthlySummary(rows,6,new Date(2026,9,3))[5]).toMatchObject({ earned: 10010,paid: 10010 });
   });
 });

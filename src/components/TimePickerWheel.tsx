@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Clock, Euro as CurrencyEur } from "lucide-react";
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { calculateAmount, parseNumber, round2 } from '@/domain/money';
+import { calculateAmount, parseNumber, round2, toWholeEuros } from '@/domain/money';
 import { hoursToDecimal } from '@/domain/time';
 
 interface TimePickerWheelProps {
@@ -32,7 +32,7 @@ export const TimePickerWheel = ({ value, onChange, placeholder = '0:00', hourlyR
   const positioning = useRef(false);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const wheelHours = untouched.current ? original.current.hours : hours + minutes / 60;
-  const amount = manualAmount === null ? (untouched.current ? original.current.amount : calculateAmount(wheelHours, hourlyRate)) : parseNumber(manualAmount);
+  const amount = manualAmount === null ? (untouched.current ? original.current.amount : calculateAmount(wheelHours, hourlyRate)) : toWholeEuros(parseNumber(manualAmount));
   const finalHours = manualAmount === null || hourlyRate <= 0 ? wheelHours : amount / hourlyRate;
   const valid = Number.isFinite(finalHours) && finalHours > 0 && finalHours <= 100.999999 &&
     (hourlyRate <= 0 || Number.isFinite(amount) && amount > 0);
@@ -97,7 +97,7 @@ export const TimePickerWheel = ({ value, onChange, placeholder = '0:00', hourlyR
         </div>
         {hourlyRate > 0 && <label className="block text-sm font-bold text-center">або введіть суму
           <div className="flex items-center gap-2 mt-3">
-            <Input type="number" min="0.01" step="0.01" aria-label="Сума за роботу" value={manualAmount ?? amount}
+            <Input type="number" min="1" step="1" aria-label="Сума за роботу" value={manualAmount ?? amount}
               onChange={event => { untouched.current = false; setManualAmount(event.target.value); }} className="text-center text-xl font-bold" />
             <CurrencyEur className="w-5 h-5" />
           </div>

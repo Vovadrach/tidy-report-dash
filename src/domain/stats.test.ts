@@ -76,6 +76,32 @@ describe("clientBalances / debtors", () => {
     expect(d.map((x) => x.clientId)).toEqual(["c2", "c1"]);
     expect(d[0].totalDue).toBe(50);
   });
+
+  it("рахує повний час робіт із боргом, як у рядках клієнта", () => {
+    const rows = [mk({ hours: 2, amount: 30, paidAmount: 12, status: 'partial' })];
+    expect(debtors(rows)[0]).toMatchObject({ totalDue: 18, unpaidHours: 2 });
+  });
+
+  it("залишки з фото не складаються у борг 1,75 євро та 0:07 годин", () => {
+    const rows = [
+      { hours: 100 / 60, amount: 25, paidAmount: 24.82 },
+      { hours: 1, amount: 15, paidAmount: 14.8 },
+      { hours: 112 / 60, amount: 28, paidAmount: 27.63 },
+      { hours: 2.5, amount: 37.5, paidAmount: 37 },
+      { hours: 2.5, amount: 37.5, paidAmount: 37 },
+    ].map(values => mk({ ...values, status: 'paid' }));
+    expect(debtors(rows)).toEqual([]);
+    expect(clientBalances(rows)[0]).toMatchObject({ totalDue: 0, unpaidHours: 0 });
+    expect(periodStats(rows, july).due).toBe(0);
+    const month = monthlySummary(rows, 1, new Date(2026, 6, 15))[0];
+    expect(month.earned).toBe(month.paid);
+  });
+
+  it("підсумок дорівнює сумі округлених рядків, а не округленій загальній сумі", () => {
+    const rows = [mk({ amount: 10.4 }), mk({ amount: 10.4 }), mk({ amount: 10.4 })];
+    expect(debtors(rows)[0].totalDue).toBe(30);
+    expect(periodStats(rows, july).due).toBe(30);
+  });
 });
 
 describe("monthlySummary", () => {
