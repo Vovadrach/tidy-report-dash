@@ -1,99 +1,85 @@
 import { useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
-
+import { ChevronRight, HandCoins, PartyPopper } from 'lucide-react';
 import { MoneyNumber } from '@/ui/MoneyNumber';
 import { useI18n } from '@/i18n';
 import { useWorkerFilter } from '@/contexts/WorkerContext';
 import { useWorkDays } from '@/data/queries';
 import { debtors as findDebtors } from '@/domain/stats';
-
 import { decimalToHours } from '@/domain/time';
-
 import { StaleDataNotice } from '@/ui/QueryError';
+import { useGo } from '@/ui/nav';
+import { Column, EmptyState, IconFrame, LargeTitle, Screen, SectionLabel } from '@/ui/Screen';
+import { Button } from '@/ui/Button';
+import { ClientAvatar } from '@/ui/Avatar';
+import { stagger } from '@/ui/motion';
 import { BottomNavigation } from '@/components/BottomNavigation';
-import { Clock, ChevronRight, PartyPopper, HandCoins } from 'lucide-react';
+
+/**
+ * «Очікую» — кому нагадати про оплату. Зверху загальний борг великою цифрою,
+ * нижче — боржники від найбільшого. Тап по рядку — борги клієнта.
+ */
 export default function ReportsStatus() {
-  const navigate = useNavigate();
+  const go = useGo();
   const { selectedWorkerId } = useWorkerFilter();
   const { t } = useI18n();
   const query = useWorkDays();
   const loading = query.isLoading;
   const error = query.isError && !query.data ? t('waiting.loadError') : null;
   const loadData = () => { void query.refetch(); };
-  const debtors = useMemo(() => findDebtors(query.data ?? [],selectedWorkerId).map(b => ({ clientId: b.clientId,name: b.clientName,hours: b.unpaidHours,remaining: b.totalDue })), [query.data,selectedWorkerId]);
-  const totalDue = debtors.reduce((n,d) => n + d.remaining,0);
-  const totalHours = debtors.reduce((n,d) => n + d.hours,0);
+  const debtors = useMemo(() => findDebtors(query.data ?? [], selectedWorkerId).map(b => ({ clientId: b.clientId, name: b.clientName, hours: b.unpaidHours, remaining: b.totalDue })), [query.data, selectedWorkerId]);
+  const totalDue = debtors.reduce((n, d) => n + d.remaining, 0);
+  const totalHours = debtors.reduce((n, d) => n + d.hours, 0);
   return (
-    <div className="min-h-dvh bg-background">
-      <header className="mx-auto max-w-md px-4 pt-4">
-        <div className="flex items-center gap-2 pb-1">
-          <span className="ibadge tint-amber h-9 w-9"><HandCoins size={18} strokeWidth={2.3} /></span>
-          <h1 className="text-xl font-bold text-foreground">{t("waiting.title")}</h1>
-        </div>
-      </header>
-
-      <main className="mx-auto max-w-md space-y-4 px-4 pb-[calc(7rem+env(safe-area-inset-bottom))] pt-4">
+    <Screen>
+      <Column className="space-y-5 pb-[calc(9rem+env(safe-area-inset-bottom))]">
+        <LargeTitle title={t('waiting.title')} />
         {query.isError && query.data && <StaleDataNotice onRetry={loadData} />}
         {loading ? (
           <>
-            <div className="skeleton h-28 rounded-2xl" />
-            <div className="skeleton h-16 rounded-2xl" />
-            <div className="skeleton h-16 rounded-2xl" />
+            <div className="skeleton h-36 rounded-[20px]" />
+            <div className="skeleton h-40 rounded-[20px]" />
           </>
         ) : error ? (
-          <div className="card-flat rounded-2xl p-5 text-center">
-            <p className="mb-3 text-muted-foreground">{error}</p>
-            <button onClick={loadData} className="press rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground">
-              {t("waiting.tryAgain")}
-            </button>
-          </div>
+          <EmptyState tone="alert" icon={<HandCoins size={26} strokeWidth={2} />} title={error}
+            action={<Button variant="primary" size="lg" onClick={loadData}>{t('waiting.tryAgain')}</Button>} />
         ) : debtors.length === 0 ? (
-          <div className="rise-in flex flex-col items-center justify-center py-20 text-center">
-            <span className="ibadge tint-emerald mb-4 h-16 w-16"><PartyPopper size={28} strokeWidth={2} /></span>
-            <p className="text-lg font-semibold">{t("waiting.allPaid")}</p>
-            <p className="mt-1 text-sm text-muted-foreground">{t("waiting.noDebts")}</p>
-          </div>
+          <EmptyState tone="ok" icon={<PartyPopper size={26} strokeWidth={2} />} title={t('waiting.allPaid')} subtitle={t('waiting.noDebts')} />
         ) : (
           <>
-            <div className="rise-in tint-rose rounded-2xl p-5 text-center">
-              <p className="text-[0.72rem] font-bold uppercase tracking-wider opacity-80">{t("waiting.owed")}</p>
-              <p className="num-display mt-1 text-4xl text-foreground"><MoneyNumber value={totalDue} />€</p>
-              <p className="mt-1 text-sm font-medium opacity-80">{t("waiting.forHours", { h: decimalToHours(totalHours) })}</p>
+            <div className="card rise-in p-5">
+              <div className="mb-3 flex items-center gap-2.5">
+                <IconFrame tone="alert" size="sm"><HandCoins size={15} strokeWidth={2.3} /></IconFrame>
+                <span className="text-footnote font-semibold text-ink-3">{t('waiting.owed')}</span>
+              </div>
+              <p className="num text-[2.75rem] font-bold leading-none tracking-[-0.03em] text-ink">
+                <MoneyNumber value={totalDue} /><span className="ml-1.5 text-title font-semibold text-ink-3">€</span>
+              </p>
+              <p className="mt-2 text-callout text-ink-3">{t('waiting.forHours', { h: decimalToHours(totalHours) })}</p>
             </div>
 
-            <div className="space-y-2.5">
-              {debtors.map((d, i) => (
-                <button
-                  key={d.clientId}
-                  type="button"
-                  onClick={() => navigate(`/client-reports/${d.clientId}`, { viewTransition: true })}
-                  style={{ animationDelay: `${Math.min(i * 0.04, 0.25)}s` }}
-                  className="press rise-in card-flat flex w-full items-center gap-3 rounded-2xl p-3.5 text-left"
-                >
-                  <span
-                    className="ibadge tint-indigo h-11 w-11 font-display text-base font-semibold"
-                    style={{ viewTransitionName: `avatar-${d.clientId}` }}
-                  >
-                    {d.name.charAt(0).toUpperCase()}
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate font-semibold text-foreground">{d.name}</p>
-                    <p className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
-                      <Clock size={12} strokeWidth={2.3} /> {decimalToHours(d.hours)} {t("common.hoursShort")}
-                    </p>
-                  </div>
-                  <span className="tint-rose num-display rounded-xl px-3 py-1.5 text-sm">
-                    <MoneyNumber value={d.remaining} />€
-                  </span>
-                  <ChevronRight size={18} className="text-muted-foreground" />
-                </button>
-              ))}
+            <div className="space-y-2">
+              <SectionLabel>{t('dash.debtsByClient')}</SectionLabel>
+              <div className="card list overflow-hidden [--list-inset:4rem]">
+                {debtors.map((d, i) => (
+                  <button key={d.clientId} type="button" onClick={() => go(`/client-reports/${d.clientId}`)} style={stagger(i)}
+                    className="tap rise-in flex w-full items-center gap-3 px-4 py-3 text-left">
+                    <ClientAvatar name={d.name} id={d.clientId} transitionName={`avatar-${d.clientId}`} />
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-headline text-ink">{d.name}</span>
+                      <span className="block num text-footnote text-ink-3">{decimalToHours(d.hours)} {t('common.hoursShort')}</span>
+                    </span>
+                    <span className="num shrink-0 rounded-full bg-alert-tint px-2.5 py-1 text-callout font-semibold text-alert-ink">
+                      <MoneyNumber value={d.remaining} /> €
+                    </span>
+                    <ChevronRight size={18} className="shrink-0 text-ink-4" />
+                  </button>
+                ))}
+              </div>
             </div>
           </>
         )}
-      </main>
-
+      </Column>
       <BottomNavigation />
-    </div>
+    </Screen>
   );
 }

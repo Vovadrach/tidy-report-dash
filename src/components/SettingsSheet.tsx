@@ -1,64 +1,47 @@
-import { AnimatePresence, motion } from "motion/react";
-import { Check, Languages } from "lucide-react";
+import { Check, Monitor, Moon, Sun } from "lucide-react";
 import { useI18n, type Lang } from "@/i18n";
-import * as Dialog from "@radix-ui/react-dialog";
+import { useTheme, type ThemeMode } from "@/ui/theme";
+import { Sheet } from "@/ui/Sheet";
+import { Segmented } from "@/ui/Segmented";
 
 const LANGS: { code: Lang; label: string; flag: string }[] = [
   { code: "uk", label: "Українська", flag: "🇺🇦" },
   { code: "it", label: "Italiano", flag: "🇮🇹" },
 ];
 
+/** Параметри: тема (світла · темна · як у телефоні) і мова. Застосовуються одразу. */
 export function SettingsSheet({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
   const { t, lang, setLang } = useI18n();
+  const { mode, setMode } = useTheme();
   return (
-    <Dialog.Root open={open} onOpenChange={onOpenChange}>
-    <Dialog.Portal forceMount><AnimatePresence>
-      {open && (
-        <>
-          <Dialog.Overlay asChild forceMount><motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-40 bg-foreground/15"
-          /></Dialog.Overlay>
-          <Dialog.Content asChild forceMount><motion.div
-            initial={{ y: "100%" }}
-            animate={{ y: 0 }}
-            exit={{ y: "100%" }}
-            transition={{ type: "spring", stiffness: 420, damping: 38 }}
-            className="fixed inset-x-0 bottom-0 z-50 mx-auto w-full max-w-[32rem] rounded-t-[1.6rem] border-t border-border bg-card"
-          >
-            <div className="mx-auto mt-3 h-1 w-10 rounded-full bg-border" />
-            <div className="px-5 pb-[calc(1.6rem+env(safe-area-inset-bottom))] pt-3">
-              <Dialog.Title asChild><h2 className="mb-4 text-lg font-bold text-foreground">{t("settings.title")}</h2></Dialog.Title>
-              <Dialog.Description className="sr-only">{t("settings.language")}</Dialog.Description>
-              <p className="mb-2 flex items-center gap-1.5 px-1 text-sm font-semibold text-muted-foreground">
-                <Languages size={16} strokeWidth={2.2} /> {t("settings.language")}
-              </p>
-              <div className="space-y-2">
-                {LANGS.map((l) => {
-                  const active = lang === l.code;
-                  return (
-                    <button
-                      key={l.code}
-                      type="button"
-                      onClick={() => setLang(l.code)}
-                      className={`press flex w-full items-center gap-3 rounded-xl border p-3.5 ${
-                        active ? "border-primary bg-[hsl(var(--t-indigo-bg))]" : "border-border bg-card"
-                      }`}
-                    >
-                      <span className="text-xl">{l.flag}</span>
-                      <span className="flex-1 text-left font-semibold text-foreground">{l.label}</span>
-                      {active && <Check size={18} strokeWidth={2.5} className="text-primary" />}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          </motion.div></Dialog.Content>
-        </>
-      )}
-    </AnimatePresence></Dialog.Portal>
-    </Dialog.Root>
+    <Sheet open={open} onOpenChange={onOpenChange} title={t("settings.title")}>
+      <p className="mb-2 px-1 text-footnote font-semibold text-ink-3">{t("settings.theme")}</p>
+      <Segmented<ThemeMode>
+        value={mode}
+        onChange={setMode}
+        stacked
+        options={[
+          { value: "light", label: t("settings.theme.light"), icon: <Sun size={19} strokeWidth={2} /> },
+          { value: "dark", label: t("settings.theme.dark"), icon: <Moon size={19} strokeWidth={2} /> },
+          { value: "system", label: t("settings.theme.system"), icon: <Monitor size={19} strokeWidth={2} /> },
+        ]}
+      />
+      <p className="mt-1.5 px-1 text-caption text-ink-4">{t("settings.themeHint")}</p>
+
+      <p className="mb-2 mt-6 px-1 text-footnote font-semibold text-ink-3">{t("settings.language")}</p>
+      <div className="list overflow-hidden rounded-[18px] bg-well [--list-inset:3.25rem]">
+        {LANGS.map((l) => {
+          const active = lang === l.code;
+          return (
+            <button key={l.code} type="button" onClick={() => setLang(l.code)} aria-pressed={active}
+              className="tap flex min-h-13 w-full items-center gap-3 px-4 py-3 text-left">
+              <span className="text-xl leading-none">{l.flag}</span>
+              <span className="flex-1 text-body text-ink">{l.label}</span>
+              {active && <Check size={19} strokeWidth={2.6} className="text-accent" />}
+            </button>
+          );
+        })}
+      </div>
+    </Sheet>
   );
 }

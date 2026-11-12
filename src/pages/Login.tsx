@@ -1,12 +1,14 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { Sparkles } from "lucide-react";
 import { useI18n } from "@/i18n";
+import { useGo } from "@/ui/nav";
+import { AuthLayout } from "@/ui/AuthLayout";
+import { FieldLabel, TextInput } from "@/ui/Field";
+import { Button } from "@/ui/Button";
 
 export default function Login() {
-  const navigate = useNavigate();
+  const go = useGo();
   const { signIn } = useAuth();
   const { t } = useI18n();
   const [email, setEmail] = useState("");
@@ -19,41 +21,28 @@ export default function Login() {
     if (!email || !password) { toast.error(t("auth.fillAll")); return; }
     setLoading(true);
     try {
-      const { error } = await signIn(email.trim(),password);
+      const { error } = await signIn(email.trim(), password);
       if (error) toast.error(error.message);
-      else { navigate("/"); }
-    } catch { toast.error(t('toast.loadError')); } finally { setLoading(false); }
+      else go("/", "tab");
+    } catch { toast.error(t("toast.loadError")); } finally { setLoading(false); }
   };
 
   return (
-    <div className="flex min-h-dvh items-center justify-center bg-background px-5">
-      <div className="w-full max-w-sm">
-        <div className="mb-8 text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary text-primary-foreground">
-            <Sparkles size={30} strokeWidth={2.2} />
+    <AuthLayout title={t("auth.login")} subtitle={t("auth.subtitle")}>
+      <form onSubmit={submit} className="space-y-4">
+        <div className="card space-y-4 p-4">
+          <div>
+            <FieldLabel htmlFor="email">{t("auth.email")}</FieldLabel>
+            <TextInput id="email" type="email" aria-label={t("auth.email")} value={email} onChange={(e) => setEmail(e.target.value)} placeholder="your@email.com" disabled={loading} autoComplete="email" />
           </div>
-          <h1 className="font-display text-3xl font-semibold text-foreground">{t("auth.login")}</h1>
-          <p className="mt-1.5 text-sm text-muted-foreground">{t("auth.subtitle")}</p>
+          <div>
+            <FieldLabel htmlFor="password">{t("auth.password")}</FieldLabel>
+            <TextInput id="password" type="password" aria-label={t("auth.password")} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" disabled={loading} autoComplete="current-password" />
+          </div>
         </div>
-        <form onSubmit={submit} className="space-y-3">
-          <div className="space-y-1.5">
-            <label className="px-1 text-sm font-semibold text-foreground">{t("auth.email")}</label>
-            <input type="email" aria-label={t("auth.email")} value={email} onChange={(e) => setEmail(e.target.value)} placeholder="your@email.com" disabled={loading}
-              autoComplete="email" className="w-full rounded-2xl border border-border bg-card px-4 py-3.5 text-base outline-none focus:border-primary" />
-          </div>
-          <div className="space-y-1.5">
-            <label className="px-1 text-sm font-semibold text-foreground">{t("auth.password")}</label>
-            <input type="password" aria-label={t("auth.password")} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" disabled={loading}
-              autoComplete="current-password" className="w-full rounded-2xl border border-border bg-card px-4 py-3.5 text-base outline-none focus:border-primary" />
-          </div>
-          <button type="submit" disabled={loading} className="press w-full rounded-2xl bg-primary py-4 text-base font-bold text-primary-foreground disabled:opacity-60">
-            {loading ? t("auth.signingIn") : t("auth.signIn")}
-          </button>
-          <button type="button" onClick={() => navigate("/register")} disabled={loading} className="press w-full py-2 text-sm font-semibold text-primary">
-            {t("auth.noAccount")}
-          </button>
-        </form>
-      </div>
-    </div>
+        <Button type="submit" variant="primary" size="lg" block disabled={loading}>{loading ? t("auth.signingIn") : t("auth.signIn")}</Button>
+        <Button variant="ghost" block onClick={() => go("/register")} disabled={loading} className="text-accent-ink">{t("auth.noAccount")}</Button>
+      </form>
+    </AuthLayout>
   );
 }

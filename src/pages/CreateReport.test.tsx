@@ -71,9 +71,14 @@ describe('дата нового запису', () => {
     expect(dateInput().value).toBe('2026-10-04');
   });
 
-  it('зберігає вручну змінену дату під час заповнення і створення', () => {
+  it('зберігає вручну змінену дату під час заповнення і створення', async () => {
     open();
-    fireEvent.change(dateInput(), { target: { value: '2026-09-30' } });
+    fireEvent.click(dateInput());
+    fireEvent.click(screen.getByRole('button', { name: 'Попередній місяць' }));
+    fireEvent.click(screen.getByRole('button', { name: '30 вересня 2026' }));
+    // Календар закривається сам після вибору дня.
+    await screen.findByRole('button', { name: 'Запланувати роботу' }, { timeout: 3000 });
+    expect(dateInput().value).toBe('2026-09-30');
     fireEvent.change(screen.getByLabelText('Нотатка'), { target: { value: 'Прибирання' } });
     fireEvent.click(screen.getByRole('button', { name: 'Запланувати роботу' }));
     expect(data.mutate).toHaveBeenCalledWith(expect.objectContaining({ date: '2026-09-30' }), expect.anything());
@@ -94,7 +99,8 @@ describe('точність і стійкість створення', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Назад' }));
     fireEvent.click(screen.getByRole('button', { name: 'Скасувати' }));
     expect((screen.getByLabelText('Нотатка') as HTMLTextAreaElement).value).toBe('Незбережена нотатка');
-    fireEvent.click(screen.getByRole('button', { name: 'Назад' }));
+    // Лист підтвердження спершу доїжджає вниз, і лише тоді екран знову інтерактивний.
+    fireEvent.click(await screen.findByRole('button', { name: 'Назад' }, { timeout: 3000 }));
     fireEvent.click(screen.getByRole('button', { name: 'Залишити' }));
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Оберіть клієнта' })).toBeTruthy());
     expect(screen.queryByText('Залишити незбережений запис?')).toBeNull();

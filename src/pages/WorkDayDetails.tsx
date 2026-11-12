@@ -1,8 +1,8 @@
 import { useMemo, useState, useRef, useEffect } from 'react';
-import { Navigate, useParams, useNavigate } from 'react-router-dom';
-import { Clock, Wallet, Trash2, ArrowLeft, Check, CircleCheck, CircleDashed, Circle, Users, StickyNote, CalendarDays } from 'lucide-react';
+import { Navigate, useParams } from 'react-router-dom';
+import { AnimatePresence, motion } from 'motion/react';
+import { Pencil, Clock, Wallet, Trash2, Check, CircleCheck, CircleDashed, Circle, CloudAlert } from 'lucide-react';
 import { MoneyNumber } from '@/ui/MoneyNumber';
-import { motion } from 'motion/react';
 import { toast } from 'sonner';
 import { useI18n } from '@/i18n';
 import { useAuth } from '@/contexts/AuthContext';
@@ -14,13 +14,28 @@ import { ScreenSkeleton } from '@/ui/Skeleton';
 import { QueryError, StaleDataNotice } from '@/ui/QueryError';
 import { useAutosaveDraft } from '@/ui/useAutosaveDraft';
 import { ConfirmSheet } from '@/ui/ConfirmSheet';
+import { useGo } from '@/ui/nav';
+import { Column, IconFrame, Screen, SectionLabel, TopBar } from '@/ui/Screen';
+import { Button } from '@/ui/Button';
+import { TextArea } from '@/ui/Field';
+import { DateField } from '@/ui/DateField';
+import { Segmented } from '@/ui/Segmented';
+import { ClientAvatar } from '@/ui/Avatar';
+import { PartialEntry, PaymentSummary } from '@/ui/Payment';
+import { reveal } from '@/ui/motion';
 import { TimePickerWheel } from '@/components/TimePickerWheel';
+
 const STATUS = [
-  { key: "paid", label: "status.paid", icon: CircleCheck, tint: "tint-emerald", ring: "ring-[hsl(var(--t-emerald-fg))]" },
-  { key: "partial", label: "status.partial", icon: CircleDashed, tint: "tint-amber", ring: "ring-[hsl(var(--t-amber-fg))]" },
-  { key: "unpaid", label: "status.unpaid", icon: Circle, tint: "tint-rose", ring: "ring-[hsl(var(--t-rose-fg))]" },
+  { key: "paid", label: "status.paid", icon: CircleCheck, tone: "ok" },
+  { key: "partial", label: "status.partial", icon: CircleDashed, tone: "warn" },
+  { key: "unpaid", label: "status.unpaid", icon: Circle, tone: "alert" },
 ] as const;
 
+/**
+ * Сторінка дня: усе про один запис і керування ним. Зміни годин, дати й
+ * нотатки зберігаються самі (автозбереження з чернеткою); оплата — одразу.
+ * Кнопка внизу показує стан збереження й дозволяє зберегти негайно.
+ */
 const WorkDayDetails = () => {
   const { dayId } = useParams();
   const query = useWorkDays();
@@ -32,7 +47,7 @@ const WorkDayDetails = () => {
   return <Details key={day.id} workDay={day} stale={query.isError} refresh={() => void query.refetch()} />;
 };
 const Details = ({ workDay, stale, refresh }: { workDay: WorkDay; stale: boolean; refresh: () => void }) => {
-  const navigate = useNavigate();
+  const go = useGo();
   const { t } = useI18n();
   const { user } = useAuth();
   const { data: clients = [] } = useClients();
@@ -96,7 +111,7 @@ const Details = ({ workDay, stale, refresh }: { workDay: WorkDay; stale: boolean
     });
   };
   const handleDelete = () => {
-    void perform(async () => { await deleteDay.mutateAsync(workDay.id); autosave.discard(); navigate('/'); });
+    void perform(async () => { await deleteDay.mutateAsync(workDay.id); autosave.discard(); go('/', 'back'); });
   };
 
   const rate = hourlyRate;
@@ -110,212 +125,135 @@ const Details = ({ workDay, stale, refresh }: { workDay: WorkDay; stale: boolean
   const save = () => { void autosave.saveNow().then(() => toast.success(t('toast.saved'))).catch(() => {}); };
   const shares = assignmentViews(workDay);
   const assignments = workDay.assignments.map((a, index) => ({ id: a.id, name: a.workerName, color: a.workerColor, hours: a.hours, amount: shares[index].amount }));
+  const workers = workDay.assignments.length;
   return (
-    <div className="min-h-dvh bg-background">
-      {/* Header */}
-      <header className="mx-auto flex max-w-md items-center gap-3 px-4 pt-3">
-        <button
-          type="button"
-          aria-label={t("common.back")}
-          onClick={() => navigate("/", { viewTransition: true })}
-          className="press flex h-10 w-10 items-center justify-center rounded-full border border-border bg-card text-foreground"
-        >
-          <ArrowLeft size={20} strokeWidth={2.3} />
-        </button>
-        <div className="flex min-w-0 flex-1 items-center gap-2.5">
-          <span className="ibadge tint-indigo h-10 w-10 font-display text-base font-semibold">
-            {client.name.charAt(0).toUpperCase()}
-          </span>
-          <div className="min-w-0">
-            <h1 className="truncate text-lg font-bold leading-tight text-foreground">{client.name}</h1>
-            <p className="text-xs text-muted-foreground">{formatMoney(rate)} {t("common.perHour")}</p>
-          </div>
-        </div>
-      </header>
+    <Screen>
+      <TopBar
+        onBack={() => go("/", "back")}
+        backLabel={t("common.back")}
+        leading={<ClientAvatar name={client.name} id={workDay.clientId} />}
+        title={client.name}
+        subtitle={`${formatMoney(rate)} ${t("common.perHour")}`}
+      />
 
-      <main className="mx-auto max-w-md space-y-4 px-4 pb-[calc(8rem+env(safe-area-inset-bottom))] pt-4">
+      <Column as="main" className="space-y-5 pb-[calc(8rem+env(safe-area-inset-bottom))] pt-2">
         {stale && <StaleDataNotice onRetry={refresh} />}
-        {autosave.error && <div role="alert" className="card-flat p-3 text-sm text-destructive">
-          <p>Зміни не збережено. Введені дані залишилися у формі.</p>
-          <button className="underline font-bold" onClick={save}>Зберегти ще раз</button>
-          {autosave.blocker.state === 'blocked' && <button className="ml-3 underline" onClick={() => autosave.blocker.reset?.()}>Залишитися</button>}
-        </div>}
-        <fieldset disabled={saving} className="space-y-4">
-        {/* Hero tiles: Години (tap → picker) + Сума */}
-        <div className="grid grid-cols-2 gap-3">
-          <TimePickerWheel value={editHours} hourlyRate={rate} exactHours={currentHours} currentAmount={currentAmount}
-            triggerClassName="press tint-violet relative block rounded-2xl p-4 text-left"
-            onChange={(value, exact) => {
-              const hours = exact?.hours ?? hoursToDecimal(value);
-              autosave.update({ ...autosave.draft, hours, amount: exact?.amount ?? calculateAmount(hours, rate) });
-            }}>
-            <div className="mb-2.5 flex items-center gap-2">
-              <span className="ibadge h-8 w-8 bg-white/70"><Clock size={16} strokeWidth={2.4} /></span>
-              <span className="text-[0.7rem] font-bold uppercase tracking-wider opacity-90">{t('common.hours')}</span>
-            </div>
-            <div className="num-display text-[1.7rem] leading-none text-foreground">{decimalToHours(currentHours)}</div>
-          </TimePickerWheel>
-          <div className="tint-indigo rounded-2xl p-4">
-            <div className="mb-2.5 flex items-center gap-2">
-              <span className="ibadge h-8 w-8 bg-white/70"><Wallet size={16} strokeWidth={2.4} /></span>
-              <span className="text-[0.7rem] font-bold uppercase tracking-wider opacity-90">{t("common.amount")}</span>
-            </div>
-            <div className="num-display text-[1.7rem] leading-none text-foreground"><MoneyNumber value={currentAmount} />€</div>
-          </div>
-        </div>
-
-        {/* Оплата */}
-        <section className="card-flat rounded-2xl p-4">
-          <p className="mb-3 text-sm font-semibold text-foreground">{t("day.payment")}</p>
-          <div className="grid grid-cols-3 gap-2">
-            {STATUS.map((s) => {
-              const active = status === s.key;
-              const Icon = s.icon;
-              return (
-                <button
-                  key={s.key}
-                  type="button"
-                  disabled={saving} onClick={() => setStatus(s.key)}
-                  className="press relative flex flex-col items-center gap-1.5 rounded-xl bg-muted py-3 text-xs font-bold"
-                >
-                  {active && (
-                    <motion.span
-                      layoutId="statusHL"
-                      transition={{ type: "spring", stiffness: 430, damping: 34 }}
-                      className={`absolute inset-0 rounded-xl ${s.tint} ring-2 ${s.ring}`}
-                    />
-                  )}
-                  <span
-                    className={`relative z-10 flex flex-col items-center gap-1.5 ${
-                      active ? "text-foreground" : "text-muted-foreground"
-                    }`}
-                  >
-                    <motion.span
-                      key={active ? "on" : "off"}
-                      initial={active ? { scale: 0.6, rotate: -12, opacity: 0 } : false}
-                      animate={{ scale: 1, rotate: 0, opacity: 1 }}
-                      transition={{ type: "spring", stiffness: 500, damping: 24 }}
-                    >
-                      <Icon size={20} strokeWidth={2.3} />
-                    </motion.span>
-                    {t(s.label)}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-
-          {(showPartial || status === "partial") && (
-            <div className="mt-3 space-y-2.5">
-              <div className="flex gap-2">
-                <input
-                  inputMode="decimal"
-                  value={partialAmount}
-                  onChange={(e) => setPartialAmount(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && applyPartial()}
-                  aria-label={t("common.received")} placeholder={t("common.received")}
-                  className="min-w-0 flex-1 rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm outline-none focus:border-primary"
-                />
-                <button
-                  type="button"
-                  disabled={saving || !partialAmount} onClick={applyPartial}
-                  className="press rounded-xl bg-primary px-5 text-sm font-bold text-primary-foreground"
-                >
-                  Додати
-                </button>
-              </div>
-              <div className="grid grid-cols-2 gap-2.5">
-                <div className="tint-emerald rounded-xl px-3 py-2.5">
-                  <p className="text-[0.7rem] font-semibold uppercase opacity-80">{t("common.paid")}</p>
-                  <p className="num-display text-base text-foreground"><MoneyNumber value={dayPaidAmount} />€</p>
-                </div>
-                <div className="tint-rose rounded-xl px-3 py-2.5">
-                  <p className="text-[0.7rem] font-semibold uppercase opacity-80">{t("common.due")}</p>
-                  <p className="num-display text-base text-foreground"><MoneyNumber value={payment.due} />€</p>
-                </div>
+        {autosave.error && (
+          <div role="alert" className="flex items-start gap-3 rounded-[16px] bg-alert-tint p-4 text-footnote text-alert-ink">
+            <CloudAlert size={18} strokeWidth={2.2} className="mt-0.5 shrink-0" />
+            <div className="flex-1">
+              <p className="font-semibold">Зміни не збережено. Введені дані залишилися у формі.</p>
+              <div className="mt-2 flex gap-4">
+                <button className="font-bold underline underline-offset-2" onClick={save}>Зберегти ще раз</button>
+                {autosave.blocker.state === 'blocked' && <button className="underline underline-offset-2" onClick={() => autosave.blocker.reset?.()}>Залишитися</button>}
               </div>
             </div>
+          </div>
+        )}
+        <fieldset disabled={saving} className="min-w-0 space-y-5">
+          {/* Час і сума */}
+          <div className="grid grid-cols-2 gap-3">
+            <TimePickerWheel value={editHours} hourlyRate={rate} exactHours={currentHours} currentAmount={currentAmount}
+              triggerClassName="press tap card block p-4 text-left"
+              onChange={(value, exact) => {
+                const hours = exact?.hours ?? hoursToDecimal(value);
+                autosave.update({ ...autosave.draft, hours, amount: exact?.amount ?? calculateAmount(hours, rate) });
+              }}>
+              <span className="mb-3 flex items-center gap-2">
+                <IconFrame tone="accent" size="sm"><Clock size={15} strokeWidth={2.3} /></IconFrame>
+                <span className="text-footnote font-semibold text-ink-3">{t('common.hours')}</span>
+              </span>
+              <span className="num block text-display text-ink">{decimalToHours(currentHours)}</span>
+              <span className="mt-1 flex items-center gap-1 text-caption font-semibold text-accent-ink"><Pencil size={11} strokeWidth={2.6} />{t("day.hoursHint")}</span>
+            </TimePickerWheel>
+            <div className="card p-4">
+              <span className="mb-3 flex items-center gap-2">
+                <IconFrame size="sm"><Wallet size={15} strokeWidth={2.3} /></IconFrame>
+                <span className="text-footnote font-semibold text-ink-3">{t("common.amount")}</span>
+              </span>
+              <span className="num block text-display text-ink"><MoneyNumber value={currentAmount} /><span className="ml-1 text-title font-semibold text-ink-3">€</span></span>
+              <span className="mt-1 block text-caption text-ink-4">{formatMoney(rate)} {t("common.perHour")}</span>
+            </div>
+          </div>
+
+          <div className="card list overflow-hidden">
+            <DateField value={editDate} onChange={setEditDate} label={t("common.date")} />
+          </div>
+
+          {/* Оплата */}
+          <section className="space-y-2">
+            <SectionLabel>{t("day.payment")}</SectionLabel>
+            <div className="card p-2">
+              <Segmented<PaymentStatus>
+                value={status}
+                onChange={setStatus}
+                disabled={saving}
+                stacked
+                className="bg-transparent p-0"
+                options={STATUS.map((s) => ({ value: s.key, label: t(s.label), tone: s.tone, icon: <s.icon size={20} strokeWidth={2.2} /> }))}
+              />
+              <AnimatePresence initial={false}>
+                {(showPartial || status === "partial") && (
+                  <motion.div {...reveal} className="overflow-hidden">
+                    <div className="space-y-3 px-1 pb-1 pt-3">
+                      <PaymentSummary amount={payment.amount} paid={dayPaidAmount} due={payment.due} />
+                      <PartialEntry value={partialAmount} onChange={setPartialAmount} onSubmit={applyPartial} due={payment.due} pending={saving} />
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          </section>
+
+          {/* Хто скільки заробив */}
+          {workers > 0 && (
+            <section className="space-y-2">
+              <SectionLabel>{t("day.whoEarned")}</SectionLabel>
+              <div className="card list overflow-hidden [--list-inset:3.75rem]">
+                {assignments.map((a) => (
+                  <div key={a.id} className="flex items-center gap-3 px-4 py-3">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-footnote font-bold text-white" style={{ background: a.color }}>
+                      {a.name.charAt(0).toUpperCase()}
+                    </span>
+                    <span className="min-w-0 flex-1 truncate text-headline text-ink">{a.name}</span>
+                    <span className="num text-callout text-ink-3">{decimalToHours(a.hours)} {t("common.hoursShort")}</span>
+                    <span className="num w-16 text-right text-headline text-ink">{a.amount} €</span>
+                  </div>
+                ))}
+              </div>
+            </section>
           )}
-        </section>
 
-        {/* Дашборд працівниць: хто скільки заробив */}
-        <section className="card-flat rounded-2xl p-4">
-          <div className="mb-3 flex items-center gap-2">
-            <Users size={16} strokeWidth={2.3} className="text-muted-foreground" />
-            <p className="text-sm font-semibold text-foreground">{t("day.whoEarned")}</p>
-          </div>
-          <div className="space-y-1">
-            {assignments.map((a) => (
-              <div key={a.id} className="flex items-center gap-3 rounded-xl px-1 py-2">
-                <span className="h-8 w-1.5 rounded-full" style={{ background: a.color }} />
-                <span className="flex-1 truncate text-sm font-semibold text-foreground">{a.name}</span>
-                <span className="tabular text-sm text-muted-foreground">{decimalToHours(a.hours)} {t("common.hoursShort")}</span>
-                <span className="num-display w-16 text-right text-sm text-foreground">{a.amount}€</span>
-              </div>
-            ))}
-          </div>
-        </section>
+          {/* Нотатка */}
+          <section className="space-y-2">
+            <SectionLabel>{t("common.note")}</SectionLabel>
+            <TextArea aria-label={t("common.note")} value={editNote} onChange={(e) => setEditNote(e.target.value)}
+              placeholder={t("create.whatDidYouDo")} className="bg-surface shadow-card" />
+          </section>
 
-        {/* Дата — нативний iOS date-picker */}
-        <section className="space-y-1.5">
-          <label className="flex items-center gap-1.5 px-1 text-sm font-semibold text-foreground">
-            <CalendarDays size={15} strokeWidth={2.3} className="text-muted-foreground" /> {t("common.date")}
-          </label>
-          <input
-            type="date"
-            aria-label={t("common.date")}
-            value={editDate}
-            onChange={(e) => {
-              setEditDate(e.target.value);
-            }}
-            className="w-full rounded-2xl border border-border bg-card px-4 py-3.5 text-base font-medium text-foreground outline-none focus:border-primary"
-          />
-        </section>
-
-        {/* Нотатка */}
-        <section className="space-y-1.5">
-          <label className="flex items-center gap-1.5 px-1 text-sm font-semibold text-foreground">
-            <StickyNote size={15} strokeWidth={2.3} className="text-muted-foreground" /> {t("common.note")}
-          </label>
-          <textarea aria-label={t("common.note")}
-            value={editNote}
-            onChange={(e) => {
-              setEditNote(e.target.value);
-            }}
-            placeholder={t("create.whatDidYouDo")}
-            className="min-h-24 w-full resize-none rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground outline-none focus:border-primary"
-          />
-        </section>
-
-        <button
-          type="button"
-          disabled={saving} onClick={remove}
-          className="press flex w-full scroll-mb-32 items-center justify-center gap-1.5 py-2 text-sm font-semibold text-destructive"
-        >
-          <Trash2 size={16} strokeWidth={2.3} /> {t("day.deleteRecord")}
-        </button>
+          <Button variant="ghost" tone="alert" block disabled={saving} onClick={remove} icon={<Trash2 size={17} strokeWidth={2.2} />} className="scroll-mb-32">
+            {t("day.deleteRecord")}
+          </Button>
         </fieldset>
-      </main>
+      </Column>
 
-      {/* Sticky Save */}
-      <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40 bg-gradient-to-t from-background via-background to-transparent pt-6">
-        <div className="mx-auto max-w-md px-4 pb-[calc(0.9rem+env(safe-area-inset-bottom))]">
-          <button
-            type="button"
-            onClick={save}
-            disabled={saving}
-            className="press pointer-events-auto flex w-full items-center justify-center gap-2 rounded-2xl bg-primary py-4 text-base font-bold text-primary-foreground disabled:opacity-60"
-          >
-            <Check size={20} strokeWidth={2.6} />
-            {autosave.error ? t("common.saveChanges") : saving ? t("common.saving") : dirty ? t("common.saveChanges") : t("common.saved")}
-          </button>
+      {/* Стан збереження */}
+      <div className="pointer-events-none fixed inset-x-0 bottom-0 z-30">
+        <div className="h-8 bg-gradient-to-t from-canvas to-transparent" />
+        <div className="bg-canvas pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
+          <Column>
+            <Button variant={dirty || autosave.error ? "primary" : "tonal"} size="lg" block onClick={save} disabled={saving} className="pointer-events-auto"
+              icon={<Check size={19} strokeWidth={2.6} />}>
+              {autosave.error ? t("common.saveChanges") : saving ? t("common.saving") : dirty ? t("common.saveChanges") : t("common.saved")}
+            </Button>
+          </Column>
         </div>
       </div>
 
       <ConfirmSheet open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}
         title={t('day.deleteRecord') + '?'} description="Буде видалено лише цей день. Інші записи залишаться."
         onConfirm={handleDelete} confirmDisabled={saving} />
-    </div>
+    </Screen>
   );
 };
 export default WorkDayDetails;

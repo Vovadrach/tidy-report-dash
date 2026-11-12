@@ -1,12 +1,17 @@
+import { useEffect } from "react";
+import { motion } from "motion/react";
+import { Users } from "lucide-react";
 import { useWorkerFilter } from "@/contexts/WorkerContext";
 import { useWorkers } from "@/data/queries";
-import { useEffect } from "react";
-import { Users } from "lucide-react";
 import { useI18n } from "@/i18n";
+import { cn } from "@/lib/utils";
+import { WorkerDot } from "@/ui/Avatar";
+import { spring } from "@/ui/motion";
 
 /**
- * WorkerChips — панель-бар вибору працівниці (як нав-меню): суцільна картка з
- * hairline, усередині горизонтальний скрол бейджів (вправо-вліво), вибір напряму.
+ * Фільтр «чиїми очима дивимось»: Всі або одна помічниця. Живе у верхній
+ * частині дока; гортається вбік, обраний — тонова підкладка, що перетікає.
+ * Прихований, якщо працює одна людина.
  */
 export const WorkerChips = () => {
   const { selectedWorkerId, setSelectedWorkerId } = useWorkerFilter();
@@ -14,50 +19,28 @@ export const WorkerChips = () => {
   const workers = query.data ?? [];
   const { t } = useI18n();
   useEffect(() => {
-    if (query.isSuccess && selectedWorkerId !== 'all' && !query.data?.some(w => w.id === selectedWorkerId)) setSelectedWorkerId('all');
+    if (query.isSuccess && selectedWorkerId !== "all" && !query.data?.some((w) => w.id === selectedWorkerId)) setSelectedWorkerId("all");
   }, [query.isSuccess, query.data, selectedWorkerId, setSelectedWorkerId]);
 
   if (!workers || workers.length <= 1) return null;
 
-  const base =
-    "press shrink-0 inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-sm font-semibold transition-colors border";
+  const chip = (id: string, label: string, lead: React.ReactNode) => {
+    const active = selectedWorkerId === id;
+    return (
+      <button key={id} type="button" onClick={() => setSelectedWorkerId(id)} aria-pressed={active}
+        className={cn("press relative inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full px-3.5 text-footnote font-semibold", active ? "text-accent-ink" : "text-ink-2")}>
+        {active
+          ? <motion.span layoutId="worker-chip" transition={spring.control} className="absolute inset-0 rounded-full bg-accent-tint" />
+          : <span className="absolute inset-0 rounded-full bg-well" />}
+        <span className="relative flex items-center gap-1.5">{lead}{label}</span>
+      </button>
+    );
+  };
 
   return (
-    <div className="scrollbar-hide flex gap-2 overflow-x-auto rounded-[1.6rem] border border-border bg-card p-2">
-      <button
-        type="button"
-        onClick={() => setSelectedWorkerId("all")}
-        className={
-          selectedWorkerId === "all"
-            ? `${base} border-primary bg-primary text-primary-foreground`
-            : `${base} border-border bg-card text-foreground`
-        }
-      >
-        <Users size={15} strokeWidth={2.3} />
-        {t("common.all")}
-      </button>
-
-      {workers.map((w) => {
-        const active = selectedWorkerId === w.id;
-        return (
-          <button
-            key={w.id}
-            type="button"
-            onClick={() => setSelectedWorkerId(w.id)}
-            className={
-              active
-                ? `${base} border-primary bg-primary text-primary-foreground`
-                : `${base} border-border bg-card text-foreground`
-            }
-          >
-            <span
-              className="h-2.5 w-2.5 rounded-full ring-2 ring-white/50"
-              style={{ background: active ? "currentColor" : w.color || "#94a3b8" }}
-            />
-            {w.name}
-          </button>
-        );
-      })}
+    <div className="scrollbar-hide flex gap-1.5 overflow-x-auto">
+      {chip("all", t("common.all"), <Users size={14} strokeWidth={2.4} />)}
+      {workers.map((w) => chip(w.id, w.name, <WorkerDot color={w.color} className="h-2.5 w-2.5" />))}
     </div>
   );
 };

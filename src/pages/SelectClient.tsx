@@ -1,99 +1,94 @@
 import { useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
+import { ChevronRight, LogOut, Search, SlidersHorizontal, UserPlus, Users } from "lucide-react";
+import { toast } from "sonner";
 import { useClients } from "@/data/queries";
-import { QueryError, StaleDataNotice } from "@/ui/QueryError";
 import { isISODate } from "@/domain/dates";
 import { formatMoney } from "@/domain/money";
-import { UserPlus, ArrowLeft, ChevronRight, Search, Users, LogOut, SlidersHorizontal } from "lucide-react";
-import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { useI18n } from "@/i18n";
 import { SettingsSheet } from "@/components/SettingsSheet";
+import { QueryError, StaleDataNotice } from "@/ui/QueryError";
+import { useGo } from "@/ui/nav";
+import { useToday } from "@/ui/useToday";
+import { dayLabel } from "@/ui/dateLabel";
+import { Column, EmptyState, Screen, TopBar } from "@/ui/Screen";
+import { Button, IconButton } from "@/ui/Button";
+import { TextInput } from "@/ui/Field";
+import { ClientAvatar } from "@/ui/Avatar";
+import { stagger } from "@/ui/motion";
 
+/** Крок 1 створення запису: кого обслуговували. Пошук зверху, список нижче. */
 export default function SelectClient() {
-  const navigate = useNavigate();
+  const go = useGo();
   const [params] = useSearchParams();
   const dateParam = params.get("date");
+  const validDate = dateParam && isISODate(dateParam) ? dateParam : null;
   const { signOut } = useAuth();
-  const { t } = useI18n();
+  const i18n = useI18n();
+  const { t } = i18n;
+  const today = useToday();
   const query = useClients();
   const clients = query.data ?? [];
   const [q, setQ] = useState("");
-  const loading = query.isLoading;
   const [settingsOpen, setSettingsOpen] = useState(false);
 
-  const pick = (id: string) =>
-    navigate(`/create-report?clientId=${id}${dateParam && isISODate(dateParam) ? `&date=${dateParam}` : ""}`, { viewTransition: true });
-
-  const filtered = clients.filter((c) => c.name.toLowerCase().includes(q.toLowerCase()));
+  const pick = (id: string) => go(`/create-report?clientId=${id}${validDate ? `&date=${validDate}` : ""}`);
+  const filtered = clients.filter((c) => c.name.toLowerCase().includes(q.trim().toLowerCase()));
 
   if (query.isError && !query.data) return <QueryError onRetry={() => void query.refetch()} />;
 
   return (
-    <div className="min-h-dvh bg-background">
-      <header className="mx-auto flex max-w-md items-center gap-2 px-4 pt-3">
-        <button type="button" aria-label={t("common.back")} onClick={() => navigate("/", { viewTransition: true })}
-          className="press flex h-10 w-10 items-center justify-center rounded-full border border-border bg-card">
-          <ArrowLeft size={20} strokeWidth={2.3} />
-        </button>
-        <h1 className="flex-1 text-lg font-bold text-foreground">{t("select.title")}</h1>
-        <button type="button" aria-label={t("settings.title")} onClick={() => setSettingsOpen(true)}
-          className="press flex h-10 w-10 items-center justify-center rounded-full text-ink-3">
-          <SlidersHorizontal size={19} strokeWidth={1.6} />
-        </button>
-        <button type="button" aria-label={t("select.addClient")} onClick={() => navigate("/client-management", { viewTransition: true })}
-          className="press flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground">
-          <UserPlus size={18} strokeWidth={2.3} />
-        </button>
-      </header>
+    <Screen>
+      <TopBar
+        onBack={() => go("/", "back")}
+        backLabel={t("common.back")}
+        title={t("select.title")}
+        subtitle={validDate ? dayLabel(validDate, today, i18n) : undefined}
+        actions={<>
+          <IconButton label={t("settings.title")} variant="ghost" onClick={() => setSettingsOpen(true)}><SlidersHorizontal size={19} strokeWidth={2} /></IconButton>
+          <IconButton label={t("select.addClient")} variant="tonal" onClick={() => go("/client-management")}><UserPlus size={19} strokeWidth={2.2} /></IconButton>
+        </>}
+      />
 
-      <main className="mx-auto max-w-md space-y-3 px-4 pb-10 pt-4">
-        <div className="relative">
-          <Search size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("select.search")}
-            className="w-full rounded-2xl border border-border bg-card py-3 pl-11 pr-4 text-base outline-none focus:border-primary" />
-        </div>
+      <Column className="space-y-3 pb-12 pt-2">
+        <TextInput value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("select.search")} aria-label={t("select.search")}
+          icon={<Search size={18} strokeWidth={2.2} />} wrapClassName="bg-sunken" />
 
         {query.isError && query.data && <StaleDataNotice onRetry={() => void query.refetch()} />}
-        {loading ? (
-          <div className="space-y-2.5">{[0, 1, 2].map((i) => <div key={i} className="skeleton h-16 rounded-2xl" />)}</div>
+        {query.isLoading ? (
+          <div className="card list overflow-hidden">{[0, 1, 2].map((i) => <div key={i} className="flex items-center gap-3 p-4"><div className="skeleton h-10 w-10 rounded-full" /><div className="skeleton h-4 flex-1 rounded-full" /></div>)}</div>
         ) : filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-center">
-            <span className="ibadge tint-indigo mb-4 h-16 w-16"><Users size={28} strokeWidth={2} /></span>
-            <p className="text-lg font-semibold">{q ? t("select.notFound") : t("select.noClients")}</p>
-            {!q && (
-              <button onClick={() => navigate("/client-management", { viewTransition: true })}
-                className="press mt-4 rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground">
-                {t("select.addClient")}
-              </button>
-            )}
-          </div>
+          <EmptyState
+            icon={<Users size={26} strokeWidth={2} />}
+            title={q ? t("select.notFound") : t("select.noClients")}
+            action={!q && <Button variant="primary" size="lg" icon={<UserPlus size={18} strokeWidth={2.3} />} onClick={() => go("/client-management")}>{t("select.addClient")}</Button>}
+          />
         ) : (
-          <div className="card-flat divide-y divide-border overflow-hidden rounded-2xl">
-            {filtered.map((c) => (
-              <button key={c.id} type="button" onClick={() => pick(c.id)}
-                className="press flex w-full items-center gap-3 p-3.5 text-left">
-                <span className="ibadge tint-indigo h-11 w-11 font-display text-base font-semibold"
-                  style={{ viewTransitionName: `avatar-${c.id}` }}>
-                  {c.name.charAt(0).toUpperCase()}
+          <div className="card list overflow-hidden [--list-inset:4rem]">
+            {filtered.map((c, i) => (
+              <button key={c.id} type="button" onClick={() => pick(c.id)} style={stagger(i, 0.025, 0.2)}
+                className="tap rise-in flex w-full items-center gap-3 px-4 py-3 text-left">
+                <ClientAvatar name={c.name} id={c.id} transitionName={`avatar-${c.id}`} />
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-headline text-ink">{c.name}</span>
+                  <span className="block num text-footnote text-ink-3">{formatMoney(c.hourlyRate)} {t("common.perHour")}</span>
                 </span>
-                <span className="flex-1 truncate font-semibold text-foreground">{c.name}</span>
-                <span className="text-sm font-semibold text-primary">
-                  {formatMoney(c.hourlyRate)}{t("common.perHour")}
-                </span>
-                <ChevronRight size={18} className="text-muted-foreground" />
+                <ChevronRight size={18} className="shrink-0 text-ink-4" />
               </button>
             ))}
           </div>
         )}
 
-        <button onClick={async () => { try { await signOut(); navigate("/login"); } catch { toast.error(t("common.error")); } }}
-          className="press mx-auto mt-6 flex items-center gap-1.5 py-2 text-sm font-medium text-muted-foreground">
-          <LogOut size={15} /> {t("select.signOut")}
-        </button>
-      </main>
+        <div className="flex justify-center pt-4">
+          <Button variant="ghost" size="sm" icon={<LogOut size={15} strokeWidth={2.2} />}
+            onClick={async () => { try { await signOut(); go("/login", "back"); } catch { toast.error(t("common.error")); } }}>
+            {t("select.signOut")}
+          </Button>
+        </div>
+      </Column>
 
       <SettingsSheet open={settingsOpen} onOpenChange={setSettingsOpen} />
-    </div>
+    </Screen>
   );
 }
