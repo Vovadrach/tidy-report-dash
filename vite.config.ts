@@ -27,8 +27,8 @@ export default defineConfig(() => ({
         short_name: 'Ясно',
         start_url: '/',
         description: 'Застосунок для обліку звітів по прибиранню апартаментів',
-        theme_color: '#ffffff',
-        background_color: '#fafbfe',
+        theme_color: '#f0f1f4',
+        background_color: '#f0f1f4',
         display: 'standalone',
         orientation: 'portrait',
         icons: [

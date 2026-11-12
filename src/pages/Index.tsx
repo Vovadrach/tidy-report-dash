@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { CalendarPlus, Plus } from 'lucide-react';
+import { CalendarPlus, Plus, RefreshCw } from 'lucide-react';
 
 import { useI18n } from '@/i18n';
 import { useWorkerFilter } from '@/contexts/WorkerContext';
@@ -74,8 +74,13 @@ export default function Index() {
   return (
     <Screen>
       <Column className="space-y-4">
-        <div className={cn('flex h-0 items-center justify-center overflow-visible transition-opacity', pulling > 0 || refreshing ? 'opacity-100' : 'opacity-0')}>
-          <p role="status" className="mt-8 rounded-full bg-surface px-3 py-1 text-caption font-semibold text-accent-ink shadow-card">{t('common.refreshing')}</p>
+        {/* Тягни вниз — оновити: індикатор виїжджає згори й наповнюється разом із жестом */}
+        <div className="pointer-events-none fixed inset-x-0 top-[calc(env(safe-area-inset-top)+0.5rem)] z-50 flex justify-center"
+          style={{ opacity: refreshing ? 1 : Math.min(1, pulling), transform: `translateY(${refreshing ? 0 : (Math.min(1, pulling) - 1) * 24}px)` }}>
+          <p role="status" className="flex items-center gap-2 rounded-full bg-overlay px-3.5 py-1.5 text-footnote font-semibold text-accent-ink shadow-float">
+            <RefreshCw size={14} strokeWidth={2.4} className={refreshing ? 'animate-spin' : ''} style={refreshing ? undefined : { transform: `rotate(${pulling * 270}deg)` }} />
+            {(pulling > 0 || refreshing) && t('common.refreshing')}
+          </p>
         </div>
         <MonthHeader
           date={anchor}

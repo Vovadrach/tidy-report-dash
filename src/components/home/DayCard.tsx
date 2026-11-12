@@ -55,7 +55,7 @@ export const DayCard = ({
 
   if (day.isPlanned) {
     return (
-      <div data-day-card={day.id}>
+      <div data-planned-card={day.id}>
         <button type="button" onClick={onOpen} className="tap flex w-full items-center gap-3 px-4 py-3 text-left">
           <StatusMark status="unpaid" planned size={40} />
           <span className="min-w-0 flex-1">
