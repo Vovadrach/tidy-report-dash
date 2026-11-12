@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useCallback, useMemo, useEffect, type ReactNode } from "react";
 import { safeStorage } from "@/lib/storage";
-import { dict, MONTHS, WEEKDAYS, LOCALE, type Lang } from "./dict";
+import { dict, MONTHS, MONTHS_OF, MONTHS_SHORT, WEEKDAYS, WEEKDAYS_SHORT, LOCALE, type Lang } from "./dict";
 
 interface I18n {
   lang: Lang;
@@ -8,7 +8,11 @@ interface I18n {
   setLang: (l: Lang) => void;
   t: (key: string, params?: Record<string, string | number>) => string;
   months: string[];
+  /** «листопада» — для дат «12 листопада». */
+  monthsOf: string[];
+  monthsShort: string[];
   weekdays: string[];
+  weekdaysShort: string[];
 }
 
 const Ctx = createContext<I18n | null>(null);
@@ -37,7 +41,11 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   );
 
   const value = useMemo<I18n>(
-    () => ({ lang, locale: LOCALE[lang], setLang, t, months: MONTHS[lang], weekdays: WEEKDAYS[lang] }),
+    () => ({
+      lang, locale: LOCALE[lang], setLang, t,
+      months: MONTHS[lang], monthsOf: MONTHS_OF[lang], monthsShort: MONTHS_SHORT[lang],
+      weekdays: WEEKDAYS[lang], weekdaysShort: WEEKDAYS_SHORT[lang],
+    }),
     [lang, setLang, t],
   );
 

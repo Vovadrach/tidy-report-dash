@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
-import { CloudSlash } from "@phosphor-icons/react/dist/csr/CloudSlash";
+import { AnimatePresence, motion } from "motion/react";
+import { WifiOff } from "lucide-react";
+import { spring } from "./motion";
 
 /** Банер офлайну: дані читаються з кешу, зміни — коли повернеться мережа. */
 export const OfflineBanner = () => {
@@ -16,14 +18,17 @@ export const OfflineBanner = () => {
     };
   }, []);
 
-  if (!offline) return null;
-
   return (
-    <div className="fixed top-0 inset-x-0 z-[90] flex justify-center pointer-events-none">
-      <div className="mt-2 px-4 py-1.5 rounded-full bg-foreground text-background text-xs font-bold flex items-center gap-1.5 shadow-lg">
-        <CloudSlash className="w-3.5 h-3.5" />
-        Офлайн — показую збережені дані
-      </div>
-    </div>
+    <AnimatePresence>
+      {offline && (
+        <motion.div initial={{ y: -40, opacity: 0 }} animate={{ y: 0, opacity: 1, transition: spring.pop }} exit={{ y: -40, opacity: 0 }}
+          className="pointer-events-none fixed inset-x-0 top-[calc(env(safe-area-inset-top)+0.5rem)] z-[90] flex justify-center">
+          <div className="flex items-center gap-1.5 rounded-full bg-ink px-4 py-2 text-footnote font-semibold text-canvas shadow-float">
+            <WifiOff size={15} strokeWidth={2.3} />
+            Офлайн — показую збережені дані
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 };

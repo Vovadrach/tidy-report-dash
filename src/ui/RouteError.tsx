@@ -11,8 +11,8 @@ export const RouteError = () => {
     safeStorage.removeItem(accountCacheKey(isDemo ? 'demo' : user?.id ?? 'guest'));
     window.location.reload();
   };
-  return <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-background p-6 text-center">
-    <p role="alert">Не вдалося відкрити сторінку. Перевірте підключення і спробуйте ще раз.</p>
-    <button onClick={retry} className="rounded-full bg-primary px-6 py-3 font-bold text-primary-foreground">Оновити сторінку</button>
+  return <div className="flex min-h-dvh flex-col items-center justify-center gap-5 bg-canvas p-6 text-center">
+    <p role="alert" className="max-w-xs text-callout text-ink-2">Не вдалося відкрити сторінку. Перевірте підключення і спробуйте ще раз.</p>
+    <button onClick={retry} className="press h-12 rounded-[16px] bg-accent px-6 font-semibold text-accent-on">Оновити сторінку</button>
   </div>;
 };

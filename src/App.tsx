@@ -1,6 +1,6 @@
 import { AccountDataProvider } from "@/data/AccountDataProvider";
 import { Toaster as Sonner } from "@/components/ui/sonner";
-import { createBrowserRouter, RouterProvider, createRoutesFromElements, Route, Navigate, Outlet, useParams } from "react-router-dom";
+import { createBrowserRouter, RouterProvider, createRoutesFromElements, Route, Navigate, Outlet, ScrollRestoration, useParams } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { WorkerProvider } from "@/contexts/WorkerContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
@@ -10,7 +10,7 @@ import { lazy, Suspense } from "react";
 import { ScreenSkeleton } from "@/ui/Skeleton";
 import { RouteError } from "@/ui/RouteError";
 import { LanguageProvider } from "@/i18n";
-import { TooltipProvider } from "@/components/ui/tooltip";
+import { ThemeProvider } from "@/ui/theme";
 const Index = lazy(() => import("./pages/Index"));
 
 const ReportsStatus = lazy(() => import("./pages/ReportsStatus"));
@@ -30,7 +30,10 @@ const LegacyDayRedirect = () => {
   return <Navigate to={`/day/${dayId}`} replace />;
 };
 
-const router = createBrowserRouter(createRoutesFromElements(<Route element={<Outlet />} errorElement={<RouteError />}>
+/** Новий екран відкривається зверху; «назад» повертає туди, де зупинились. */
+const Root = () => <><ScrollRestoration /><Outlet /></>;
+
+const router = createBrowserRouter(createRoutesFromElements(<Route element={<Root />} errorElement={<RouteError />}>
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
               <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
@@ -48,19 +51,19 @@ const router = createBrowserRouter(createRoutesFromElements(<Route element={<Out
 </Route>));
 const App = () => (
   <ErrorBoundary>
+    <ThemeProvider>
     <LanguageProvider>
     <AuthProvider>
       <AccountDataProvider>
           <WorkerProvider>
-            <TooltipProvider delayDuration={200}>
             <Sonner position="top-center" />
             <OfflineBanner />
             <Suspense fallback={<ScreenSkeleton />}><RouterProvider router={router} /></Suspense>
-            </TooltipProvider>
           </WorkerProvider>
       </AccountDataProvider>
     </AuthProvider>
     </LanguageProvider>
+    </ThemeProvider>
   </ErrorBoundary>
 );
 export default App;
