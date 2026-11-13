@@ -3,8 +3,9 @@
  * системний Chrome, playwright-core (npx playwright-core недостатньо —
  * встановлюється тимчасово: npm i -D playwright-core).
  *
- * Сценарії: створити запис → оплачено → часткова оплата → видалення з
- * підтвердженням → навігація доком; + перевірка, що кнопки не перекриті.
+ * Сценарії: створити запис → оплачено (лист оплати) → часткова оплата →
+ * видалення з підтвердженням → навігація доком → темна тема; + перевірка,
+ * що кнопки не перекриті.
  */
 import { chromium } from "playwright-core";
 
@@ -59,8 +60,9 @@ await step("зміна статусу після підтвердження зб
   await page.waitForURL(BASE + "/");
   const statusBtn = page.locator('button[aria-label="Статус"]').first();
   await statusBtn.click();
-  await page.click('[role="menuitem"]:has-text("Оплачено")');
-  await page.waitForTimeout(400); // відповідь демо-бекенда
+  await page.getByRole('dialog').getByRole('button', { name: 'Оплачено', exact: true }).click();
+  await page.waitForSelector('[role="dialog"]', { state: 'detached', timeout: 3000 }); // лист закривається після відповіді
+  if (await statusBtn.getAttribute('data-status') !== 'paid') throw new Error('статус не оновився');
 });
 
 await step("деталі дня: кнопка видалення не перекрита доком", async () => {
@@ -86,7 +88,7 @@ await step("часткова оплата у звітах без центів", 
   await page.getByLabel('Отримано, €').fill('1.25');
   await page.getByRole('button', { name: 'Додати', exact: true }).click();
   await page.waitForSelector('text=Оплату додано');
-  await page.waitForSelector('main number-flow-react[aria-label="1"]');
+  await page.waitForSelector('main >> text=Сплачено 1 з'); // цілі євро, без центів
 });
 
 await step("швидке збереження нотатки перед навігацією", async () => {
@@ -114,6 +116,17 @@ await step("навігація доком: Очікую і Звіт", async () =
   await page.waitForURL("**/dashboard");
   await page.click('button:has-text("Головна")');
   await page.waitForURL(BASE + "/");
+});
+
+await step("темна тема з параметрів і назад", async () => {
+  await page.click('button:has-text("Звіт")');
+  await page.waitForURL("**/dashboard");
+  await page.getByRole('button', { name: 'Параметри' }).click();
+  await page.getByRole('dialog').getByRole('button', { name: 'Темна' }).click();
+  await page.waitForFunction(() => document.documentElement.classList.contains('dark'));
+  await page.getByRole('dialog').getByRole('button', { name: 'Світла' }).click();
+  await page.waitForFunction(() => !document.documentElement.classList.contains('dark'));
+  await page.keyboard.press('Escape');
 });
 
 if (errors.length) {

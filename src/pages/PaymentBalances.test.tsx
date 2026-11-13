@@ -12,6 +12,7 @@ vi.mock('@/data/queries', () => ({
   useWorkDays: () => ({ data: data.days }),
   useClients: () => ({ data: [{ id: 'c1', name: 'Barbara Rina di Natale', hourlyRate: 15 }] }),
   useSetPayment: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useAddPayment: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useMarkAllPaid: () => ({ mutateAsync: data.markAllPaid, isPending: false }),
 }));
 vi.mock('@/contexts/WorkerContext', () => ({ useWorkerFilter: () => ({ selectedWorkerId: data.worker }) }));
@@ -69,9 +70,10 @@ describe('узгоджені борги та години на обох екра
     const owing = day({ status: 'paid' }); // Stale legacy flags must not show a paid icon for debt.
     data.days.push(owing);
     open('/client-reports/c1');
-    expect(screen.getAllByText('2')).toHaveLength(2);
+    expect(screen.getByText('2')).toBeTruthy();
+    expect(screen.getByText('2 год')).toBeTruthy();
     expect(screen.getAllByLabelText('18')).toHaveLength(2);
-    expect(screen.getByRole('button', { name: 'Статус' }).className).toContain('tint-amber');
+    expect(screen.getByRole('button', { name: 'Статус' }).dataset.status).toBe('partial');
     fireEvent.click(screen.getByRole('button', { name: /Оплачено всі \(1\)/ }));
     await waitFor(() => expect(data.markAllPaid).toHaveBeenCalledWith([owing]));
   });

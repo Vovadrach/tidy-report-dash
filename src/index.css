@@ -1,201 +1,303 @@
 @import "tailwindcss";
-@import "tw-animate-css";
 
-@custom-variant dark (&:is(.dark *));
+@custom-variant dark (&:where(.dark, .dark *));
 
-/* ============================================================
-   Home v2 — нова візуальна база
-   Світло-біле полотно · ПЛАСКО (без тіней/скла) ·
-   яскраві кольорові підтінки · Onest (UI) + Unbounded (display)
-   Глибина = межі + колірні заливки, а не тіні.
-   ============================================================ */
+/* ============================================================================
+   Ясно — дизайн-система
+   ----------------------------------------------------------------------------
+   Поверхні розділяє ТОН і дозована ТІНЬ, а не обводка. Кожен елемент лежить на
+   одній із площин (знизу вгору):
+
+     canvas  — полотно екрана
+     sunken  — колодязь на полотні (трек сегмента, поле поза карткою)
+     surface — картка / група / док (біла у світлій, підсвічена у темній)
+     well    — колодязь усередині картки (поле вводу, трек, неактивний чіп)
+     raised  — те, що лежить на колодязі (бігунок сегмента, обраний чіп)
+     overlay — лист, меню, тост (найвища площина, справжня тінь + затемнення)
+
+   Колір має лише дві ролі:
+     сигнал   — стан оплати: ok (оплачено) · warn (частково) · alert (борг)
+     вибір    — один акцент: головна дія, обране, фокус
+   Решта — нейтральна драбина. Значення живуть ТІЛЬКИ тут.
+   Опис моделі: docs/DESIGN-SYSTEM.md
+   ========================================================================== */
 
 :root {
-  --background: 220 40% 99%;         /* майже біле, ледь прохолодне */
-  --foreground: 224 33% 12%;         /* глибоке чорнило */
+  color-scheme: light;
 
-  --card: 0 0% 100%;
-  --card-foreground: 224 33% 12%;
+  /* Площини */
+  --canvas: oklch(0.962 0.004 265);
+  --sunken: oklch(0.928 0.005 265);
+  --surface: oklch(1 0 0);
+  --well: oklch(0.958 0.004 265);
+  --well-strong: oklch(0.925 0.005 265);
+  --raised: oklch(1 0 0);
+  --overlay: oklch(1 0 0);
+  --scrim: oklch(0.18 0.02 265 / 0.38);
 
-  --popover: 0 0% 100%;
-  --popover-foreground: 224 33% 12%;
+  /* Стани (накладки працюють на будь-якій площині) */
+  --state-hover: oklch(0.2 0.02 265 / 0.04);
+  --state-press: oklch(0.2 0.02 265 / 0.07);
 
-  --primary: 243 82% 62%;            /* яскравий індиго */
-  --primary-foreground: 0 0% 100%;
+  /* Волосяна лінія — ЛИШЕ внутрішній роздільник, не рамка */
+  --line: oklch(0.2 0.02 265 / 0.08);
 
-  --secondary: 220 24% 96%;
-  --secondary-foreground: 224 33% 12%;
+  /* Текст */
+  --ink: oklch(0.21 0.008 265);
+  --ink-2: oklch(0.42 0.01 265);
+  --ink-3: oklch(0.56 0.01 265);
+  --ink-4: oklch(0.72 0.008 265);
 
-  --accent: 158 84% 39%;             /* смарагд */
-  --accent-foreground: 0 0% 100%;
+  /* Акцент (вибір, головна дія, фокус) */
+  --accent: oklch(0.56 0.19 258);
+  --accent-press: oklch(0.5 0.19 258);
+  --accent-ink: oklch(0.48 0.17 258);
+  --accent-tint: oklch(0.945 0.03 258);
+  --accent-on: oklch(1 0 0);
+  --focus: oklch(0.56 0.19 258 / 0.35);
 
-  --muted: 220 20% 95%;
-  --muted-foreground: 222 12% 46%;
+  /* Сигнали оплати */
+  --ok: oklch(0.63 0.15 155);
+  --ok-ink: oklch(0.47 0.12 155);
+  --ok-tint: oklch(0.945 0.045 155);
+  --warn: oklch(0.76 0.15 72);
+  --warn-ink: oklch(0.52 0.12 60);
+  --warn-tint: oklch(0.955 0.05 82);
+  --alert: oklch(0.62 0.2 25);
+  --alert-ink: oklch(0.52 0.19 25);
+  --alert-tint: oklch(0.948 0.03 20);
 
-  --success: 158 84% 36%;
-  --success-foreground: 0 0% 100%;
+  /* Аватари клієнтів: приналежність, відтінок задає --h */
+  --av-l: 0.935;
+  --av-c: 0.045;
+  --av-ink-l: 0.46;
+  --av-ink-c: 0.12;
 
-  --warning: 35 95% 50%;
-  --warning-foreground: 0 0% 100%;
+  /* Тіні, дозовані за площиною */
+  --sh-hair: 0 1px 1px oklch(0.2 0.02 265 / 0.04);
+  --sh-card: 0 1px 2px oklch(0.2 0.02 265 / 0.05), 0 2px 10px oklch(0.2 0.02 265 / 0.045);
+  --sh-raised: 0 1px 2px oklch(0.2 0.02 265 / 0.1), 0 2px 6px oklch(0.2 0.02 265 / 0.06);
+  --sh-float: 0 4px 14px oklch(0.2 0.02 265 / 0.08), 0 12px 32px oklch(0.2 0.02 265 / 0.08);
+  --sh-sheet: 0 -6px 30px oklch(0.2 0.02 265 / 0.12);
+  --sh-accent: 0 6px 18px oklch(0.56 0.19 258 / 0.32);
 
-  --destructive: 349 82% 58%;
-  --destructive-foreground: 0 0% 100%;
+  /* Радіуси */
+  --r-xs: 8px;
+  --r-sm: 12px;
+  --r-md: 14px;
+  --r-lg: 20px;
+  --r-xl: 28px;
 
-  --border: 220 20% 91%;
-  --input: 220 20% 91%;
-  --ring: 243 82% 62%;
-
-  --radius: 1.25rem;                 /* більші, сучасні форми */
-
-  /* Немає тіней — усе пласко */
-  --shadow-none: 0 0 #0000;
-
-  --ease-spring: cubic-bezier(0.22, 1, 0.36, 1);
-  --transition-smooth: all 0.24s cubic-bezier(0.4, 0, 0.2, 1);
-
-  /* Яскраві підтінки (bg / fg) для плиток та іконок */
-  --t-violet-bg: 262 90% 96%;   --t-violet-fg: 262 83% 58%;
-  --t-indigo-bg: 243 96% 96%;   --t-indigo-fg: 243 82% 62%;
-  --t-blue-bg:   214 100% 96%;  --t-blue-fg:   217 91% 55%;
-  --t-sky-bg:    198 100% 95%;  --t-sky-fg:    199 92% 44%;
-  --t-teal-bg:   172 76% 93%;   --t-teal-fg:   174 84% 33%;
-  --t-emerald-bg:152 74% 93%;   --t-emerald-fg:158 84% 34%;
-  --t-amber-bg:  43 100% 92%;   --t-amber-fg:  33 95% 46%;
-  --t-rose-bg:   350 100% 96%;  --t-rose-fg:   349 82% 58%;
+  /* Рух */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-std: cubic-bezier(0.4, 0, 0.2, 1);
+  --t-fast: 0.14s;
+  --t: 0.22s;
 }
 
 .dark {
-  --background: 224 32% 8%;
-  --foreground: 0 0% 94%;
-  --card: 224 28% 12%;
-  --card-foreground: 0 0% 94%;
-  --popover: 224 28% 12%;
-  --popover-foreground: 0 0% 94%;
-  --primary: 243 82% 68%;
-  --primary-foreground: 0 0% 100%;
-  --secondary: 224 22% 18%;
-  --secondary-foreground: 0 0% 94%;
-  --muted: 224 20% 22%;
-  --muted-foreground: 222 12% 68%;
-  --accent: 158 84% 44%;
-  --accent-foreground: 0 0% 100%;
-  --destructive: 349 82% 62%;
-  --destructive-foreground: 0 0% 100%;
-  --success: 158 84% 42%;
-  --success-foreground: 0 0% 100%;
-  --warning: 35 95% 55%;
-  --warning-foreground: 0 0% 100%;
-  --border: 224 20% 22%;
-  --input: 224 20% 22%;
-  --ring: 243 82% 68%;
+  color-scheme: dark;
+
+  /* У темній: вище = світліше; тінь допомагає лише оверлеям */
+  --canvas: oklch(0.155 0.004 265);
+  --sunken: oklch(0.125 0.004 265);
+  --surface: oklch(0.212 0.005 265);
+  --well: oklch(0.255 0.006 265);
+  --well-strong: oklch(0.29 0.007 265);
+  --raised: oklch(0.33 0.007 265);
+  --overlay: oklch(0.235 0.006 265);
+  --scrim: oklch(0 0 0 / 0.58);
+
+  --state-hover: oklch(1 0 0 / 0.045);
+  --state-press: oklch(1 0 0 / 0.08);
+
+  --line: oklch(1 0 0 / 0.08);
+
+  --ink: oklch(0.955 0.003 265);
+  --ink-2: oklch(0.79 0.006 265);
+  --ink-3: oklch(0.64 0.008 265);
+  --ink-4: oklch(0.48 0.008 265);
+
+  --accent: oklch(0.65 0.17 258);
+  --accent-press: oklch(0.6 0.17 258);
+  --accent-ink: oklch(0.8 0.11 258);
+  --accent-tint: oklch(0.31 0.065 258);
+  --accent-on: oklch(1 0 0);
+  --focus: oklch(0.65 0.17 258 / 0.45);
+
+  --ok: oklch(0.7 0.15 155);
+  --ok-ink: oklch(0.82 0.12 155);
+  --ok-tint: oklch(0.3 0.055 155);
+  --warn: oklch(0.79 0.14 75);
+  --warn-ink: oklch(0.86 0.11 80);
+  --warn-tint: oklch(0.33 0.055 70);
+  --alert: oklch(0.68 0.18 25);
+  --alert-ink: oklch(0.81 0.11 25);
+  --alert-tint: oklch(0.31 0.07 25);
+
+  --av-l: 0.32;
+  --av-c: 0.06;
+  --av-ink-l: 0.85;
+  --av-ink-c: 0.09;
+
+  --sh-hair: 0 0 #0000;
+  --sh-card: 0 1px 2px oklch(0 0 0 / 0.3);
+  --sh-raised: 0 1px 2px oklch(0 0 0 / 0.4), 0 2px 6px oklch(0 0 0 / 0.25);
+  --sh-float: 0 6px 18px oklch(0 0 0 / 0.45), 0 16px 40px oklch(0 0 0 / 0.35);
+  --sh-sheet: 0 -8px 36px oklch(0 0 0 / 0.5);
+  --sh-accent: 0 6px 18px oklch(0.4 0.15 258 / 0.45);
 }
 
 @theme inline {
-  --color-background: hsl(var(--background));
-  --color-foreground: hsl(var(--foreground));
-  --color-card: hsl(var(--card));
-  --color-card-foreground: hsl(var(--card-foreground));
-  --color-popover: hsl(var(--popover));
-  --color-popover-foreground: hsl(var(--popover-foreground));
-  --color-primary: hsl(var(--primary));
-  --color-primary-foreground: hsl(var(--primary-foreground));
-  --color-secondary: hsl(var(--secondary));
-  --color-secondary-foreground: hsl(var(--secondary-foreground));
-  --color-accent: hsl(var(--accent));
-  --color-accent-foreground: hsl(var(--accent-foreground));
-  --color-muted: hsl(var(--muted));
-  --color-muted-foreground: hsl(var(--muted-foreground));
-  --color-success: hsl(var(--success));
-  --color-success-foreground: hsl(var(--success-foreground));
-  --color-warning: hsl(var(--warning));
-  --color-warning-foreground: hsl(var(--warning-foreground));
-  --color-destructive: hsl(var(--destructive));
-  --color-destructive-foreground: hsl(var(--destructive-foreground));
-  --color-border: hsl(var(--border));
-  --color-input: hsl(var(--input));
-  --color-ring: hsl(var(--ring));
+  --color-canvas: var(--canvas);
+  --color-sunken: var(--sunken);
+  --color-surface: var(--surface);
+  --color-well: var(--well);
+  --color-well-strong: var(--well-strong);
+  --color-raised: var(--raised);
+  --color-overlay: var(--overlay);
+  --color-line: var(--line);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-ink-4: var(--ink-4);
+  --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+  --color-accent-tint: var(--accent-tint);
+  --color-accent-on: var(--accent-on);
+  --color-ok: var(--ok);
+  --color-ok-ink: var(--ok-ink);
+  --color-ok-tint: var(--ok-tint);
+  --color-warn: var(--warn);
+  --color-warn-ink: var(--warn-ink);
+  --color-warn-tint: var(--warn-tint);
+  --color-alert: var(--alert);
+  --color-alert-ink: var(--alert-ink);
+  --color-alert-tint: var(--alert-tint);
 
-  --radius-sm: calc(var(--radius) - 10px);
-  --radius-md: calc(var(--radius) - 6px);
-  --radius-lg: calc(var(--radius) - 2px);
-  --radius-xl: var(--radius);
-  --radius-2xl: calc(var(--radius) + 6px);
+  /* Сумісність для залишків shadcn (Radix-примітиви) */
+  --color-background: var(--canvas);
+  --color-foreground: var(--ink);
+  --color-muted-foreground: var(--ink-3);
+  --color-border: var(--line);
 
-  /* Прибираємо тіні Tailwind повністю */
-  --shadow-2xs: 0 0 #0000;
-  --shadow-xs: 0 0 #0000;
-  --shadow-sm: 0 0 #0000;
-  --shadow: 0 0 #0000;
-  --shadow-md: 0 0 #0000;
-  --shadow-lg: 0 0 #0000;
-  --shadow-xl: 0 0 #0000;
-  --shadow-2xl: 0 0 #0000;
+  --radius-xs: var(--r-xs);
+  --radius-sm: var(--r-sm);
+  --radius-md: var(--r-md);
+  --radius-lg: var(--r-lg);
+  --radius-xl: var(--r-xl);
 
-  --font-sans: "Onest Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --font-display: "Unbounded Variable", "Onest Variable", ui-sans-serif, system-ui, sans-serif;
+  --shadow-hair: var(--sh-hair);
+  --shadow-card: var(--sh-card);
+  --shadow-raised: var(--sh-raised);
+  --shadow-float: var(--sh-float);
+  --shadow-sheet: var(--sh-sheet);
+  --shadow-accent: var(--sh-accent);
 
-  --animate-rise: rise 0.5s var(--ease-spring) both;
-  --animate-pop: pop 0.34s var(--ease-spring) both;
+  /* Системний шрифт платформи: SF Pro на iPhone, Roboto на Android */
+  --font-sans: system-ui, -apple-system, "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+
+  /* Типографічна драбина (мобільна, як у системних застосунках) */
+  --text-display: 2.125rem;
+  --text-display--line-height: 2.5rem;
+  --text-display--letter-spacing: -0.025em;
+  --text-display--font-weight: 700;
+  --text-title: 1.75rem;
+  --text-title--line-height: 2.125rem;
+  --text-title--letter-spacing: -0.022em;
+  --text-title--font-weight: 700;
+  --text-headline: 1.0625rem;
+  --text-headline--line-height: 1.375rem;
+  --text-headline--letter-spacing: -0.01em;
+  --text-headline--font-weight: 600;
+  --text-body: 1rem;
+  --text-body--line-height: 1.375rem;
+  --text-callout: 0.9375rem;
+  --text-callout--line-height: 1.25rem;
+  --text-footnote: 0.8125rem;
+  --text-footnote--line-height: 1.125rem;
+  --text-caption: 0.75rem;
+  --text-caption--line-height: 1rem;
+
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+
+  --animate-rise: rise 0.42s var(--ease-out) both;
+  --animate-fade: fade 0.24s var(--ease-out) both;
 
   @keyframes rise {
-    from { opacity: 0; transform: translateY(10px); }
-    to   { opacity: 1; transform: translateY(0); }
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: none; }
   }
-  @keyframes pop {
-    0%   { transform: scale(0.82); opacity: 0; }
-    60%  { transform: scale(1.05); }
-    100% { transform: scale(1); opacity: 1; }
+  @keyframes fade {
+    from { opacity: 0; }
+    to { opacity: 1; }
   }
-  @keyframes shimmer { 100% { transform: translateX(100%); } }
+  @keyframes shimmer {
+    100% { transform: translateX(100%); }
+  }
 }
 
 @layer base {
-  * { border-color: hsl(var(--border)); }
-  html { -webkit-tap-highlight-color: transparent; }
+  html {
+    -webkit-tap-highlight-color: transparent;
+    background: var(--canvas);
+    transition: background-color var(--t) var(--ease-std);
+  }
   body {
-    background-color: hsl(var(--background));
-    color: hsl(var(--foreground));
+    background: var(--canvas);
+    color: var(--ink);
     font-family: var(--font-sans);
+    font-size: 1rem;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
+    font-feature-settings: "cv11", "ss01";
+    overscroll-behavior-y: none;
   }
-  button { touch-action: manipulation; }
-
-  .font-display { font-family: var(--font-display); }
-  .tabular, [data-tabular] { font-variant-numeric: tabular-nums; }
-  .num-display {
-    font-family: var(--font-display);
-    font-variant-numeric: tabular-nums;
-    letter-spacing: -0.01em;
-    font-weight: 600;
-  }
-
-  ::selection { background: hsl(var(--primary) / 0.16); }
+  button { touch-action: manipulation; cursor: pointer; }
+  button:disabled { cursor: default; }
+  input, textarea { font: inherit; color: inherit; }
+  input::placeholder, textarea::placeholder { color: var(--ink-4); }
+  ::selection { background: var(--accent-tint); }
 
   :focus-visible {
     outline: none;
-    box-shadow: 0 0 0 3px hsl(var(--ring) / 0.28);
+    box-shadow: 0 0 0 3px var(--focus);
   }
 
-  /* View Transitions — плавні переходи між екранами (fade + легкий підйом) */
-  @keyframes vt-out {
-    to { opacity: 0; transform: scale(0.99); }
-  }
-  @keyframes vt-in {
-    from { opacity: 0; transform: translateY(12px) scale(0.99); }
-    to { opacity: 1; transform: translateY(0) scale(1); }
-  }
-  ::view-transition-old(root) {
-    animation: vt-out 0.2s var(--ease-spring) both;
-  }
+  /* Цифри: однакова ширина, щоб колонки не стрибали */
+  .num { font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+
+  /* ── Переходи між екранами (View Transitions) ─────────────────────────────
+     push — углиб (новий екран заходить справа), back — назад,
+     tab  — між розділами дока (тихе перетікання). Док має власну назву
+     й стоїть на місці, поки змінюється сторінка. */
+  ::view-transition-old(root),
   ::view-transition-new(root) {
-    animation: vt-in 0.32s var(--ease-spring) both;
+    animation-duration: 0.26s;
+    animation-timing-function: var(--ease-out);
   }
+  ::view-transition-old(root) { animation-name: vt-fade-out; }
+  ::view-transition-new(root) { animation-name: vt-fade-in; }
+
+  html[data-nav="push"]::view-transition-old(root) { animation: vt-out-left 0.28s var(--ease-out) both; }
+  html[data-nav="push"]::view-transition-new(root) { animation: vt-in-right 0.34s var(--ease-out) both; }
+  html[data-nav="back"]::view-transition-old(root) { animation: vt-out-right 0.26s var(--ease-out) both; }
+  html[data-nav="back"]::view-transition-new(root) { animation: vt-in-left 0.32s var(--ease-out) both; }
+
+  ::view-transition-group(dock) { animation-duration: 0.3s; }
+
+  @keyframes vt-fade-out { to { opacity: 0; } }
+  @keyframes vt-fade-in { from { opacity: 0; } }
+  @keyframes vt-out-left { to { opacity: 0; transform: translateX(-28px); } }
+  @keyframes vt-in-right { from { opacity: 0; transform: translateX(36px); } }
+  @keyframes vt-out-right { to { opacity: 0; transform: translateX(36px); } }
+  @keyframes vt-in-left { from { opacity: 0; transform: translateX(-28px); } }
 
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {
       animation-duration: 0.01ms !important;
+      animation-delay: 0ms !important;
       transition-duration: 0.01ms !important;
     }
     ::view-transition-group(*),
@@ -204,48 +306,85 @@
   }
 }
 
-/* Пласка картка: папір + hairline, БЕЗ тіні */
-@utility card-flat {
-  background: hsl(var(--card));
-  border: 1px solid hsl(var(--border));
-  border-radius: var(--radius);
+/* ── Утиліти площин ───────────────────────────────────────────────────────── */
+
+/* Картка / група: площина surface */
+@utility card {
+  background: var(--surface);
+  border-radius: var(--r-lg);
+  box-shadow: var(--sh-card);
 }
 
-/* Кольорові icon-badge (заливка підтінком + насичена іконка) */
-@utility ibadge {
+/* Згрупований список: рядки розділяє внутрішня лінія з відступом зліва */
+@utility list {
+  & > * { position: relative; }
+  & > * + *::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: var(--list-inset, 16px);
+    right: 0;
+    height: 1px;
+    background: var(--line);
+    pointer-events: none;
+  }
+}
+
+/* Колодязь усередині картки: поле, трек */
+@utility field {
+  background: var(--well);
+  border-radius: var(--r-md);
+  transition: background-color var(--t-fast) var(--ease-std), box-shadow var(--t-fast) var(--ease-std);
+  &:focus-within, &:focus { background: var(--surface); box-shadow: 0 0 0 2px var(--accent), 0 0 0 5px var(--focus); }
+}
+
+/* Аватар клієнта: тон приналежності за --h */
+@utility avatar {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
   border-radius: 999px;
+  font-weight: 650;
+  background: oklch(var(--av-l) var(--av-c) var(--h, 258));
+  color: oklch(var(--av-ink-l) var(--av-ink-c) var(--h, 258));
 }
-@utility tint-violet  { background: hsl(var(--t-violet-bg));  color: hsl(var(--t-violet-fg)); }
-@utility tint-indigo  { background: hsl(var(--t-indigo-bg));  color: hsl(var(--t-indigo-fg)); }
-@utility tint-blue    { background: hsl(var(--t-blue-bg));    color: hsl(var(--t-blue-fg)); }
-@utility tint-sky     { background: hsl(var(--t-sky-bg));     color: hsl(var(--t-sky-fg)); }
-@utility tint-teal    { background: hsl(var(--t-teal-bg));    color: hsl(var(--t-teal-fg)); }
-@utility tint-emerald { background: hsl(var(--t-emerald-bg)); color: hsl(var(--t-emerald-fg)); }
-@utility tint-amber   { background: hsl(var(--t-amber-bg));   color: hsl(var(--t-amber-fg)); }
-@utility tint-rose    { background: hsl(var(--t-rose-bg));    color: hsl(var(--t-rose-fg)); }
 
-/* Мікровідгук натиску */
+/* Відгук натиску: рядки й картки — тонова накладка; кнопки — ще й стиснення */
+@utility tap {
+  position: relative;
+  transition: transform var(--t-fast) var(--ease-std), background-color var(--t-fast) var(--ease-std);
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: var(--state-press);
+    opacity: 0;
+    transition: opacity var(--t-fast) var(--ease-std);
+    pointer-events: none;
+  }
+  &:active:not(:disabled)::after { opacity: 1; }
+  @media (hover: hover) {
+    &:hover:not(:disabled)::after { opacity: 0.55; }
+  }
+}
 @utility press {
-  transition: transform 0.16s var(--ease-spring);
-  &:active { transform: scale(0.96); }
+  transition: transform var(--t-fast) var(--ease-std), background-color var(--t-fast) var(--ease-std), opacity var(--t-fast);
+  &:active:not(:disabled) { transform: scale(0.965); }
 }
 
-/* Мерехтливий скелетон */
 @utility skeleton {
   position: relative;
   overflow: hidden;
-  background: hsl(var(--muted));
+  background: var(--well-strong);
   &::after {
     content: "";
     position: absolute;
     inset: 0;
     transform: translateX(-100%);
-    background: linear-gradient(90deg, transparent, hsl(0 0% 100% / 0.6), transparent);
-    animation: shimmer 1.6s infinite;
+    background: linear-gradient(90deg, transparent, oklch(1 0 0 / 0.35), transparent);
+    animation: shimmer 1.4s infinite;
   }
 }
 
@@ -256,21 +395,7 @@
   &::-webkit-scrollbar { display: none; }
 }
 
-@utility pb-dock {
-  padding-bottom: calc(6.5rem + env(safe-area-inset-bottom, 0px));
-}
-
 @utility rise-in { animation: var(--animate-rise); }
-@utility pop-in { animation: var(--animate-pop); }
-@utility transition-smooth { transition: var(--transition-smooth); }
+@utility fade-in { animation: var(--animate-fade); }
 
-/* Легасі-класи старих екранів → нейтралізовано під пласку базу
-   (щоб решта сторінок не ламались до їхнього редизайну) */
-@utility glass-card { background: hsl(var(--card)); border: 1px solid hsl(var(--border)); border-radius: var(--radius-lg); }
-@utility glass-effect { background: hsl(var(--card)); border: 1px solid hsl(var(--border)); }
-@utility gradient-primary { background: linear-gradient(135deg, hsl(var(--primary)), hsl(243 82% 70%)); }
-@utility gradient-secondary { background: linear-gradient(180deg, hsl(0 0% 100%), hsl(220 24% 97%)); }
-@utility gradient-success { background: linear-gradient(135deg, hsl(158 84% 38%), hsl(158 84% 46%)); }
-@utility shadow-glow { box-shadow: none; }
-@utility shadow-glow-hover { box-shadow: none; }
-@utility notebook-bg { background-color: hsl(var(--background)); }
+@utility safe-bottom { padding-bottom: env(safe-area-inset-bottom, 0px); }

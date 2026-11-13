@@ -19,16 +19,15 @@ export class ErrorBoundary extends Component<Props, State> {
   render() {
     if (this.state.error) {
       return (
-        <div className="min-h-screen bg-background flex items-center justify-center px-6">
-          <div className="card-flat rounded-3xl p-8 text-center max-w-sm">
-            <p className="text-4xl mb-3">🫧</p>
-            <h1 className="font-display text-xl font-semibold text-foreground mb-2">Щось пішло не так</h1>
-            <p className="text-sm text-muted-foreground mb-5">
+        <div className="flex min-h-dvh items-center justify-center bg-canvas px-6">
+          <div className="card max-w-sm p-8 text-center">
+            <h1 className="mb-2 text-[1.25rem] font-bold text-ink">Щось пішло не так</h1>
+            <p className="mb-6 text-callout text-ink-3">
               Спробуй оновити сторінку. Після цього перевір, чи збережено останні зміни.
             </p>
             <button
               onClick={() => window.location.reload()}
-              className="bg-primary text-primary-foreground rounded-full px-6 py-2.5 font-bold active:scale-95 transition-transform"
+              className="press h-12 rounded-[16px] bg-accent px-6 font-semibold text-accent-on"
             >
               Оновити
             </button>
